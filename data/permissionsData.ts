@@ -30,7 +30,6 @@ export const allPermissions: { name: Permission, label: string, module: string }
   { name: 'send_communications', label: 'Enviar Comunicações', module: 'Comunicação' },
   // Declarations
   { name: 'view_declarations', label: 'Ver Declarações', module: 'Declarações' },
-  // FIX: Corrected typo from `name::` to `name:`.
   { name: 'generate_declarations', label: 'Gerar Declarações', module: 'Declarações' },
   // Gallery
   { name: 'view_gallery', label: 'Ver Mural de Fotos', module: 'Mural de Fotos' },
