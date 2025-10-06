@@ -22,6 +22,7 @@ export const allPermissions: { name: Permission, label: string, module: string }
   { name: 'view_leads', label: 'Ver Admissões', module: 'Admissões' },
   { name: 'create_leads', label: 'Criar Leads', module: 'Admissões' },
   { name: 'edit_leads', label: 'Editar Leads', module: 'Admissões' },
+  { name: 'manage_lead_forms', label: 'Gerenciar Links de Captura', module: 'Admissões' },
   // Agenda
   { name: 'view_agenda', label: 'Ver Agenda', module: 'Agenda' },
   { name: 'create_agenda_items', label: 'Criar Itens na Agenda', module: 'Agenda' },
@@ -69,6 +70,7 @@ export const initialRoles: Role[] = [
             'view_leads',
             'create_leads',
             'edit_leads',
+            'manage_lead_forms',
             'view_agenda',
             'create_agenda_items',
             'view_communications',

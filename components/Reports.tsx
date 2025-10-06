@@ -1,10 +1,12 @@
 
+
 import React from 'react';
 import Card from './common/Card';
 import { useData } from '../contexts/DataContext';
 // FIX: Corrected import path for types.
 import { StudentStatus, PaymentStatus, LeadStatus } from '../types';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ResponsiveValue } from 'recharts';
+// FIX: Removed non-exported 'ResponsiveValue' type from recharts import.
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 // A simple stat card component local to this view
 const StatCard: React.FC<{ title: string; value: string; }> = ({ title, value }) => (
@@ -148,7 +150,8 @@ const Reports: React.FC = () => {
                 <ResponsiveContainer width="100%" height={250}>
                     <BarChart data={leadStatusData}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" tick={{ fontSize: 12 }} angle={-20 as ResponsiveValue<number>} textAnchor="end" height={50 as ResponsiveValue<number>} />
+                        {/* FIX: Removed 'as ResponsiveValue<number>' cast which caused a TypeScript error. */}
+                        <XAxis dataKey="name" tick={{ fontSize: 12 }} angle={-20} textAnchor="end" height={50} />
                         <YAxis />
                         <Tooltip />
                         <Bar dataKey="Leads" fill="#8b5cf6" />

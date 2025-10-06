@@ -5,9 +5,14 @@ import Card from './common/Card';
 import AddLeadModal from './leads/AddLeadModal';
 import LeadDetailModal from './leads/LeadDetailModal';
 import ProtectedComponent from './common/ProtectedComponent';
+import LeadCaptureLinksModal from './leads/LeadCaptureLinksModal';
 
 const PlusIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+);
+
+const LinkIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"/></svg>
 );
 
 const LeadCard: React.FC<{ lead: Lead; onClick: () => void }> = ({ lead, onClick }) => (
@@ -34,8 +39,9 @@ const LeadsColumn: React.FC<{ title: string; leads: Lead[]; onLeadClick: (lead: 
 
 
 const Leads: React.FC = () => {
-    const { leads } = useData();
+    const { leads, addLead } = useData();
     const [isAddModalOpen, setAddModalOpen] = useState(false);
+    const [isLinkManagerOpen, setLinkManagerOpen] = useState(false);
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
     const handleLeadClick = (lead: Lead) => {
@@ -46,11 +52,8 @@ const Leads: React.FC = () => {
         setSelectedLead(null);
     };
     
-    // This function will be a placeholder since we are not actually modifying data
     const handleAddLead = (newLeadData: Omit<Lead, 'id'>) => {
-        console.log("New Lead Added (mock): ", newLeadData);
-        // In a real app, you would call an API service to add the lead
-        // and then update the local state, perhaps by re-fetching.
+        addLead(newLeadData);
         setAddModalOpen(false);
     };
 
@@ -66,15 +69,26 @@ const Leads: React.FC = () => {
         <>
             <div className="mb-4 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                  <h2 className="text-2xl font-bold text-brand-text-dark">Funil de Admissões</h2>
-                <ProtectedComponent requiredPermission='create_leads'>
-                    <button
-                        onClick={() => setAddModalOpen(true)}
-                        className="w-full sm:w-auto flex items-center justify-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm"
-                    >
-                        <PlusIcon className="w-5 h-5 mr-2" />
-                        Adicionar Lead
-                    </button>
-                </ProtectedComponent>
+                <div className="flex flex-col sm:flex-row gap-2">
+                    <ProtectedComponent requiredPermission='manage_lead_forms'>
+                        <button
+                            onClick={() => setLinkManagerOpen(true)}
+                            className="w-full sm:w-auto flex items-center justify-center bg-white text-brand-primary border border-brand-primary font-bold py-2 px-4 rounded-lg hover:bg-sky-50 transition-colors duration-300 shadow-sm"
+                        >
+                            <LinkIcon className="w-5 h-5 mr-2" />
+                            Links de Captura
+                        </button>
+                    </ProtectedComponent>
+                     <ProtectedComponent requiredPermission='create_leads'>
+                        <button
+                            onClick={() => setAddModalOpen(true)}
+                            className="w-full sm:w-auto flex items-center justify-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm"
+                        >
+                            <PlusIcon className="w-5 h-5 mr-2" />
+                            Adicionar Lead
+                        </button>
+                    </ProtectedComponent>
+                </div>
             </div>
             <div className="flex space-x-6 overflow-x-auto pb-4">
                 {columns.map(col => (
@@ -91,6 +105,11 @@ const Leads: React.FC = () => {
                 isOpen={isAddModalOpen}
                 onClose={() => setAddModalOpen(false)}
                 onAddLead={handleAddLead}
+            />
+
+            <LeadCaptureLinksModal
+                isOpen={isLinkManagerOpen}
+                onClose={() => setLinkManagerOpen(false)}
             />
 
             {selectedLead && (

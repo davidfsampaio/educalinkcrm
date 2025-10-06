@@ -1,6 +1,6 @@
-import { mockStudents, mockInvoices, mockLeads, mockStaff, mockCommunications, mockAgendaItems, mockLibraryBooks, mockPhotoAlbums, financialSummaryData, mockUsers, mockExpenses, mockRevenues } from '../data/mockData';
+import { mockStudents, mockInvoices, mockLeads, mockStaff, mockCommunications, mockAgendaItems, mockLibraryBooks, mockPhotoAlbums, financialSummaryData, mockUsers, mockExpenses, mockRevenues, mockLeadCaptureCampaigns } from '../data/mockData';
 // FIX: Corrected import path for types.
-import { Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum, FinancialSummaryPoint, User, Expense, Revenue } from '../types';
+import { Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum, FinancialSummaryPoint, User, Expense, Revenue, LeadCaptureCampaign } from '../types';
 
 // FIX: Changed simulateDelay to be a generic function to preserve type information.
 const simulateDelay = <T>(data: T): Promise<T> => new Promise(resolve => setTimeout(() => resolve(data), 500));
@@ -17,3 +17,4 @@ export const getFinancialSummary = (): Promise<FinancialSummaryPoint[]> => simul
 export const getUsers = (): Promise<User[]> => simulateDelay(mockUsers);
 export const getExpenses = (): Promise<Expense[]> => simulateDelay(mockExpenses);
 export const getRevenues = (): Promise<Revenue[]> => simulateDelay(mockRevenues);
+export const getLeadCaptureCampaigns = (): Promise<LeadCaptureCampaign[]> => simulateDelay(mockLeadCaptureCampaigns);

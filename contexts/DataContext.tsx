@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 // FIX: Corrected import path for types.
-import { Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum, FinancialSummaryPoint, User, Expense, Revenue } from '../types';
+import { Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum, FinancialSummaryPoint, User, Expense, Revenue, LeadCaptureCampaign, LeadStatus } from '../types';
 import * as api from '../services/apiService';
 
 interface DataContextType {
@@ -16,7 +16,10 @@ interface DataContextType {
     financialSummary: FinancialSummaryPoint[];
     expenses: Expense[];
     revenues: Revenue[];
+    leadCaptureCampaigns: LeadCaptureCampaign[];
     loading: boolean;
+    addLead: (leadData: Omit<Lead, 'id'>, campaignId?: string) => void;
+    addLeadCaptureCampaign: (campaign: LeadCaptureCampaign) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -34,6 +37,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [financialSummary, setFinancialSummary] = useState<FinancialSummaryPoint[]>([]);
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [revenues, setRevenues] = useState<Revenue[]>([]);
+    const [leadCaptureCampaigns, setLeadCaptureCampaigns] = useState<LeadCaptureCampaign[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -53,6 +57,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     financialData,
                     expensesData,
                     revenuesData,
+                    campaignsData,
                 ] = await Promise.all([
                     api.getStudents(),
                     api.getInvoices(),
@@ -66,6 +71,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     api.getFinancialSummary(),
                     api.getExpenses(),
                     api.getRevenues(),
+                    api.getLeadCaptureCampaigns(),
                 ]);
                 setStudents(studentsData);
                 setInvoices(invoicesData);
@@ -79,6 +85,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 setFinancialSummary(financialData);
                 setExpenses(expensesData);
                 setRevenues(revenuesData);
+                setLeadCaptureCampaigns(campaignsData);
             } catch (error) {
                 console.error("Failed to load data", error);
             } finally {
@@ -89,7 +96,25 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loadData();
     }, []);
 
-    const value = { students, invoices, leads, staff, users, communications, agendaItems, libraryBooks, photoAlbums, financialSummary, expenses, revenues, loading };
+    const addLead = (leadData: Omit<Lead, 'id'>, campaignId?: string) => {
+        const newLead: Lead = {
+            id: Date.now(),
+            ...leadData,
+        };
+        setLeads(prev => [newLead, ...prev]);
+
+        if (campaignId) {
+            setLeadCaptureCampaigns(prev => prev.map(c => 
+                c.id === campaignId ? { ...c, leadsCaptured: c.leadsCaptured + 1 } : c
+            ));
+        }
+    };
+    
+    const addLeadCaptureCampaign = (campaign: LeadCaptureCampaign) => {
+        setLeadCaptureCampaigns(prev => [campaign, ...prev]);
+    };
+
+    const value = { students, invoices, leads, staff, users, communications, agendaItems, libraryBooks, photoAlbums, financialSummary, expenses, revenues, leadCaptureCampaigns, loading, addLead, addLeadCaptureCampaign };
 
     return (
         <DataContext.Provider value={value}>

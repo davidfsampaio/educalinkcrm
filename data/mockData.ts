@@ -1,19 +1,35 @@
-import { Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, TuitionPlan, PhotoAlbum, User, UserRoleName, UserStatus, Expense, Revenue, ExpenseCategory, RevenueCategory, AgendaItemType } from '../types';
+import { Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, TuitionPlan, PhotoAlbum, User, UserRoleName, UserStatus, Expense, Revenue, ExpenseCategory, RevenueCategory, AgendaItemType, LeadStatus, StudentStatus, StaffStatus, PaymentStatus, LeadCaptureCampaign } from '../types';
 
-// Data cleared for production setup
-export const mockStudents: Student[] = [];
+export const mockStudents: Student[] = [
+    { 
+        id: 1, name: 'Ana Clara Souza', class: 'Turma A', enrollmentDate: '2023-01-15', status: StudentStatus.Active, parentName: 'Marcos Souza', parentContact: '(11) 98765-4321', avatarUrl: 'https://picsum.photos/seed/student1/100/100', cpf: '123.456.789-10', address: 'Rua das Flores, 123', email: 'marcos.souza@example.com', phone: '(11) 98765-4321', tuitionPlanId: 1, grades: [], attendance: [], occurrences: [], documents: [], individualAgenda: [], communicationLog: []
+    },
+    { 
+        id: 2, name: 'Lucas Oliveira', class: 'Turma B', enrollmentDate: '2023-01-16', status: StudentStatus.Active, parentName: 'Fernanda Oliveira', parentContact: '(21) 91234-5678', avatarUrl: 'https://picsum.photos/seed/student2/100/100', cpf: '234.567.890-11', address: 'Avenida Principal, 456', email: 'fernanda.oliveira@example.com', phone: '(21) 91234-5678', tuitionPlanId: 2, grades: [], attendance: [], occurrences: [], documents: [], individualAgenda: [], communicationLog: []
+    },
+];
 
-export const mockInvoices: Invoice[] = [];
+export const mockInvoices: Invoice[] = [
+    { id: 'INV-20240701', studentName: 'Ana Clara Souza', studentId: 1, amount: 850.00, dueDate: '2024-07-05', status: PaymentStatus.Paid, paidDate: '2024-07-03', payments: [] },
+    { id: 'INV-20240702', studentName: 'Lucas Oliveira', studentId: 2, amount: 1350.00, dueDate: '2024-07-05', status: PaymentStatus.Pending, payments: [] },
+];
 
-export const mockLeads: Lead[] = [];
+export const mockLeads: Lead[] = [
+    { id: 1, name: 'Família Silva', parentName: 'Carlos Silva', contact: '(11) 99999-8888', status: LeadStatus.New, interestDate: '2024-07-10', notes: 'Interesse no período integral.', tasks: [], isConverted: false, requiredDocuments: [], communicationLog: [] },
+    { id: 2, name: 'Família Pereira', parentName: 'Juliana Pereira', contact: 'juliana.p@example.com', status: LeadStatus.Contacted, interestDate: '2024-07-08', notes: 'Solicitou visita.', tasks: [], isConverted: false, requiredDocuments: [], communicationLog: [] },
+];
 
-export const mockStaff: Staff[] = [];
+export const mockStaff: Staff[] = [
+    { id: 1, name: 'Mariana Costa', role: 'Coordenador(a)', email: 'mariana.costa@educalink.com', phone: '(11) 98888-7777', hireDate: '2022-02-01', status: StaffStatus.Active, avatarUrl: 'https://picsum.photos/seed/staff1/100/100', cpf: '345.678.901-22', address: 'Rua dos Professores, 789' },
+    { id: 2, name: 'Ricardo Alves', role: 'Professor(a)', email: 'ricardo.alves@educalink.com', phone: '(11) 97777-6666', hireDate: '2022-08-10', status: StaffStatus.Active, avatarUrl: 'https://picsum.photos/seed/staff2/100/100', cpf: '456.789.012-33', address: 'Avenida da Escola, 101' },
+];
 
 
 export const mockUsers: User[] = [
     { id: 1, name: 'Administrador', email: 'admin@educalink.com', role: 'Admin', status: UserStatus.Active, avatarUrl: 'https://picsum.photos/seed/admin/100/100' },
 ];
 
+export const mockLeadCaptureCampaigns: LeadCaptureCampaign[] = [];
 
 // --- Generic data that can be kept ---
 

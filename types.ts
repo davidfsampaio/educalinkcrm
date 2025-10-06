@@ -276,6 +276,14 @@ export interface TuitionPlan {
     amount: number;
 }
 
+export interface LeadCaptureCampaign {
+    id: string;
+    name: string;
+    publicUrl: string;
+    createdAt: string;
+    leadsCaptured: number;
+}
+
 export type Permission = 
   // Dashboard
   'view_dashboard' |
@@ -298,6 +306,7 @@ export type Permission =
   'view_leads' |
   'create_leads' |
   'edit_leads' |
+  'manage_lead_forms' | // New permission
   // Agenda
   'view_agenda' |
   'create_agenda_items' |

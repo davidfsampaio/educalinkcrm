@@ -1,4 +1,4 @@
-import React, { useState, lazy, Suspense } from 'react';
+import React, { useState, lazy, Suspense, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import { View, Permission } from './types';
@@ -22,6 +22,7 @@ const Gallery = lazy(() => import('./components/Gallery'));
 const Declarations = lazy(() => import('./components/Declarations'));
 const Users = lazy(() => import('./components/Users'));
 const ParentPortal = lazy(() => import('./components/parent_portal/ParentPortal'));
+const PublicLeadCapturePage = lazy(() => import('./components/PublicLeadCapturePage'));
 
 
 const viewPermissions: Record<View, Permission> = {
@@ -228,12 +229,20 @@ const AuthScreen: React.FC<{ setUserType: (type: 'staff' | 'parent') => void }> 
 
 const App: React.FC = () => {
   const [userType, setUserType] = useState<'staff' | 'parent' | null>(null);
+  const [page, setPage] = useState<'crm' | 'capture'>(() => {
+    return window.location.pathname.startsWith('/capture/') ? 'capture' : 'crm';
+  });
+
 
   const handleLogout = () => {
     setUserType(null);
   };
 
   const renderContent = () => {
+    if (page === 'capture') {
+        return <PublicLeadCapturePage />;
+    }
+
     if (!userType) {
       return <AuthScreen setUserType={setUserType} />;
     }
