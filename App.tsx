@@ -1,4 +1,3 @@
-
 import React, { useState, lazy, Suspense } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -107,10 +106,9 @@ const SchoolIcon: React.FC<{className?: string}> = ({ className }) => (
 );
 
 
-const LoginScreen: React.FC<{ setUserType: (type: 'staff' | 'parent') => void }> = ({ setUserType }) => {
+const InitialSelectionScreen: React.FC<{ onSelect: (type: 'staff' | 'parent') => void }> = ({ onSelect }) => {
   return (
-    <div className="flex items-center justify-center h-screen bg-slate-100">
-      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-xl text-center">
+    <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-xl text-center">
         <div className="flex flex-col items-center">
             <SchoolIcon className="h-16 w-16 text-brand-primary" />
             <h1 className="text-3xl font-bold mt-4 text-brand-text-dark">Bem-vindo ao EducaLink CRM</h1>
@@ -118,13 +116,13 @@ const LoginScreen: React.FC<{ setUserType: (type: 'staff' | 'parent') => void }>
         </div>
         <div className="space-y-4 pt-4">
             <button
-                onClick={() => setUserType('staff')}
+                onClick={() => onSelect('staff')}
                 className="w-full py-3 px-4 font-semibold rounded-lg text-white bg-brand-primary hover:bg-sky-600 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1"
             >
                 Acessar como Equipe da Escola
             </button>
             <button
-                onClick={() => setUserType('parent')}
+                onClick={() => onSelect('parent')}
                 className="w-full py-3 px-4 font-semibold rounded-lg text-brand-text-dark bg-slate-200 hover:bg-slate-300 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1"
             >
                 Acessar como Pai/Responsável
@@ -133,9 +131,92 @@ const LoginScreen: React.FC<{ setUserType: (type: 'staff' | 'parent') => void }>
          <div className="pt-6 text-center text-slate-400 text-sm">
             <p>&copy; 2024 EducaLink CRM</p>
         </div>
-      </div>
     </div>
   );
+};
+
+const StaffLoginScreen: React.FC<{ onLogin: () => void, onBack: () => void }> = ({ onLogin, onBack }) => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+
+    const handleLogin = () => {
+        // Hardcoded credentials for demonstration
+        if (email === 'admin@educalink.com' && password === 'admin123') {
+            setError('');
+            onLogin();
+        } else {
+            setError('Credenciais inválidas. Tente novamente.');
+        }
+    };
+
+    return (
+        <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-xl">
+            <div className="flex flex-col items-center text-center">
+                <SchoolIcon className="h-12 w-12 text-brand-primary" />
+                <h2 className="text-2xl font-bold mt-3 text-brand-text-dark">Login da Equipe</h2>
+            </div>
+            {error && <p className="text-sm text-center text-red-600 bg-red-50 p-3 rounded-md">{error}</p>}
+            <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-4">
+                <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+                    <input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
+                        placeholder="admin@educalink.com"
+                    />
+                </div>
+                 <div>
+                    <label htmlFor="password"className="block text-sm font-medium text-gray-700">Senha</label>
+                    <input
+                        id="password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
+                        placeholder="admin123"
+                    />
+                </div>
+                 <div className="pt-2">
+                    <button
+                        type="submit"
+                        className="w-full py-3 px-4 font-semibold rounded-lg text-white bg-brand-primary hover:bg-sky-600 transition-all duration-300"
+                    >
+                        Entrar
+                    </button>
+                </div>
+            </form>
+            <div className="text-center">
+                <button onClick={onBack} className="text-sm font-medium text-brand-primary hover:underline">
+                    &larr; Voltar para a seleção de perfil
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const AuthScreen: React.FC<{ setUserType: (type: 'staff' | 'parent') => void }> = ({ setUserType }) => {
+    const [view, setView] = useState<'initial' | 'staff_login'>('initial');
+
+    const handleSelect = (type: 'staff' | 'parent') => {
+        if (type === 'staff') {
+            setView('staff_login');
+        } else {
+            setUserType('parent');
+        }
+    };
+
+    return (
+        <div className="flex items-center justify-center h-screen bg-slate-100">
+            {view === 'initial' && <InitialSelectionScreen onSelect={handleSelect} />}
+            {view === 'staff_login' && <StaffLoginScreen onLogin={() => setUserType('staff')} onBack={() => setView('initial')} />}
+        </div>
+    );
 };
 
 
@@ -148,7 +229,7 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     if (!userType) {
-      return <LoginScreen setUserType={setUserType} />;
+      return <AuthScreen setUserType={setUserType} />;
     }
     if (userType === 'staff') {
       return (
