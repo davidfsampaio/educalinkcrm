@@ -1,29 +1,28 @@
 
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import Dashboard from './components/Dashboard';
-import Students from './components/Students';
-import Financials from './components/Financials';
-import Leads from './components/Leads';
-import Communications from './components/Communications';
-import Staff from './components/Staff';
-import Agenda from './components/Agenda';
-// FIX: Corrected import path for Settings component.
-import Settings from './components/Settings';
-import Reports from './components/Reports';
-import Library from './components/Library';
-import Gallery from './components/Gallery';
-// FIX: Corrected import path for Declarations component.
-import Declarations from './components/Declarations'; // Import the new component
-import Users from './components/Users';
-// FIX: Corrected import path for View type.
 import { View, Permission } from './types';
 import { DataProvider } from './contexts/DataContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AccessDenied from './components/common/AccessDenied';
-import ParentPortal from './components/parent_portal/ParentPortal';
+
+// Lazy load components for code splitting
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const Students = lazy(() => import('./components/Students'));
+const Financials = lazy(() => import('./components/Financials'));
+const Leads = lazy(() => import('./components/Leads'));
+const Communications = lazy(() => import('./components/Communications'));
+const Staff = lazy(() => import('./components/Staff'));
+const Agenda = lazy(() => import('./components/Agenda'));
+const Settings = lazy(() => import('./components/Settings'));
+const Reports = lazy(() => import('./components/Reports'));
+const Library = lazy(() => import('./components/Library'));
+const Gallery = lazy(() => import('./components/Gallery'));
+const Declarations = lazy(() => import('./components/Declarations'));
+const Users = lazy(() => import('./components/Users'));
+const ParentPortal = lazy(() => import('./components/parent_portal/ParentPortal'));
 
 
 const viewPermissions: Record<View, Permission> = {
@@ -41,6 +40,12 @@ const viewPermissions: Record<View, Permission> = {
   users: 'view_users',
   settings: 'view_settings',
 };
+
+const LoadingFallback: React.FC = () => (
+    <div className="flex justify-center items-center h-full w-full">
+        <p className="text-brand-text">Carregando...</p>
+    </div>
+);
 
 
 const MainApp: React.FC = () => {
@@ -77,7 +82,9 @@ const MainApp: React.FC = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header currentView={activeView} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 p-6">
-          {renderView()}
+          <Suspense fallback={<LoadingFallback />}>
+            {renderView()}
+          </Suspense>
         </main>
       </div>
     </div>
@@ -159,7 +166,9 @@ const App: React.FC = () => {
   return (
     <SettingsProvider>
       <DataProvider>
-        {renderContent()}
+        <Suspense fallback={<div className="flex h-screen w-screen items-center justify-center"><p>Carregando Módulo...</p></div>}>
+          {renderContent()}
+        </Suspense>
       </DataProvider>
     </SettingsProvider>
   );
