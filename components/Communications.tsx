@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 // FIX: Corrected import path for context.
 import { useData } from '../contexts/DataContext';
@@ -14,7 +13,10 @@ const Communications: React.FC = () => {
 
     useEffect(() => {
         if (!loading) {
-            setLocalCommunications(initialCommunications.sort((a, b) => new Date(b.sentDate).getTime() - new Date(a.sentDate).getTime()));
+            // FIX: Corrected the sort function to use 'a.sentDate' instead of 'a.date'.
+            // Also, created a shallow copy with [...initialCommunications] before sorting
+            // to avoid mutating the original array from context.
+            setLocalCommunications([...initialCommunications].sort((a, b) => new Date(b.sentDate).getTime() - new Date(a.sentDate).getTime()));
         }
     }, [initialCommunications, loading]);
 
