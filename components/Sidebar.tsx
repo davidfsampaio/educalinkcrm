@@ -1,11 +1,12 @@
 import React from 'react';
-// FIX: Corrected import path for types.
 import { View } from '../types';
 import ProtectedComponent from './common/ProtectedComponent';
 
 interface SidebarProps {
   activeView: View;
   setActiveView: (view: View) => void;
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
 }
 
 const SchoolIcon: React.FC<{className?: string}> = ({ className }) => (
@@ -56,65 +57,92 @@ const navIcons = {
     users: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 21a8 8 0 0 1 10.43-7.62"/><circle cx="10" cy="8" r="4"/><circle cx="18" cy="18" r="3"/><path d="m19.5 14.5-.42.42"/><path d="m16.5 21.5-.42-.42"/><path d="m21.5 16.5-.42.42"/><path d="m14.5 19.5-.42-.42"/><path d="m19.5 21.5.42-.42"/><path d="m16.5 14.5.42.42"/><path d="m14.5 16.5.42-.42"/><path d="m21.5 19.5.42.42"/></svg>,
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView }) => {
-  return (
-    <div className="w-64 bg-brand-dark text-white flex flex-col p-4 shadow-2xl">
-      <div className="flex items-center mb-10 px-2">
-        <SchoolIcon className="h-10 w-10 text-brand-primary" />
-        <h1 className="text-2xl font-bold ml-3 text-white">EducaLink</h1>
-      </div>
-      <nav className="flex-1">
-        <ul className="space-y-3">
-            <ProtectedComponent requiredPermission='view_dashboard'>
-                <NavItem icon={navIcons.dashboard} label="Dashboard" isActive={activeView === 'dashboard'} onClick={() => setActiveView('dashboard')} />
-            </ProtectedComponent>
-            <ProtectedComponent requiredPermission='view_students'>
-                <NavItem icon={navIcons.students} label="Alunos" isActive={activeView === 'students'} onClick={() => setActiveView('students')} />
-            </ProtectedComponent>
-            <ProtectedComponent requiredPermission='view_staff'>
-                <NavItem icon={navIcons.staff} label="Funcionários" isActive={activeView === 'staff'} onClick={() => setActiveView('staff')} />
-            </ProtectedComponent>
-             <ProtectedComponent requiredPermission='view_financials'>
-                <NavItem icon={navIcons.financials} label="Financeiro" isActive={activeView === 'financials'} onClick={() => setActiveView('financials')} />
-            </ProtectedComponent>
-            <ProtectedComponent requiredPermission='view_leads'>
-                <NavItem icon={navIcons.leads} label="Admissões" isActive={activeView === 'leads'} onClick={() => setActiveView('leads')} />
-            </ProtectedComponent>
-            <ProtectedComponent requiredPermission='view_agenda'>
-                <NavItem icon={navIcons.agenda} label="Agenda Online" isActive={activeView === 'agenda'} onClick={() => setActiveView('agenda')} />
-            </ProtectedComponent>
-            <ProtectedComponent requiredPermission='view_communications'>
-                <NavItem icon={navIcons.communications} label="Comunicação" isActive={activeView === 'communications'} onClick={() => setActiveView('communications')} />
-            </ProtectedComponent>
-             <ProtectedComponent requiredPermission='view_declarations'>
-                <NavItem icon={navIcons.declarations} label="Declarações" isActive={activeView === 'declarations'} onClick={() => setActiveView('declarations')} />
-            </ProtectedComponent>
-            <ProtectedComponent requiredPermission='view_gallery'>
-                <NavItem icon={navIcons.gallery} label="Mural de Fotos" isActive={activeView === 'gallery'} onClick={() => setActiveView('gallery')} />
-            </ProtectedComponent>
-            <ProtectedComponent requiredPermission='view_library'>
-                <NavItem icon={navIcons.library} label="Biblioteca" isActive={activeView === 'library'} onClick={() => setActiveView('library')} />
-            </ProtectedComponent>
-            <ProtectedComponent requiredPermission='view_reports'>
-                <NavItem icon={navIcons.reports} label="Relatórios" isActive={activeView === 'reports'} onClick={() => setActiveView('reports')} />
+const SidebarContent: React.FC<{ activeView: View, onNavItemClick: (view: View) => void }> = ({ activeView, onNavItemClick }) => (
+  <>
+    <div className="flex items-center mb-10 px-2">
+      <SchoolIcon className="h-10 w-10 text-brand-primary" />
+      <h1 className="text-2xl font-bold ml-3 text-white">EducaLink</h1>
+    </div>
+    <nav className="flex-1">
+      <ul className="space-y-3">
+          <ProtectedComponent requiredPermission='view_dashboard'>
+              <NavItem icon={navIcons.dashboard} label="Dashboard" isActive={activeView === 'dashboard'} onClick={() => onNavItemClick('dashboard')} />
+          </ProtectedComponent>
+          <ProtectedComponent requiredPermission='view_students'>
+              <NavItem icon={navIcons.students} label="Alunos" isActive={activeView === 'students'} onClick={() => onNavItemClick('students')} />
+          </ProtectedComponent>
+          <ProtectedComponent requiredPermission='view_staff'>
+              <NavItem icon={navIcons.staff} label="Funcionários" isActive={activeView === 'staff'} onClick={() => onNavItemClick('staff')} />
+          </ProtectedComponent>
+            <ProtectedComponent requiredPermission='view_financials'>
+              <NavItem icon={navIcons.financials} label="Financeiro" isActive={activeView === 'financials'} onClick={() => onNavItemClick('financials')} />
+          </ProtectedComponent>
+          <ProtectedComponent requiredPermission='view_leads'>
+              <NavItem icon={navIcons.leads} label="Admissões" isActive={activeView === 'leads'} onClick={() => onNavItemClick('leads')} />
+          </ProtectedComponent>
+          <ProtectedComponent requiredPermission='view_agenda'>
+              <NavItem icon={navIcons.agenda} label="Agenda Online" isActive={activeView === 'agenda'} onClick={() => onNavItemClick('agenda')} />
+          </ProtectedComponent>
+          <ProtectedComponent requiredPermission='view_communications'>
+              <NavItem icon={navIcons.communications} label="Comunicação" isActive={activeView === 'communications'} onClick={() => onNavItemClick('communications')} />
+          </ProtectedComponent>
+            <ProtectedComponent requiredPermission='view_declarations'>
+              <NavItem icon={navIcons.declarations} label="Declarações" isActive={activeView === 'declarations'} onClick={() => onNavItemClick('declarations')} />
+          </ProtectedComponent>
+          <ProtectedComponent requiredPermission='view_gallery'>
+              <NavItem icon={navIcons.gallery} label="Mural de Fotos" isActive={activeView === 'gallery'} onClick={() => onNavItemClick('gallery')} />
+          </ProtectedComponent>
+          <ProtectedComponent requiredPermission='view_library'>
+              <NavItem icon={navIcons.library} label="Biblioteca" isActive={activeView === 'library'} onClick={() => onNavItemClick('library')} />
+          </ProtectedComponent>
+          <ProtectedComponent requiredPermission='view_reports'>
+              <NavItem icon={navIcons.reports} label="Relatórios" isActive={activeView === 'reports'} onClick={() => onNavItemClick('reports')} />
+          </ProtectedComponent>
+      </ul>
+    </nav>
+    <div className="mt-auto">
+        <ul className="space-y-3 pt-4 border-t border-slate-700">
+            <ProtectedComponent requiredPermission='view_users'>
+              <NavItem icon={navIcons.users} label="Usuários" isActive={activeView === 'users'} onClick={() => onNavItemClick('users')} />
+          </ProtectedComponent>
+          <ProtectedComponent requiredPermission='view_settings'>
+              <NavItem icon={navIcons.settings} label="Configurações" isActive={activeView === 'settings'} onClick={() => onNavItemClick('settings')} />
             </ProtectedComponent>
         </ul>
-      </nav>
-      <div className="mt-auto">
-         <ul className="space-y-3 pt-4 border-t border-slate-700">
-             <ProtectedComponent requiredPermission='view_users'>
-                <NavItem icon={navIcons.users} label="Usuários" isActive={activeView === 'users'} onClick={() => setActiveView('users')} />
-            </ProtectedComponent>
-            <ProtectedComponent requiredPermission='view_settings'>
-                <NavItem icon={navIcons.settings} label="Configurações" isActive={activeView === 'settings'} onClick={() => setActiveView('settings')} />
-             </ProtectedComponent>
-         </ul>
-        <div className="pt-6 text-center text-slate-400 text-sm">
-            <p>&copy; 2024 EducaLink CRM</p>
-            <p>Todos os direitos reservados.</p>
-        </div>
+      <div className="pt-6 text-center text-slate-400 text-sm">
+          <p>&copy; 2024 EducaLink CRM</p>
+          <p>Todos os direitos reservados.</p>
       </div>
     </div>
+  </>
+);
+
+
+const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isOpen, setIsOpen }) => {
+  const handleNavClick = (view: View) => {
+    setActiveView(view);
+    setIsOpen(false);
+  };
+
+  return (
+    <>
+      {/* Mobile Sidebar Overlay */}
+      <div 
+        className={`fixed inset-0 bg-black bg-opacity-50 z-30 transition-opacity md:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        onClick={() => setIsOpen(false)}
+        aria-hidden="true"
+      ></div>
+      
+      {/* Mobile Sidebar */}
+      <div className={`fixed inset-y-0 left-0 w-64 bg-brand-dark text-white flex flex-col p-4 shadow-2xl transform transition-transform z-40 md:hidden ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <SidebarContent activeView={activeView} onNavItemClick={handleNavClick} />
+      </div>
+
+      {/* Desktop Sidebar */}
+      <div className="w-64 bg-brand-dark text-white hidden md:flex flex-col p-4 shadow-2xl">
+        <SidebarContent activeView={activeView} onNavItemClick={handleNavClick} />
+      </div>
+    </>
   );
 };
 

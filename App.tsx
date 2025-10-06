@@ -49,6 +49,7 @@ const LoadingFallback: React.FC = () => (
 
 const MainApp: React.FC = () => {
   const [activeView, setActiveView] = useState<View>('dashboard');
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
   const { hasPermission } = useAuth();
 
   const renderView = () => {
@@ -76,11 +77,16 @@ const MainApp: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans">
-      <Sidebar activeView={activeView} setActiveView={setActiveView} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header currentView={activeView} />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 p-6">
+    <div className="relative min-h-screen md:flex bg-slate-50 font-sans">
+      <Sidebar 
+        activeView={activeView} 
+        setActiveView={setActiveView} 
+        isOpen={isSidebarOpen}
+        setIsOpen={setSidebarOpen}
+      />
+      <div className="flex-1 flex flex-col min-w-0"> {/* Added min-w-0 to prevent content overflow */}
+        <Header currentView={activeView} onMenuClick={() => setSidebarOpen(true)} />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 p-4 md:p-6">
           <Suspense fallback={<LoadingFallback />}>
             {renderView()}
           </Suspense>
@@ -108,7 +114,7 @@ const SchoolIcon: React.FC<{className?: string}> = ({ className }) => (
 
 const InitialSelectionScreen: React.FC<{ onSelect: (type: 'staff' | 'parent') => void }> = ({ onSelect }) => {
   return (
-    <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-xl text-center">
+    <div className="w-full max-w-md p-6 sm:p-8 space-y-8 bg-white rounded-2xl shadow-xl text-center">
         <div className="flex flex-col items-center">
             <SchoolIcon className="h-16 w-16 text-brand-primary" />
             <h1 className="text-3xl font-bold mt-4 text-brand-text-dark">Bem-vindo ao EducaLink CRM</h1>
@@ -151,7 +157,7 @@ const StaffLoginScreen: React.FC<{ onLogin: () => void, onBack: () => void }> = 
     };
 
     return (
-        <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-xl">
+        <div className="w-full max-w-md p-6 sm:p-8 space-y-6 bg-white rounded-2xl shadow-xl">
             <div className="flex flex-col items-center text-center">
                 <SchoolIcon className="h-12 w-12 text-brand-primary" />
                 <h2 className="text-2xl font-bold mt-3 text-brand-text-dark">Login da Equipe</h2>
@@ -212,7 +218,7 @@ const AuthScreen: React.FC<{ setUserType: (type: 'staff' | 'parent') => void }> 
     };
 
     return (
-        <div className="flex items-center justify-center h-screen bg-slate-100">
+        <div className="flex items-center justify-center h-screen bg-slate-100 p-4">
             {view === 'initial' && <InitialSelectionScreen onSelect={handleSelect} />}
             {view === 'staff_login' && <StaffLoginScreen onLogin={() => setUserType('staff')} onBack={() => setView('initial')} />}
         </div>

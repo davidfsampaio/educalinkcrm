@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useData } from '../contexts/DataContext';
 import Card from './common/Card';
@@ -64,12 +63,12 @@ const Users: React.FC = () => {
     return (
         <>
             <Card>
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
                     <h2 className="text-xl font-bold text-brand-text-dark">Lista de Usuários</h2>
                     <ProtectedComponent requiredPermission='manage_users'>
                         <button
                             onClick={() => setAddModalOpen(true)}
-                            className="flex items-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm"
+                            className="w-full sm:w-auto flex items-center justify-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm"
                         >
                             <PlusIcon className="w-5 h-5 mr-2" />
                             Adicionar Usuário

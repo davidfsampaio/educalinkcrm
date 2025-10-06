@@ -114,7 +114,7 @@ const Financials: React.FC = () => {
                     <ProtectedComponent requiredPermission='create_invoices'>
                         <button
                             onClick={() => setAddInvoiceModalOpen(true)}
-                            className="flex items-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm"
+                            className="w-full sm:w-auto flex items-center justify-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm"
                         >
                             <PlusIcon className="w-5 h-5 mr-2" />
                             Adicionar Fatura
@@ -126,7 +126,7 @@ const Financials: React.FC = () => {
                     <ProtectedComponent requiredPermission='manage_revenues'> 
                         <button
                             onClick={() => setAddRevenueModalOpen(true)}
-                            className="flex items-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm"
+                            className="w-full sm:w-auto flex items-center justify-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm"
                         >
                             <PlusIcon className="w-5 h-5 mr-2" />
                             Adicionar Receita
@@ -138,7 +138,7 @@ const Financials: React.FC = () => {
                     <ProtectedComponent requiredPermission='manage_expenses'>
                         <button
                             onClick={() => setAddExpenseModalOpen(true)}
-                            className="flex items-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm"
+                            className="w-full sm:w-auto flex items-center justify-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm"
                         >
                             <PlusIcon className="w-5 h-5 mr-2" />
                             Adicionar Despesa
@@ -209,13 +209,13 @@ const Financials: React.FC = () => {
     return (
         <>
             <Card>
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
                     <h2 className="text-xl font-bold text-brand-text-dark">Gestão Financeira</h2>
                     {renderHeaderButton()}
                 </div>
                 
                 <div className="border-b border-gray-200 mb-4">
-                    <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+                    <nav className="-mb-px flex space-x-6 overflow-x-auto pb-2" aria-label="Tabs">
                         <button
                             onClick={() => setActiveTab('invoices')}
                             className={`${activeTab === 'invoices' ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-500 hover:text-gray-700'} whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors`}

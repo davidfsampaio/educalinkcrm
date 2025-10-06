@@ -1,12 +1,10 @@
-
 import React, { useState } from 'react';
-// FIX: Corrected import path for context.
 import { useData } from '../contexts/DataContext';
-// FIX: Corrected import path for types.
 import { Lead, LeadStatus } from '../types';
 import Card from './common/Card';
 import AddLeadModal from './leads/AddLeadModal';
 import LeadDetailModal from './leads/LeadDetailModal';
+import ProtectedComponent from '../common/ProtectedComponent';
 
 const PlusIcon: React.FC<{className?: string}> = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -26,7 +24,7 @@ const LeadCard: React.FC<{ lead: Lead; onClick: () => void }> = ({ lead, onClick
 const LeadsColumn: React.FC<{ title: string; leads: Lead[]; onLeadClick: (lead: Lead) => void }> = ({ title, leads, onLeadClick }) => (
     <div className="flex-1 bg-slate-100 rounded-xl p-4 min-w-[300px]">
         <h3 className="font-bold text-lg text-brand-text-dark mb-4 px-2">{title} ({leads.length})</h3>
-        <div className="space-y-4 h-[calc(100vh-250px)] overflow-y-auto pr-2">
+        <div className="space-y-4 h-[calc(100vh-280px)] overflow-y-auto pr-2">
             {leads.map(lead => (
                 <LeadCard key={lead.id} lead={lead} onClick={() => onLeadClick(lead)} />
             ))}
@@ -66,15 +64,17 @@ const Leads: React.FC = () => {
 
     return (
         <>
-            <div className="mb-4 flex justify-between items-center">
+            <div className="mb-4 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                  <h2 className="text-2xl font-bold text-brand-text-dark">Funil de Admissões</h2>
-                 <button
-                    onClick={() => setAddModalOpen(true)}
-                    className="flex items-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm"
-                >
-                    <PlusIcon className="w-5 h-5 mr-2" />
-                    Adicionar Lead
-                </button>
+                <ProtectedComponent requiredPermission='create_leads'>
+                    <button
+                        onClick={() => setAddModalOpen(true)}
+                        className="w-full sm:w-auto flex items-center justify-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm"
+                    >
+                        <PlusIcon className="w-5 h-5 mr-2" />
+                        Adicionar Lead
+                    </button>
+                </ProtectedComponent>
             </div>
             <div className="flex space-x-6 overflow-x-auto pb-4">
                 {columns.map(col => (

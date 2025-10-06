@@ -1,9 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { useSettings } from '../../contexts/SettingsContext';
-import AIAssistantModal from './AIAssistantModal';
-// FIX: Corrected import path for types.
 import { Communication } from '../../types';
+
+// Lazy load the AI Assistant Modal to prevent its dependencies from loading upfront
+const AIAssistantModal = lazy(() => import('./AIAssistantModal'));
 
 interface ComposerProps {
     onSend: (newComm: Omit<Communication, 'id' | 'sentDate'>) => void;
@@ -109,11 +110,15 @@ const Composer: React.FC<ComposerProps> = ({ onSend }) => {
                 </button>
             </div>
 
-            <AIAssistantModal
-                isOpen={isAIAssistantOpen}
-                onClose={() => setAIAssistantOpen(false)}
-                onTextGenerated={handleAIGenerate}
-            />
+            {isAIAssistantOpen && (
+                <Suspense fallback={<div className="text-center p-4">Carregando Assistente IA...</div>}>
+                    <AIAssistantModal
+                        isOpen={isAIAssistantOpen}
+                        onClose={() => setAIAssistantOpen(false)}
+                        onTextGenerated={handleAIGenerate}
+                    />
+                </Suspense>
+            )}
         </div>
     );
 };
