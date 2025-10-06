@@ -15,7 +15,7 @@ const PublicLeadCapturePage: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     const { schoolInfo } = settings;
-    const campaignId = window.location.pathname.split('/').pop();
+    const campaignId = window.location.hash.split('/').pop();
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();

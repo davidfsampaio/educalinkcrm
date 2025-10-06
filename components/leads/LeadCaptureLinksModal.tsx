@@ -20,10 +20,11 @@ const LeadCaptureLinksModal: React.FC<LeadCaptureLinksModalProps> = ({ isOpen, o
     const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
     const handleCreateCampaign = (campaignName: string) => {
+        const campaignId = `campaign-${Date.now()}`;
         const newCampaign: LeadCaptureCampaign = {
-            id: `campaign-${Date.now()}`,
+            id: campaignId,
             name: campaignName,
-            publicUrl: `/capture/${`campaign-${Date.now()}`}`,
+            publicUrl: `/#/capture/${campaignId}`,
             createdAt: new Date().toISOString(),
             leadsCaptured: 0,
         };
@@ -32,7 +33,7 @@ const LeadCaptureLinksModal: React.FC<LeadCaptureLinksModalProps> = ({ isOpen, o
     };
 
     const handleCopyLink = (url: string) => {
-        const fullUrl = `${window.location.origin}${url}`;
+        const fullUrl = `${window.location.origin}${window.location.pathname}${url}`;
         navigator.clipboard.writeText(fullUrl).then(() => {
             setCopiedLink(url);
             setTimeout(() => setCopiedLink(null), 2000);
@@ -72,7 +73,7 @@ const LeadCaptureLinksModal: React.FC<LeadCaptureLinksModalProps> = ({ isOpen, o
                                         <td className="px-6 py-4 whitespace-nowrap text-center text-lg font-bold text-brand-text-dark">{campaign.leadsCaptured}</td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
-                                                <input type="text" readOnly value={`${window.location.origin}${campaign.publicUrl}`} className="w-full bg-slate-100 border-slate-300 rounded-l-md text-sm p-2 font-mono" />
+                                                <input type="text" readOnly value={`${window.location.origin}${window.location.pathname}${campaign.publicUrl}`} className="w-full bg-slate-100 border-slate-300 rounded-l-md text-sm p-2 font-mono" />
                                                 <button 
                                                     onClick={() => handleCopyLink(campaign.publicUrl)}
                                                     className="bg-slate-200 p-2 rounded-r-md hover:bg-slate-300"

@@ -229,9 +229,24 @@ const AuthScreen: React.FC<{ setUserType: (type: 'staff' | 'parent') => void }> 
 
 const App: React.FC = () => {
   const [userType, setUserType] = useState<'staff' | 'parent' | null>(null);
-  const [page, setPage] = useState<'crm' | 'capture'>(() => {
-    return window.location.pathname.startsWith('/capture/') ? 'capture' : 'crm';
-  });
+  const [page, setPage] = useState<'crm' | 'capture' | null>(null);
+
+  useEffect(() => {
+    const handleRouting = () => {
+      if (window.location.hash.startsWith('#/capture/')) {
+        setPage('capture');
+      } else {
+        setPage('crm');
+      }
+    };
+
+    handleRouting(); // Initial check
+    window.addEventListener('hashchange', handleRouting);
+
+    return () => {
+      window.removeEventListener('hashchange', handleRouting);
+    };
+  }, []);
 
 
   const handleLogout = () => {
@@ -239,6 +254,10 @@ const App: React.FC = () => {
   };
 
   const renderContent = () => {
+    if (page === null) {
+      return <div className="flex h-screen w-screen items-center justify-center"><p>Carregando...</p></div>;
+    }
+
     if (page === 'capture') {
         return <PublicLeadCapturePage />;
     }
