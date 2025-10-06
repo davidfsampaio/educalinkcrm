@@ -12,11 +12,18 @@ const Communications: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'composer' | 'history'>('composer');
 
     useEffect(() => {
-        if (!loading) {
-            // FIX: Corrected the sort function to use 'a.sentDate' instead of 'a.date'.
-            // Also, created a shallow copy with [...initialCommunications] before sorting
-            // to avoid mutating the original array from context.
-            setLocalCommunications([...initialCommunications].sort((a, b) => new Date(b.sentDate).getTime() - new Date(a.sentDate).getTime()));
+        if (!loading && Array.isArray(initialCommunications)) {
+            const sorted = [...initialCommunications].sort((a, b) => {
+                const dateA = a?.sentDate ? new Date(a.sentDate).getTime() : 0;
+                const dateB = b?.sentDate ? new Date(b.sentDate).getTime() : 0;
+                
+                if (isNaN(dateA) || isNaN(dateB)) {
+                    return 0; // Don't sort if dates are invalid
+                }
+
+                return dateB - dateA;
+            });
+            setLocalCommunications(sorted);
         }
     }, [initialCommunications, loading]);
 

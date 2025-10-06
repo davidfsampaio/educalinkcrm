@@ -34,7 +34,6 @@ export const mockCommunications: Communication[] = [
 ];
 
 export const mockAgendaItems: AgendaItem[] = [
-    // FIX: Used AgendaItemType enum members for the 'type' property to align with type definitions.
     { id: 1, date: '2024-07-25', title: 'Reunião de Pais - Turma C', description: 'Discussão sobre o progresso do semestre e apresentação dos projetos.', type: AgendaItemType.Event, classTarget: 'Turma C', isSent: true },
     { id: 2, date: '2024-08-10', title: 'Feira de Ciências', description: 'Apresentação dos projetos dos alunos do Ensino Fundamental. Aberto aos pais.', type: AgendaItemType.Event, classTarget: 'Todas as Turmas', isSent: false },
     { id: 5, date: '2024-07-20', title: 'Pagamento da Mensalidade', description: 'Lembramos que o vencimento da mensalidade de Agosto é no dia 05.', type: AgendaItemType.Reminder, classTarget: 'Todas as Turmas', isSent: false },
