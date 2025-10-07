@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // FIX: Corrected import path for types.
 import { Lead, LeadStatus, Task, RequiredDocument, CommunicationLog } from '../../types';
 import Modal from '../common/Modal';
@@ -8,6 +7,7 @@ interface LeadDetailModalProps {
     isOpen: boolean;
     onClose: () => void;
     lead: Lead;
+    onUpdateLead: (updatedLead: Lead) => void;
 }
 
 const getStatusClass = (status: LeadStatus) => {
@@ -25,16 +25,22 @@ const CheckIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
 );
 
-const LeadDetailModal: React.FC<LeadDetailModalProps> = ({ isOpen, onClose, lead }) => {
-    // In a real app, this state would be handled and updated via an API
-    const [tasks, setTasks] = useState<Task[]>(lead.tasks);
+const LeadDetailModal: React.FC<LeadDetailModalProps> = ({ isOpen, onClose, lead, onUpdateLead }) => {
+    const [currentNotes, setCurrentNotes] = useState(lead.notes || '');
+
+    useEffect(() => {
+        setCurrentNotes(lead.notes || '');
+    }, [lead]);
 
     const handleTaskToggle = (taskId: number) => {
-        setTasks(prevTasks =>
-            prevTasks.map(task =>
-                task.id === taskId ? { ...task, isCompleted: !task.isCompleted } : task
-            )
+        const updatedTasks = lead.tasks.map(task =>
+            task.id === taskId ? { ...task, isCompleted: !task.isCompleted } : task
         );
+        onUpdateLead({ ...lead, tasks: updatedTasks });
+    };
+
+    const handleSaveNotes = () => {
+        onUpdateLead({ ...lead, notes: currentNotes });
     };
 
     return (
@@ -50,20 +56,42 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({ isOpen, onClose, lead
                             Interesse em: {new Date(lead.interestDate).toLocaleDateString('pt-BR')}
                         </p>
                         <div className="mt-2">
-                             <span className={`px-3 py-1 text-sm font-semibold rounded-full ${getStatusClass(lead.status)}`}>
-                                {lead.status}
-                            </span>
+                             <select
+                                value={lead.status}
+                                onChange={(e) => onUpdateLead({ ...lead, status: e.target.value as LeadStatus })}
+                                className={`w-full px-3 py-1 text-sm font-semibold rounded-full border-0 focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary appearance-none ${getStatusClass(lead.status)}`}
+                            >
+                                {Object.values(LeadStatus).map(status => (
+                                    <option key={status} value={status}>{status}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
                     <div className="bg-slate-50 rounded-lg p-4 border border-slate-200/80">
-                        <h4 className="font-bold text-brand-text-dark mb-2">Observações</h4>
-                        <p className="text-brand-text text-sm">{lead.notes || 'Nenhuma observação.'}</p>
+                        <div className="flex justify-between items-center mb-2">
+                            <h4 className="font-bold text-brand-text-dark">Observações</h4>
+                            {lead.notes !== currentNotes && (
+                                <button 
+                                    onClick={handleSaveNotes}
+                                    className="text-sm font-semibold text-brand-primary hover:underline"
+                                >
+                                    Salvar
+                                </button>
+                            )}
+                        </div>
+                        <textarea
+                            value={currentNotes}
+                            onChange={(e) => setCurrentNotes(e.target.value)}
+                            rows={4}
+                            className="w-full text-brand-text text-sm bg-transparent focus:bg-white p-1 rounded focus:outline-none focus:ring-1 focus:ring-brand-primary transition-colors"
+                            placeholder="Nenhuma observação."
+                        />
                     </div>
                      <div className="bg-slate-50 rounded-lg p-4 border border-slate-200/80">
                         <h4 className="font-bold text-brand-text-dark mb-2">Próximas Ações</h4>
-                        {tasks.length > 0 ? (
+                        {lead.tasks.length > 0 ? (
                             <ul className="space-y-2">
-                                {tasks.map(task => (
+                                {lead.tasks.map(task => (
                                     <li key={task.id} className="flex items-center">
                                         <input
                                             type="checkbox"

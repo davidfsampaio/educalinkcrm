@@ -7,35 +7,16 @@ import Composer from './communications/Composer';
 import History from './communications/History';
 
 const Communications: React.FC = () => {
-    const { communications: initialCommunications, loading } = useData();
-    const [localCommunications, setLocalCommunications] = useState<Communication[]>([]);
+    const { communications, addCommunication } = useData();
     const [activeTab, setActiveTab] = useState<'composer' | 'history'>('composer');
 
-    useEffect(() => {
-        if (!loading && Array.isArray(initialCommunications)) {
-            const sorted = [...initialCommunications].sort((a, b) => {
-                const dateA = a?.sentDate ? new Date(a.sentDate).getTime() : 0;
-                const dateB = b?.sentDate ? new Date(b.sentDate).getTime() : 0;
-                
-                if (isNaN(dateA) || isNaN(dateB)) {
-                    return 0; // Don't sort if dates are invalid
-                }
-
-                return dateB - dateA;
-            });
-            setLocalCommunications(sorted);
-        }
-    }, [initialCommunications, loading]);
-
     const handleSendCommunication = (newComm: Omit<Communication, 'id' | 'sentDate'>) => {
-        const newCommunication: Communication = {
-            id: Date.now(),
-            ...newComm,
-            sentDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
-        };
-        setLocalCommunications(prev => [newCommunication, ...prev]);
+        addCommunication(newComm);
         setActiveTab('history'); // Switch to history tab after sending
     };
+    
+    // Sort communications for display
+    const sortedCommunications = [...communications].sort((a, b) => new Date(b.sentDate).getTime() - new Date(a.sentDate).getTime());
 
     return (
         <div className="space-y-6">
@@ -66,7 +47,7 @@ const Communications: React.FC = () => {
                 </div>
                 <div className="p-6">
                     {activeTab === 'composer' && <Composer onSend={handleSendCommunication} />}
-                    {activeTab === 'history' && <History communications={localCommunications} />}
+                    {activeTab === 'history' && <History communications={sortedCommunications} />}
                 </div>
             </div>
         </div>

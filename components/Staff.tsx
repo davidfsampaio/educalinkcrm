@@ -15,17 +15,10 @@ const EditIcon: React.FC<{className?: string}> = ({ className }) => (
 );
 
 const Staff: React.FC = () => {
-    const { staff: initialStaff, loading } = useData();
-    const [localStaff, setLocalStaff] = useState<Staff[]>([]);
+    const { staff, addStaff, updateStaff } = useData();
     const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
     const [isEditModalOpen, setEditModalOpen] = useState(false);
     const [isAddModalOpen, setAddModalOpen] = useState(false);
-
-    useEffect(() => {
-        if (!loading) {
-            setLocalStaff(initialStaff);
-        }
-    }, [initialStaff, loading]);
 
     const handleOpenEditModal = (staffMember: Staff) => {
         setEditingStaff(staffMember);
@@ -33,20 +26,13 @@ const Staff: React.FC = () => {
     };
 
     const handleUpdateStaff = (updatedStaff: Staff) => {
-        setLocalStaff(prev => prev.map(s => s.id === updatedStaff.id ? updatedStaff : s));
+        updateStaff(updatedStaff);
         setEditModalOpen(false);
         setEditingStaff(null);
     };
 
     const handleAddStaff = (newStaffData: Omit<Staff, 'id' | 'status' | 'hireDate' | 'avatarUrl'>) => {
-        const newStaff: Staff = {
-            id: Date.now(), // Mock ID
-            ...newStaffData,
-            status: StaffStatus.Active,
-            hireDate: new Date().toISOString().split('T')[0],
-            avatarUrl: `https://picsum.photos/seed/staff${Date.now()}/100/100`,
-        };
-        setLocalStaff(prev => [newStaff, ...prev]);
+        addStaff(newStaffData);
         setAddModalOpen(false);
     };
 
@@ -77,7 +63,7 @@ const Staff: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200 text-brand-text-dark">
-                            {localStaff.map((staffMember) => (
+                            {staff.map((staffMember) => (
                                 <tr key={staffMember.id}>
                                     <td className="px-6 py-4 whitespace-nowrap">{staffMember.name}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">{staffMember.role}</td>

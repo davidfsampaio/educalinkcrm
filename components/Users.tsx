@@ -27,36 +27,23 @@ const getStatusClass = (status: UserStatus) => {
 };
 
 const Users: React.FC = () => {
-    const { users: initialUsers, students, loading } = useData();
-    const [localUsers, setLocalUsers] = useState<User[]>([]);
+    const { users, students, addUser, updateUser, deleteUser } = useData();
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
 
-    useEffect(() => {
-        if (!loading) {
-            setLocalUsers(initialUsers);
-        }
-    }, [initialUsers, loading]);
-
     const handleAddUser = (newUserData: Omit<User, 'id' | 'avatarUrl' | 'status'>) => {
-        const newUser: User = {
-            id: Date.now(), // Mock ID
-            ...newUserData,
-            status: UserStatus.Active,
-            avatarUrl: `https://picsum.photos/seed/user${Date.now()}/100/100`,
-        };
-        setLocalUsers(prev => [newUser, ...prev]);
+        addUser(newUserData);
         setAddModalOpen(false);
     };
     
     const handleUpdateUser = (updatedUser: User) => {
-        setLocalUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+        updateUser(updatedUser);
         setEditingUser(null);
     };
 
     const handleDeleteUser = (userId: number) => {
         if (window.confirm('Tem certeza de que deseja excluir este usuário? Esta ação não pode ser desfeita.')) {
-            setLocalUsers(prev => prev.filter(u => u.id !== userId));
+            deleteUser(userId);
         }
     };
 
@@ -87,7 +74,7 @@ const Users: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {localUsers.map((user) => {
+                            {users.map((user) => {
                                 const student = user.studentId ? students.find(s => s.id === user.studentId) : null;
                                 return (
                                 <tr key={user.id}>

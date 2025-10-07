@@ -19,32 +19,23 @@ const CheckIcon: React.FC<{className?: string}> = ({ className }) => (
 
 
 const Agenda: React.FC = () => {
-    const { agendaItems, loading } = useData();
-    const [localAgendaItems, setLocalAgendaItems] = useState<AgendaItem[]>([]);
+    const { agendaItems, addAgendaItem, updateAgendaItem } = useData();
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    useEffect(() => {
-        if (!loading) {
-            setLocalAgendaItems(agendaItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-        }
-    }, [agendaItems, loading]);
-
     const handleAddEvent = (eventData: Omit<AgendaItem, 'id' | 'isSent'>) => {
-        const newEvent: AgendaItem = {
-            id: Date.now(), // Simple unique ID for mock purposes
-            ...eventData,
-            isSent: false,
-        };
-        setLocalAgendaItems(prevItems => [newEvent, ...prevItems].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        addAgendaItem(eventData);
         setIsModalOpen(false);
     };
 
     const handleSend = (itemId: number) => {
-         setLocalAgendaItems(prevItems => prevItems.map(item => 
-            item.id === itemId ? { ...item, isSent: true } : item
-        ));
-        alert(`Enviando "${localAgendaItems.find(i => i.id === itemId)?.title}"... (Funcionalidade de exemplo)`);
+        const itemToSend = agendaItems.find(i => i.id === itemId);
+        if (itemToSend) {
+            updateAgendaItem({ ...itemToSend, isSent: true });
+            alert(`Enviando "${itemToSend.title}"... (Funcionalidade de exemplo)`);
+        }
     }
+    
+    const sortedAgendaItems = [...agendaItems].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     return (
         <>
@@ -62,7 +53,7 @@ const Agenda: React.FC = () => {
                     </ProtectedComponent>
                 </div>
                 <div className="space-y-4">
-                    {localAgendaItems.map((item) => (
+                    {sortedAgendaItems.map((item) => (
                         <div key={item.id} className="p-4 border border-slate-200/80 rounded-lg bg-slate-50/50 flex flex-col">
                             <div className="flex-grow">
                                 <div className="flex justify-between">

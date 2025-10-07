@@ -12,7 +12,7 @@ const PlusIcon: React.FC<{className?: string}> = ({ className }) => (
 );
 
 const LinkIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"/></svg>
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"/></svg>
 );
 
 const LeadCard: React.FC<{ lead: Lead; onClick: () => void }> = ({ lead, onClick }) => (
@@ -39,7 +39,7 @@ const LeadsColumn: React.FC<{ title: string; leads: Lead[]; onLeadClick: (lead: 
 
 
 const Leads: React.FC = () => {
-    const { leads, addLead } = useData();
+    const { leads, addLead, updateLead } = useData();
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [isLinkManagerOpen, setLinkManagerOpen] = useState(false);
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -55,6 +55,14 @@ const Leads: React.FC = () => {
     const handleAddLead = (newLeadData: Omit<Lead, 'id'>) => {
         addLead(newLeadData);
         setAddModalOpen(false);
+    };
+    
+    const handleUpdateLead = (updatedLead: Lead) => {
+        updateLead(updatedLead);
+        // If the updated lead is the one currently selected, update the selectedLead state as well
+        if (selectedLead && selectedLead.id === updatedLead.id) {
+            setSelectedLead(updatedLead);
+        }
     };
 
     const columns: { status: LeadStatus; title: string }[] = [
@@ -117,6 +125,7 @@ const Leads: React.FC = () => {
                     isOpen={!!selectedLead}
                     onClose={handleCloseDetailModal}
                     lead={selectedLead}
+                    onUpdateLead={handleUpdateLead}
                 />
             )}
         </>

@@ -8,24 +8,16 @@ import EditStudentModal from './students/EditStudentModal'; // Import the edit m
 import ProtectedComponent from './common/ProtectedComponent';
 
 const PlusIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
 );
 
 const Students: React.FC = () => {
-    const { students: initialStudents, loading } = useData();
-    const [localStudents, setLocalStudents] = useState<Student[]>([]);
+    const { students, addStudent, updateStudent, loading } = useData();
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
     const [isDetailModalOpen, setDetailModalOpen] = useState(false);
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [isEditModalOpen, setEditModalOpen] = useState(false);
-
-     useEffect(() => {
-        if (!loading) {
-            setLocalStudents(initialStudents);
-        }
-    }, [initialStudents, loading]);
-
 
     const handleRowClick = (student: Student) => {
         setSelectedStudent(student);
@@ -44,7 +36,7 @@ const Students: React.FC = () => {
     };
 
     const handleUpdateStudent = (updatedStudent: Student) => {
-        setLocalStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudent : s));
+        updateStudent(updatedStudent);
         if (selectedStudent && selectedStudent.id === updatedStudent.id) {
             setSelectedStudent(updatedStudent);
         }
@@ -53,22 +45,7 @@ const Students: React.FC = () => {
     };
 
     const handleAddStudent = (newStudentData: Omit<Student, 'id'|'status'|'enrollmentDate'|'avatarUrl'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuitionPlanId'|'medicalNotes'>) => {
-        const newStudent: Student = {
-            id: Date.now(), // Mock ID
-            ...newStudentData,
-            tuitionPlanId: 1, // Mock plan
-            medicalNotes: '',
-            status: StudentStatus.Active,
-            enrollmentDate: new Date().toISOString().split('T')[0],
-            avatarUrl: `https://picsum.photos/seed/student${Date.now()}/100/100`,
-            grades: [],
-            attendance: [],
-            occurrences: [],
-            documents: [],
-            individualAgenda: [],
-            communicationLog: [],
-        };
-        setLocalStudents(prev => [newStudent, ...prev]);
+        addStudent(newStudentData);
         setAddModalOpen(false);
     };
 
@@ -99,7 +76,7 @@ const Students: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {localStudents.map((student) => (
+                            {students.map((student) => (
                                 <tr key={student.id} onClick={() => handleRowClick(student)} className="cursor-pointer hover:bg-slate-50 transition-colors duration-200">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">

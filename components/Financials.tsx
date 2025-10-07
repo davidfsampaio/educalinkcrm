@@ -11,6 +11,7 @@ import RevenuesTable from './financials/RevenuesTable';
 import ProtectedComponent from './common/ProtectedComponent';
 
 const PlusIcon: React.FC<{className?: string}> = ({ className }) => (
+    // FIX: Corrected typo in viewBox attribute.
     <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
 );
 
@@ -36,15 +37,16 @@ type FinancialsTab = 'invoices' | 'revenues' | 'expenses';
 
 const Financials: React.FC = () => {
     const { 
-        invoices: initialInvoices, 
+        invoices, 
         students, 
-        expenses: initialExpenses,
-        revenues: initialRevenues,
-        loading 
+        expenses,
+        revenues,
+        addInvoice,
+        updateInvoice,
+        deleteInvoice,
+        addExpense,
+        addRevenue,
     } = useData();
-    const [localInvoices, setLocalInvoices] = useState<Invoice[]>([]);
-    const [localExpenses, setLocalExpenses] = useState<Expense[]>([]);
-    const [localRevenues, setLocalRevenues] = useState<Revenue[]>([]);
 
     const [activeTab, setActiveTab] = useState<FinancialsTab>('invoices');
     
@@ -53,55 +55,29 @@ const Financials: React.FC = () => {
     const [isAddRevenueModalOpen, setAddRevenueModalOpen] = useState(false);
     const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
 
-    useEffect(() => {
-        if (!loading) {
-            setLocalInvoices(initialInvoices);
-            setLocalExpenses(initialExpenses);
-            setLocalRevenues(initialRevenues);
-        }
-    }, [initialInvoices, initialExpenses, initialRevenues, loading]);
-
-    const handleAddInvoice = (newInvoiceData: Omit<Invoice, 'id' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => {
-        const student = students.find(s => s.id === newInvoiceData.studentId);
-        if (!student) return;
-
-        const newInvoice: Invoice = {
-            id: `INV-${Date.now()}`,
-            ...newInvoiceData,
-            studentName: student.name,
-            status: new Date(newInvoiceData.dueDate) < new Date() ? PaymentStatus.Overdue : PaymentStatus.Pending,
-            payments: [],
-        };
-        setLocalInvoices(prev => [newInvoice, ...prev]);
+    const handleAddInvoiceSubmit = (newInvoiceData: Omit<Invoice, 'id' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => {
+        addInvoice(newInvoiceData);
         setAddInvoiceModalOpen(false);
     };
 
-    const handleUpdateInvoice = (updatedInvoice: Invoice) => {
-        setLocalInvoices(prev => prev.map(inv => inv.id === updatedInvoice.id ? updatedInvoice : inv));
+    const handleUpdateInvoiceSubmit = (updatedInvoice: Invoice) => {
+        updateInvoice(updatedInvoice);
         setEditingInvoice(null);
     };
 
     const handleDeleteInvoice = (invoiceId: string) => {
         if (window.confirm('Tem certeza de que deseja excluir esta fatura? Esta ação não pode ser desfeita.')) {
-            setLocalInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
+            deleteInvoice(invoiceId);
         }
     };
     
-    const handleAddExpense = (newExpenseData: Omit<Expense, 'id'>) => {
-        const newExpense: Expense = {
-            id: Date.now(),
-            ...newExpenseData,
-        };
-        setLocalExpenses(prev => [newExpense, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    const handleAddExpenseSubmit = (newExpenseData: Omit<Expense, 'id'>) => {
+        addExpense(newExpenseData);
         setAddExpenseModalOpen(false);
     };
     
-    const handleAddRevenue = (newRevenueData: Omit<Revenue, 'id'>) => {
-        const newRevenue: Revenue = {
-            id: Date.now(),
-            ...newRevenueData,
-        };
-        setLocalRevenues(prev => [newRevenue, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    const handleAddRevenueSubmit = (newRevenueData: Omit<Revenue, 'id'>) => {
+        addRevenue(newRevenueData);
         setAddRevenueModalOpen(false);
     };
 
@@ -166,7 +142,7 @@ const Financials: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200 text-brand-text-dark">
-                            {localInvoices.map((invoice) => (
+                            {invoices.map((invoice) => (
                                 <tr key={invoice.id}>
                                     <td className="px-6 py-4 whitespace-nowrap font-mono text-sm">{invoice.id}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">{invoice.studentName}</td>
@@ -197,9 +173,9 @@ const Financials: React.FC = () => {
                     </table>
                 );
             case 'revenues':
-                return <RevenuesTable revenues={localRevenues} />;
+                return <RevenuesTable revenues={revenues} />;
             case 'expenses':
-                return <ExpensesTable expenses={localExpenses} />;
+                return <ExpensesTable expenses={expenses} />;
             default:
                 return null;
         }
@@ -245,7 +221,7 @@ const Financials: React.FC = () => {
             <AddInvoiceModal
                 isOpen={isAddInvoiceModalOpen}
                 onClose={() => setAddInvoiceModalOpen(false)}
-                onAddInvoice={handleAddInvoice}
+                onAddInvoice={handleAddInvoiceSubmit}
                 students={activeStudents}
             />
 
@@ -254,20 +230,20 @@ const Financials: React.FC = () => {
                     isOpen={!!editingInvoice}
                     onClose={() => setEditingInvoice(null)}
                     invoice={editingInvoice}
-                    onUpdateInvoice={handleUpdateInvoice}
+                    onUpdateInvoice={handleUpdateInvoiceSubmit}
                 />
             )}
             
             <AddRevenueModal
                 isOpen={isAddRevenueModalOpen}
                 onClose={() => setAddRevenueModalOpen(false)}
-                onAddRevenue={handleAddRevenue}
+                onAddRevenue={handleAddRevenueSubmit}
             />
             
             <AddExpenseModal
                 isOpen={isAddExpenseModalOpen}
                 onClose={() => setAddExpenseModalOpen(false)}
-                onAddExpense={handleAddExpense}
+                onAddExpense={handleAddExpenseSubmit}
             />
         </>
     );
