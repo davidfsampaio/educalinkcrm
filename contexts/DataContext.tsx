@@ -66,8 +66,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [loading, setLoading] = useState(true);
 
     const loadData = useCallback(async () => {
-        // No need to setLoading(true) here as it might cause UI flicker on reloads.
-        // It's primarily for the initial load.
         try {
             const [
                 studentsData,
@@ -113,15 +111,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setLeadCaptureCampaigns(campaignsData);
         } catch (error) {
             console.error("Failed to load data", error);
-        } finally {
-             if (loading) setLoading(false);
         }
-    }, [loading]);
+    }, []);
 
     // Effect for initial data load
     useEffect(() => {
-        setLoading(true);
-        loadData();
+        loadData().finally(() => setLoading(false));
     }, [loadData]);
 
     // Effect for syncing data across tabs
