@@ -9,6 +9,8 @@ import AddRevenueModal from './financials/AddRevenueModal';
 import ExpensesTable from './financials/ExpensesTable';
 import RevenuesTable from './financials/RevenuesTable';
 import ProtectedComponent from './common/ProtectedComponent';
+import EditExpenseModal from './financials/EditExpenseModal';
+import EditRevenueModal from './financials/EditRevenueModal';
 
 const PlusIcon: React.FC<{className?: string}> = ({ className }) => (
     // FIX: Corrected typo in viewBox attribute.
@@ -45,7 +47,11 @@ const Financials: React.FC = () => {
         updateInvoice,
         deleteInvoice,
         addExpense,
+        updateExpense,
+        deleteExpense,
         addRevenue,
+        updateRevenue,
+        deleteRevenue,
     } = useData();
 
     const [activeTab, setActiveTab] = useState<FinancialsTab>('invoices');
@@ -54,6 +60,9 @@ const Financials: React.FC = () => {
     const [isAddExpenseModalOpen, setAddExpenseModalOpen] = useState(false);
     const [isAddRevenueModalOpen, setAddRevenueModalOpen] = useState(false);
     const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+    const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+    const [editingRevenue, setEditingRevenue] = useState<Revenue | null>(null);
+
 
     const handleAddInvoiceSubmit = (newInvoiceData: Omit<Invoice, 'id' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => {
         addInvoice(newInvoiceData);
@@ -75,10 +84,32 @@ const Financials: React.FC = () => {
         addExpense(newExpenseData);
         setAddExpenseModalOpen(false);
     };
+
+    const handleUpdateExpenseSubmit = (updatedExpense: Expense) => {
+        updateExpense(updatedExpense);
+        setEditingExpense(null);
+    };
+
+    const handleDeleteExpense = (expenseId: number) => {
+        if (window.confirm('Tem certeza de que deseja excluir esta despesa?')) {
+            deleteExpense(expenseId);
+        }
+    };
     
     const handleAddRevenueSubmit = (newRevenueData: Omit<Revenue, 'id'>) => {
         addRevenue(newRevenueData);
         setAddRevenueModalOpen(false);
+    };
+
+    const handleUpdateRevenueSubmit = (updatedRevenue: Revenue) => {
+        updateRevenue(updatedRevenue);
+        setEditingRevenue(null);
+    };
+
+    const handleDeleteRevenue = (revenueId: number) => {
+        if (window.confirm('Tem certeza de que deseja excluir esta receita?')) {
+            deleteRevenue(revenueId);
+        }
     };
 
     const activeStudents = students.filter(s => s.status === StudentStatus.Active);
@@ -173,9 +204,9 @@ const Financials: React.FC = () => {
                     </table>
                 );
             case 'revenues':
-                return <RevenuesTable revenues={revenues} />;
+                return <RevenuesTable revenues={revenues} onEdit={setEditingRevenue} onDelete={handleDeleteRevenue} />;
             case 'expenses':
-                return <ExpensesTable expenses={expenses} />;
+                return <ExpensesTable expenses={expenses} onEdit={setEditingExpense} onDelete={handleDeleteExpense} />;
             default:
                 return null;
         }
@@ -245,6 +276,24 @@ const Financials: React.FC = () => {
                 onClose={() => setAddExpenseModalOpen(false)}
                 onAddExpense={handleAddExpenseSubmit}
             />
+
+            {editingExpense && (
+                <EditExpenseModal
+                    isOpen={!!editingExpense}
+                    onClose={() => setEditingExpense(null)}
+                    expense={editingExpense}
+                    onUpdateExpense={handleUpdateExpenseSubmit}
+                />
+            )}
+
+            {editingRevenue && (
+                 <EditRevenueModal
+                    isOpen={!!editingRevenue}
+                    onClose={() => setEditingRevenue(null)}
+                    revenue={editingRevenue}
+                    onUpdateRevenue={handleUpdateRevenueSubmit}
+                />
+            )}
         </>
     );
 };

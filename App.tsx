@@ -1,7 +1,7 @@
 import React, { useState, lazy, Suspense, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import { View, Permission } from './types';
+import { View, Permission, Student, Staff as StaffType } from './types';
 import { DataProvider } from './contexts/DataContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -50,8 +50,28 @@ const LoadingFallback: React.FC = () => (
 
 const MainApp: React.FC = () => {
   const [activeView, setActiveView] = useState<View>('dashboard');
+  const [initialSelectedItem, setInitialSelectedItem] = useState<Student | StaffType | null>(null);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const { hasPermission } = useAuth();
+
+  const handleSearchSelect = (item: Student | StaffType) => {
+    // Check if the item is a Student or Staff using a unique property
+    if ('parentName' in item) { // This is a simple way to differentiate Student
+      setActiveView('students');
+    } else {
+      setActiveView('staff');
+    }
+    setInitialSelectedItem(item);
+  };
+
+  useEffect(() => {
+    if (initialSelectedItem) {
+      // Clear the item after a short delay so the child component can process it
+      const timer = setTimeout(() => setInitialSelectedItem(null), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [initialSelectedItem]);
+
 
   const renderView = () => {
     const requiredPermission = viewPermissions[activeView];
@@ -59,10 +79,13 @@ const MainApp: React.FC = () => {
         return <AccessDenied />;
     }
 
+    const isStudent = initialSelectedItem && 'parentName' in initialSelectedItem;
+    const isStaff = initialSelectedItem && !('parentName' in initialSelectedItem);
+
     switch (activeView) {
       case 'dashboard': return <Dashboard />;
-      case 'students': return <Students />;
-      case 'staff': return <Staff />;
+      case 'students': return <Students initialStudent={isStudent ? initialSelectedItem as Student : null} />;
+      case 'staff': return <Staff initialStaff={isStaff ? initialSelectedItem as StaffType : null} />;
       case 'financials': return <Financials />;
       case 'leads': return <Leads />;
       case 'agenda': return <Agenda />;
@@ -86,7 +109,7 @@ const MainApp: React.FC = () => {
         setIsOpen={setSidebarOpen}
       />
       <div className="flex-1 flex flex-col min-w-0"> {/* Added min-w-0 to prevent content overflow */}
-        <Header currentView={activeView} onMenuClick={() => setSidebarOpen(true)} />
+        <Header currentView={activeView} onMenuClick={() => setSidebarOpen(true)} onSearchSelect={handleSearchSelect} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 p-4 md:p-6">
           <Suspense fallback={<LoadingFallback />}>
             {renderView()}

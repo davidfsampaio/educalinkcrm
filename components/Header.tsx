@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View } from '../types';
+import { View, Student, Staff } from '../types';
 import NotificationPanel from './common/NotificationPanel';
+import GlobalSearch from './common/GlobalSearch';
 
 interface HeaderProps {
     currentView: View;
     onMenuClick: () => void;
+    onSearchSelect: (item: Student | Staff) => void;
 }
 
 const viewTitles: Record<View, string> = {
@@ -23,7 +25,7 @@ const viewTitles: Record<View, string> = {
     users: 'Gestão de Usuários',
 };
 
-const Header: React.FC<HeaderProps> = ({ currentView, onMenuClick }) => {
+const Header: React.FC<HeaderProps> = ({ currentView, onMenuClick, onSearchSelect }) => {
     const title = viewTitles[currentView];
     const [isNotificationsOpen, setNotificationsOpen] = useState(false);
     const [hasUnread, setHasUnread] = useState(true); // Assume there are unread notifications initially
@@ -44,6 +46,11 @@ const Header: React.FC<HeaderProps> = ({ currentView, onMenuClick }) => {
                 </button>
                 <h1 className="text-xl md:text-2xl font-bold text-brand-text-dark truncate">{title}</h1>
             </div>
+            
+            <div className="flex-1 flex justify-center px-4">
+                <GlobalSearch onSelect={onSearchSelect} />
+            </div>
+
             <div className="flex items-center space-x-4">
                 <div className="relative">
                     <button 

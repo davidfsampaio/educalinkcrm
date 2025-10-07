@@ -1,56 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 // FIX: Added missing StaffStatus and UserStatus imports.
-import { Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum, FinancialSummaryPoint, User, Expense, Revenue, LeadCaptureCampaign, LeadStatus, StudentStatus, PaymentStatus, StaffStatus, UserStatus, Photo } from '../types';
+import { Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum, FinancialSummaryPoint, User, Expense, Revenue, LeadCaptureCampaign, LeadStatus, StudentStatus, PaymentStatus, StaffStatus, UserStatus, Photo, DataContextType } from '../types';
 import * as api from '../services/apiService';
-
-interface DataContextType {
-    students: Student[];
-    invoices: Invoice[];
-    leads: Lead[];
-    staff: Staff[];
-    users: User[];
-    communications: Communication[];
-    agendaItems: AgendaItem[];
-    libraryBooks: LibraryBook[];
-    photoAlbums: PhotoAlbum[];
-    financialSummary: FinancialSummaryPoint[];
-    expenses: Expense[];
-    revenues: Revenue[];
-    leadCaptureCampaigns: LeadCaptureCampaign[];
-    loading: boolean;
-    // Student functions
-    addStudent: (studentData: Omit<Student, 'id'|'status'|'enrollmentDate'|'avatarUrl'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuitionPlanId'|'medicalNotes'>) => void;
-    updateStudent: (updatedStudent: Student) => void;
-    // Lead functions
-    addLead: (leadData: Omit<Lead, 'id'>, campaignId?: string) => void;
-    updateLead: (updatedLead: Lead) => void;
-    // Invoice functions
-    addInvoice: (invoiceData: Omit<Invoice, 'id' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => void;
-    updateInvoice: (updatedInvoice: Invoice) => void;
-    deleteInvoice: (invoiceId: string) => void;
-    // Expense/Revenue functions
-    addExpense: (expenseData: Omit<Expense, 'id'>) => void;
-    addRevenue: (revenueData: Omit<Revenue, 'id'>) => void;
-    // Staff functions
-    addStaff: (staffData: Omit<Staff, 'id' | 'status' | 'hireDate' | 'avatarUrl'>) => void;
-    updateStaff: (updatedStaff: Staff) => void;
-    // Communication functions
-    addCommunication: (commData: Omit<Communication, 'id' | 'sentDate'>) => void;
-    // Agenda functions
-    addAgendaItem: (itemData: Omit<AgendaItem, 'id' | 'isSent'>) => void;
-    updateAgendaItem: (updatedItem: AgendaItem) => void;
-    // User functions
-    addUser: (userData: Omit<User, 'id' | 'avatarUrl' | 'status'>) => void;
-    updateUser: (updatedUser: User) => void;
-    deleteUser: (userId: number) => void;
-    // Lead Capture functions
-    addLeadCaptureCampaign: (campaign: LeadCaptureCampaign) => void;
-    // Gallery functions
-    addPhotoAlbum: (albumData: Omit<PhotoAlbum, 'id' | 'photos'>) => void;
-    deletePhotoAlbum: (albumId: number) => void;
-    addPhotoToAlbum: (albumId: number, photoData: { url: string; caption: string }) => void;
-    deletePhotoFromAlbum: (albumId: number, photoId: number) => void;
-}
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
@@ -225,6 +176,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setExpenses(newExpenses);
         await api.saveExpenses(newExpenses);
     };
+    
+    const updateExpense = async (updatedExpense: Expense) => {
+        const newExpenses = expenses.map(e => e.id === updatedExpense.id ? updatedExpense : e).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setExpenses(newExpenses);
+        await api.saveExpenses(newExpenses);
+    };
+
+    const deleteExpense = async (expenseId: number) => {
+        const newExpenses = expenses.filter(e => e.id !== expenseId);
+        setExpenses(newExpenses);
+        await api.saveExpenses(newExpenses);
+    };
 
     const addRevenue = async (revenueData: Omit<Revenue, 'id'>) => {
         const newRevenue: Revenue = { id: Date.now(), ...revenueData };
@@ -232,6 +195,19 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setRevenues(newRevenues);
         await api.saveRevenues(newRevenues);
     };
+
+    const updateRevenue = async (updatedRevenue: Revenue) => {
+        const newRevenues = revenues.map(r => r.id === updatedRevenue.id ? updatedRevenue : r).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setRevenues(newRevenues);
+        await api.saveRevenues(newRevenues);
+    };
+
+    const deleteRevenue = async (revenueId: number) => {
+        const newRevenues = revenues.filter(r => r.id !== revenueId);
+        setRevenues(newRevenues);
+        await api.saveRevenues(newRevenues);
+    };
+
 
     const addStaff = async (staffData: Omit<Staff, 'id' | 'status' | 'hireDate' | 'avatarUrl'>) => {
         const newStaff: Staff = {
@@ -338,7 +314,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const value: DataContextType = { 
         students, invoices, leads, staff, users, communications, agendaItems, libraryBooks, photoAlbums, financialSummary, expenses, revenues, leadCaptureCampaigns, loading, 
-        addStudent, updateStudent, addLead, updateLead, addInvoice, updateInvoice, deleteInvoice, addExpense, addRevenue,
+        addStudent, updateStudent, addLead, updateLead, addInvoice, updateInvoice, deleteInvoice, 
+        addExpense, updateExpense, deleteExpense,
+        addRevenue, updateRevenue, deleteRevenue,
         addStaff, updateStaff, addCommunication, addAgendaItem, updateAgendaItem,
         addUser, updateUser, deleteUser, addLeadCaptureCampaign,
         addPhotoAlbum, deletePhotoAlbum, addPhotoToAlbum, deletePhotoFromAlbum

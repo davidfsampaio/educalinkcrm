@@ -1,3 +1,5 @@
+import { ReactNode } from 'react';
+
 export type View = 'dashboard' | 'students' | 'staff' | 'financials' | 'leads' | 'agenda' | 'communications' | 'settings' | 'reports' | 'library' | 'gallery' | 'declarations' | 'users';
 
 export type StudentDetailTab = 'details' | 'grades' | 'attendance' | 'occurrences' | 'individualAgenda' | 'documents' | 'contactHistory' | 'declarations';
@@ -282,6 +284,49 @@ export interface LeadCaptureCampaign {
     publicUrl: string;
     createdAt: string;
     leadsCaptured: number;
+}
+
+export interface DataContextType {
+    students: Student[];
+    invoices: Invoice[];
+    leads: Lead[];
+    staff: Staff[];
+    users: User[];
+    communications: Communication[];
+    agendaItems: AgendaItem[];
+    libraryBooks: LibraryBook[];
+    photoAlbums: PhotoAlbum[];
+    financialSummary: FinancialSummaryPoint[];
+    expenses: Expense[];
+    revenues: Revenue[];
+    leadCaptureCampaigns: LeadCaptureCampaign[];
+    loading: boolean;
+    addStudent: (studentData: Omit<Student, 'id' | 'status' | 'enrollmentDate' | 'avatarUrl' | 'grades' | 'attendance' | 'occurrences' | 'documents' | 'individualAgenda' | 'communicationLog' | 'tuitionPlanId' | 'medicalNotes'>) => void;
+    updateStudent: (updatedStudent: Student) => void;
+    addLead: (leadData: Omit<Lead, 'id'>, campaignId?: string) => void;
+    updateLead: (updatedLead: Lead) => void;
+    addInvoice: (invoiceData: Omit<Invoice, 'id' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => void;
+    updateInvoice: (updatedInvoice: Invoice) => void;
+    deleteInvoice: (invoiceId: string) => void;
+    addExpense: (expenseData: Omit<Expense, 'id'>) => void;
+    updateExpense: (updatedExpense: Expense) => void;
+    deleteExpense: (expenseId: number) => void;
+    addRevenue: (revenueData: Omit<Revenue, 'id'>) => void;
+    updateRevenue: (updatedRevenue: Revenue) => void;
+    deleteRevenue: (revenueId: number) => void;
+    addStaff: (staffData: Omit<Staff, 'id' | 'status' | 'hireDate' | 'avatarUrl'>) => void;
+    updateStaff: (updatedStaff: Staff) => void;
+    addCommunication: (commData: Omit<Communication, 'id' | 'sentDate'>) => void;
+    addAgendaItem: (itemData: Omit<AgendaItem, 'id' | 'isSent'>) => void;
+    updateAgendaItem: (updatedItem: AgendaItem) => void;
+    addUser: (userData: Omit<User, 'id' | 'avatarUrl' | 'status'>) => void;
+    updateUser: (updatedUser: User) => void;
+    deleteUser: (userId: number) => void;
+    addLeadCaptureCampaign: (campaign: LeadCaptureCampaign) => void;
+    addPhotoAlbum: (albumData: Omit<PhotoAlbum, 'id' | 'photos'>) => void;
+    deletePhotoAlbum: (albumId: number) => void;
+    addPhotoToAlbum: (albumId: number, photoData: { url: string; caption: string }) => void;
+    deletePhotoFromAlbum: (albumId: number, photoId: number) => void;
 }
 
 export type Permission = 
