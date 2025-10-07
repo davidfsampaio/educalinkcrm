@@ -2,7 +2,7 @@
   "name": "EducaLink CRM",
   "short_name": "EducaLink",
   "description": "CRM integrado para escolas gerenciarem alunos, finanças e comunicação.",
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#f1f5f9",
   "theme_color": "#0ea5e9",

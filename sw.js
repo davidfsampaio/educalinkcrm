@@ -1,5 +1,5 @@
 // Define o nome e a versão do cache. Mudar a versão invalida caches antigos.
-const CACHE_NAME = 'educalink-crm-cache-v2';
+const CACHE_NAME = 'educalink-crm-cache-v3';
 
 // Lista de arquivos essenciais para o "app shell" que serão cacheados
 const APP_SHELL_URLS = [
@@ -12,78 +12,64 @@ const APP_SHELL_URLS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('Cache aberto e salvando o app shell');
-      // Adicionamos /index.html que servirá para todas as rotas de navegação
+      console.log('SW install: Caching app shell');
       return cache.addAll(APP_SHELL_URLS);
     })
   );
 });
 
-// Evento de ativação: limpa caches antigos para garantir que a nova versão seja usada
+// Evento de ativação: limpa caches antigos e assume o controle imediatamente
 self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
-    caches.keys().then((cacheNames) =>
-      Promise.all(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
         cacheNames.map((cacheName) => {
-          if (!cacheWhitelist.includes(cacheName)) {
-            console.log('Deletando cache antigo:', cacheName);
+          if (cacheName !== CACHE_NAME) {
+            console.log('SW activate: Deleting old cache', cacheName);
             return caches.delete(cacheName);
           }
         })
-      )
-    )
+      );
+    }).then(() => {
+      // Força o novo service worker a assumir o controle da página imediatamente.
+      return self.clients.claim();
+    })
   );
 });
 
-// Evento de fetch: intercepta as requisições
+// Evento de fetch: intercepta as requisições de rede
 self.addEventListener('fetch', (event) => {
-  // Ignora requisições que não são GET
-  if (event.request.method !== 'GET') return;
-
-  // Estratégia para requisições de navegação (ex: abrir o app, mudar de página)
+  // Estratégia para requisições de navegação (abrir o app, F5, etc.)
+  // Sempre serve o `index.html` do cache para garantir que o app carregue.
+  // Isso contorna o problema do servidor que não serve o arquivo HTML corretamente.
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      caches.open(CACHE_NAME).then(cache => {
-        // 1. Tenta servir o index.html do cache primeiro (para velocidade)
-        return cache.match('/index.html').then(cachedResponse => {
-          // 2. Em paralelo, busca uma nova versão da rede para atualizar o cache
-          const networkFetch = fetch('/index.html').then(networkResponse => {
-            if (networkResponse.ok) {
-              // Se a busca na rede funcionar, atualiza o cache com a nova versão
-              cache.put('/index.html', networkResponse.clone());
-            }
-            return networkResponse;
-          }).catch(() => {
-            // Se a rede falhar, não faz nada, pois já estamos servindo do cache se disponível
-          });
-
-          // Retorna a resposta do cache imediatamente se existir, senão, espera pela rede.
-          // Isso garante que o app abra offline.
-          return cachedResponse || networkFetch;
-        });
+      caches.match('/index.html').then(response => {
+        // Se o index.html estiver no cache, retorna ele. Senão (caso muito raro após a instalação), busca na rede.
+        return response || fetch(event.request);
       })
     );
     return;
   }
 
-  // Estratégia para outros recursos (JS, CSS, imagens, etc.) - Cache First
+  // Estratégia para todos os outros recursos (JS, imagens, fontes, etc.)
+  // "Cache first": serve do cache se disponível, senão busca na rede e armazena para a próxima vez.
   event.respondWith(
-    caches.match(event.request).then(cachedResponse => {
-      // Se o recurso estiver no cache, retorna ele
-      if (cachedResponse) {
-        return cachedResponse;
+    caches.match(event.request).then((response) => {
+      // Se tivermos uma resposta no cache, retorna ela.
+      if (response) {
+        return response;
       }
-      // Se não, busca na rede
-      return fetch(event.request).then(networkResponse => {
-        // Se a busca for bem-sucedida, clona e armazena no cache para a próxima vez
-        if (networkResponse && networkResponse.ok) {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then(cache => {
+      // Se não, busca na rede.
+      return fetch(event.request).then((fetchResponse) => {
+        // Se a resposta da rede for válida, clona, armazena no cache e retorna.
+        if (fetchResponse && fetchResponse.ok) {
+          const responseToCache = fetchResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
           });
         }
-        return networkResponse;
+        return fetchResponse;
       });
     })
   );
