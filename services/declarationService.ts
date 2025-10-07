@@ -1,11 +1,11 @@
 import { Student, Settings, DeclarationType } from '../types';
 
 export const generateDeclaration = (student: Student, type: DeclarationType, settings: Settings): string => {
-    const { schoolInfo, declarationTemplates } = settings;
-    const template = declarationTemplates[type];
+    const template = settings?.declarationTemplates?.[type];
+    const schoolInfo = settings?.schoolInfo;
 
-    if (!template) {
-        return "Erro: Modelo de declaração não encontrado.";
+    if (!template || !schoolInfo) {
+        return "Erro: Modelo de declaração ou informações da escola não encontradas.";
     }
 
     const currentDate = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });

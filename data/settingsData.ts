@@ -29,7 +29,7 @@ export const defaultSettings: Settings = {
     declarationTemplates: {
         enrollment: `DECLARAÇÃO DE MATRÍCULA
 
-Declaramos, для os devidos fins, que o(a) aluno(a) {{student.name}}, filho(a) de {{student.parentName}}, portador(a) do CPF nº {{student.cpf}}, encontra-se regularmente matriculado(a) nesta instituição de ensino, {{schoolInfo.name}}, sob o CNPJ nº {{schoolInfo.cnpj}}, no ano letivo de {{currentYear}}, cursando a {{student.class}}.`,
+Declaramos, para os devidos fins, que o(a) aluno(a) {{student.name}}, filho(a) de {{student.parentName}}, portador(a) do CPF nº {{student.cpf}}, encontra-se regularmente matriculado(a) nesta instituição de ensino, {{schoolInfo.name}}, sob o CNPJ nº {{schoolInfo.cnpj}}, no ano letivo de {{currentYear}}, cursando a {{student.class}}.`,
 
         completion: `DECLARAÇÃO DE CONCLUSÃO
 
