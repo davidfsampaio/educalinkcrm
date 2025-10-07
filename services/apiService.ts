@@ -53,7 +53,10 @@ export const getAgendaItems = (): Promise<AgendaItem[]> => simulateDelay(getData
 export const saveAgendaItems = (data: AgendaItem[]): Promise<void> => saveData('agendaItems', data);
 
 export const getLibraryBooks = (): Promise<LibraryBook[]> => simulateDelay(getData('libraryBooks', mockLibraryBooks));
+
 export const getPhotoAlbums = (): Promise<PhotoAlbum[]> => simulateDelay(getData('photoAlbums', mockPhotoAlbums));
+export const savePhotoAlbums = (data: PhotoAlbum[]): Promise<void> => saveData('photoAlbums', data);
+
 export const getFinancialSummary = (): Promise<FinancialSummaryPoint[]> => simulateDelay(financialSummaryData); // This one doesn't need saving as it's static for the demo
 
 export const getUsers = (): Promise<User[]> => simulateDelay(getData('users', mockUsers));

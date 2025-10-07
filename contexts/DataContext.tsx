@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 // FIX: Added missing StaffStatus and UserStatus imports.
-import { Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum, FinancialSummaryPoint, User, Expense, Revenue, LeadCaptureCampaign, LeadStatus, StudentStatus, PaymentStatus, StaffStatus, UserStatus } from '../types';
+import { Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum, FinancialSummaryPoint, User, Expense, Revenue, LeadCaptureCampaign, LeadStatus, StudentStatus, PaymentStatus, StaffStatus, UserStatus, Photo } from '../types';
 import * as api from '../services/apiService';
 
 interface DataContextType {
@@ -45,6 +45,11 @@ interface DataContextType {
     deleteUser: (userId: number) => void;
     // Lead Capture functions
     addLeadCaptureCampaign: (campaign: LeadCaptureCampaign) => void;
+    // Gallery functions
+    addPhotoAlbum: (albumData: Omit<PhotoAlbum, 'id' | 'photos'>) => void;
+    deletePhotoAlbum: (albumId: number) => void;
+    addPhotoToAlbum: (albumId: number, photoData: { url: string; caption: string }) => void;
+    deletePhotoFromAlbum: (albumId: number, photoId: number) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -122,7 +127,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Effect for syncing data across tabs
     useEffect(() => {
         const handleStorageChange = (event: StorageEvent) => {
-            const crmKeys = ['students', 'invoices', 'leads', 'staff', 'users', 'communications', 'agendaItems', 'expenses', 'revenues', 'leadCaptureCampaigns'];
+            const crmKeys = ['students', 'invoices', 'leads', 'staff', 'users', 'communications', 'agendaItems', 'expenses', 'revenues', 'leadCaptureCampaigns', 'photoAlbums'];
             if (event.key && crmKeys.includes(event.key)) {
                 loadData();
             }
@@ -286,12 +291,57 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUsers(newUsers);
         await api.saveUsers(newUsers);
     };
+    
+    const addPhotoAlbum = async (albumData: Omit<PhotoAlbum, 'id' | 'photos'>) => {
+        const newAlbum: PhotoAlbum = {
+            id: Date.now(),
+            ...albumData,
+            photos: [],
+        };
+        const newAlbums = [newAlbum, ...photoAlbums];
+        setPhotoAlbums(newAlbums);
+        await api.savePhotoAlbums(newAlbums);
+    };
+    
+    const deletePhotoAlbum = async (albumId: number) => {
+        const newAlbums = photoAlbums.filter(album => album.id !== albumId);
+        setPhotoAlbums(newAlbums);
+        await api.savePhotoAlbums(newAlbums);
+    };
+
+    const addPhotoToAlbum = async (albumId: number, photoData: { url: string; caption: string }) => {
+        const newPhoto: Photo = {
+            id: Date.now(),
+            ...photoData,
+        };
+        const newAlbums = photoAlbums.map(album => {
+            if (album.id === albumId) {
+                return { ...album, photos: [...album.photos, newPhoto] };
+            }
+            return album;
+        });
+        setPhotoAlbums(newAlbums);
+        await api.savePhotoAlbums(newAlbums);
+    };
+    
+    const deletePhotoFromAlbum = async (albumId: number, photoId: number) => {
+        const newAlbums = photoAlbums.map(album => {
+            if (album.id === albumId) {
+                return { ...album, photos: album.photos.filter(p => p.id !== photoId) };
+            }
+            return album;
+        });
+        // Also update the selected album if it's being viewed, to reflect the change immediately
+        setPhotoAlbums(newAlbums);
+        await api.savePhotoAlbums(newAlbums);
+    };
 
     const value: DataContextType = { 
         students, invoices, leads, staff, users, communications, agendaItems, libraryBooks, photoAlbums, financialSummary, expenses, revenues, leadCaptureCampaigns, loading, 
         addStudent, updateStudent, addLead, updateLead, addInvoice, updateInvoice, deleteInvoice, addExpense, addRevenue,
         addStaff, updateStaff, addCommunication, addAgendaItem, updateAgendaItem,
-        addUser, updateUser, deleteUser, addLeadCaptureCampaign
+        addUser, updateUser, deleteUser, addLeadCaptureCampaign,
+        addPhotoAlbum, deletePhotoAlbum, addPhotoToAlbum, deletePhotoFromAlbum
     };
 
     return (
