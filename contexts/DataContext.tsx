@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 // FIX: Added missing StaffStatus and UserStatus imports.
 import { Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum, FinancialSummaryPoint, User, Expense, Revenue, LeadCaptureCampaign, LeadStatus, StudentStatus, PaymentStatus, StaffStatus, UserStatus } from '../types';
 import * as api from '../services/apiService';
@@ -65,61 +65,81 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [leadCaptureCampaigns, setLeadCaptureCampaigns] = useState<LeadCaptureCampaign[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const loadData = useCallback(async () => {
+        // No need to setLoading(true) here as it might cause UI flicker on reloads.
+        // It's primarily for the initial load.
+        try {
+            const [
+                studentsData,
+                invoicesData,
+                leadsData,
+                staffData,
+                usersData,
+                communicationsData,
+                agendaData,
+                libraryData,
+                albumData,
+                financialData,
+                expensesData,
+                revenuesData,
+                campaignsData,
+            ] = await Promise.all([
+                api.getStudents(),
+                api.getInvoices(),
+                api.getLeads(),
+                api.getStaff(),
+                api.getUsers(),
+                api.getCommunications(),
+                api.getAgendaItems(),
+                api.getLibraryBooks(),
+                api.getPhotoAlbums(),
+                api.getFinancialSummary(),
+                api.getExpenses(),
+                api.getRevenues(),
+                api.getLeadCaptureCampaigns(),
+            ]);
+            setStudents(studentsData);
+            setInvoices(invoicesData);
+            setLeads(leadsData);
+            setStaff(staffData);
+            setUsers(usersData);
+            setCommunications(communicationsData);
+            setAgendaItems(agendaData);
+            setLibraryBooks(libraryData);
+            setPhotoAlbums(albumData);
+            setFinancialSummary(financialData);
+            setExpenses(expensesData);
+            setRevenues(revenuesData);
+            setLeadCaptureCampaigns(campaignsData);
+        } catch (error) {
+            console.error("Failed to load data", error);
+        } finally {
+             if (loading) setLoading(false);
+        }
+    }, [loading]);
+
+    // Effect for initial data load
     useEffect(() => {
-        const loadData = async () => {
-            setLoading(true);
-            try {
-                const [
-                    studentsData,
-                    invoicesData,
-                    leadsData,
-                    staffData,
-                    usersData,
-                    communicationsData,
-                    agendaData,
-                    libraryData,
-                    albumData,
-                    financialData,
-                    expensesData,
-                    revenuesData,
-                    campaignsData,
-                ] = await Promise.all([
-                    api.getStudents(),
-                    api.getInvoices(),
-                    api.getLeads(),
-                    api.getStaff(),
-                    api.getUsers(),
-                    api.getCommunications(),
-                    api.getAgendaItems(),
-                    api.getLibraryBooks(),
-                    api.getPhotoAlbums(),
-                    api.getFinancialSummary(),
-                    api.getExpenses(),
-                    api.getRevenues(),
-                    api.getLeadCaptureCampaigns(),
-                ]);
-                setStudents(studentsData);
-                setInvoices(invoicesData);
-                setLeads(leadsData);
-                setStaff(staffData);
-                setUsers(usersData);
-                setCommunications(communicationsData);
-                setAgendaItems(agendaData);
-                setLibraryBooks(libraryData);
-                setPhotoAlbums(albumData);
-                setFinancialSummary(financialData);
-                setExpenses(expensesData);
-                setRevenues(revenuesData);
-                setLeadCaptureCampaigns(campaignsData);
-            } catch (error) {
-                console.error("Failed to load data", error);
-            } finally {
-                setLoading(false);
+        setLoading(true);
+        loadData();
+    }, [loadData]);
+
+    // Effect for syncing data across tabs
+    useEffect(() => {
+        const handleStorageChange = (event: StorageEvent) => {
+            const crmKeys = ['students', 'invoices', 'leads', 'staff', 'users', 'communications', 'agendaItems', 'expenses', 'revenues', 'leadCaptureCampaigns'];
+            if (event.key && crmKeys.includes(event.key)) {
+                loadData();
             }
         };
 
-        loadData();
-    }, []);
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, [loadData]);
+
 
     const addStudent = async (studentData: Omit<Student, 'id'|'status'|'enrollmentDate'|'avatarUrl'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuitionPlanId'|'medicalNotes'>) => {
         const newStudent: Student = {
