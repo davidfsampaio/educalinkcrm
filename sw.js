@@ -5,11 +5,8 @@ const CACHE_NAME = 'educalink-crm-cache-v1';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/index.tsx',
   '/icon.svg',
-  // Adicione aqui outros assets estáticos importantes se houver (CSS, etc.)
-  // O Service Worker não consegue ver o importmap, então não podemos cachear os módulos CDN diretamente aqui.
-  // A estratégia de cache abaixo cuidará disso.
+  '/manifest.json'
 ];
 
 // Evento de instalação: abre o cache e adiciona os arquivos do app shell
@@ -25,6 +22,11 @@ self.addEventListener('install', (event) => {
 
 // Evento de fetch: intercepta as requisições e serve do cache se disponível
 self.addEventListener('fetch', (event) => {
+  // Apenas lida com requisições GET
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
@@ -37,7 +39,7 @@ self.addEventListener('fetch', (event) => {
         return fetch(event.request).then(
           (response) => {
             // Se a resposta da rede for inválida, não armazena e retorna
-            if (!response || response.status !== 200 || response.type !== 'basic' && response.type !== 'cors') {
+            if (!response || response.status !== 200 || (response.type !== 'basic' && response.type !== 'cors')) {
               return response;
             }
 
