@@ -6,6 +6,7 @@ const urlsToCache = [
   '/',
   '/index.html',
   '/index.tsx',
+  '/icon.svg',
   // Adicione aqui outros assets estáticos importantes se houver (CSS, etc.)
   // O Service Worker não consegue ver o importmap, então não podemos cachear os módulos CDN diretamente aqui.
   // A estratégia de cache abaixo cuidará disso.

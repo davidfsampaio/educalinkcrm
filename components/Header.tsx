@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Student, Staff } from '../types';
 import NotificationPanel from './common/NotificationPanel';
 import GlobalSearch from './common/GlobalSearch';
+import { usePWA } from '../contexts/PWAContext';
 
 interface HeaderProps {
     currentView: View;
@@ -25,10 +26,23 @@ const viewTitles: Record<View, string> = {
     users: 'Gestão de Usuários',
 };
 
+const InstallPWABtn: React.FC<{ onInstall: () => void }> = ({ onInstall }) => (
+    <button
+        onClick={onInstall}
+        className="hidden sm:flex items-center space-x-2 bg-brand-primary/10 text-brand-primary font-bold py-2 px-3 rounded-lg hover:bg-brand-primary/20 transition-colors duration-300"
+        title="Instalar o aplicativo no seu dispositivo"
+    >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+        <span className="hidden lg:inline">Instalar App</span>
+    </button>
+);
+
+
 const Header: React.FC<HeaderProps> = ({ currentView, onMenuClick, onSearchSelect }) => {
     const title = viewTitles[currentView];
     const [isNotificationsOpen, setNotificationsOpen] = useState(false);
     const [hasUnread, setHasUnread] = useState(true); // Assume there are unread notifications initially
+    const { canInstall, triggerInstall } = usePWA();
 
     const handleNotificationClick = () => {
         setNotificationsOpen(prev => !prev);
@@ -52,6 +66,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onMenuClick, onSearchSelec
             </div>
 
             <div className="flex items-center space-x-4">
+                {canInstall && <InstallPWABtn onInstall={triggerInstall} />}
                 <div className="relative">
                     <button 
                         onClick={handleNotificationClick}

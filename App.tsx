@@ -6,6 +6,7 @@ import { DataProvider } from './contexts/DataContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AccessDenied from './components/common/AccessDenied';
+import { PWAProvider } from './contexts/PWAContext';
 
 // Lazy load components for code splitting
 const Dashboard = lazy(() => import('./components/Dashboard'));
@@ -302,13 +303,15 @@ const App: React.FC = () => {
   };
 
   return (
-    <SettingsProvider>
-      <DataProvider>
-        <Suspense fallback={<div className="flex h-screen w-screen items-center justify-center"><p>Carregando Módulo...</p></div>}>
-          {renderContent()}
-        </Suspense>
-      </DataProvider>
-    </SettingsProvider>
+    <PWAProvider>
+      <SettingsProvider>
+        <DataProvider>
+          <Suspense fallback={<div className="flex h-screen w-screen items-center justify-center"><p>Carregando Módulo...</p></div>}>
+            {renderContent()}
+          </Suspense>
+        </DataProvider>
+      </SettingsProvider>
+    </PWAProvider>
   );
 };
 
