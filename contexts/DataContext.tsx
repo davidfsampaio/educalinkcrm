@@ -92,7 +92,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [loadData]);
 
 
-    const addStudent = (studentData: Omit<Student, 'id'|'status'|'enrollmentDate'|'avatarUrl'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuitionPlanId'|'medicalNotes'>) => {
+    const addStudent = async (studentData: Omit<Student, 'id'|'status'|'enrollmentDate'|'avatarUrl'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuitionPlanId'|'medicalNotes'>) => {
         const newStudent: Student = {
             id: Date.now(),
             ...studentData,
@@ -104,47 +104,67 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             grades: [], attendance: [], occurrences: [], documents: [], individualAgenda: [], communicationLog: [],
         };
         const newStudents = [newStudent, ...students];
-        setStudents(newStudents);
-        api.saveStudents(newStudents);
+        try {
+            await api.saveStudents(newStudents);
+            setStudents(newStudents);
+        } catch (error) {
+            console.error("Failed to save new student:", error);
+        }
     };
 
-    const updateStudent = (updatedStudent: Student) => {
+    const updateStudent = async (updatedStudent: Student) => {
         const newStudents = students.map(s => s.id === updatedStudent.id ? updatedStudent : s);
-        setStudents(newStudents);
-        api.saveStudents(newStudents);
+        try {
+            await api.saveStudents(newStudents);
+            setStudents(newStudents);
+        } catch (error) {
+            console.error("Failed to update student:", error);
+        }
     };
 
-    const addLead = (leadData: Omit<Lead, 'id'>, campaignId?: string) => {
+    const addLead = async (leadData: Omit<Lead, 'id'>, campaignId?: string) => {
         const newLead: Lead = {
             id: Date.now(),
             ...leadData,
         };
         const newLeads = [newLead, ...leads];
-        setLeads(newLeads);
-        api.saveLeads(newLeads);
+        try {
+            await api.saveLeads(newLeads);
+            setLeads(newLeads);
 
-        if (campaignId) {
-            const newCampaigns = leadCaptureCampaigns.map(c => 
-                c.id === campaignId ? { ...c, leadsCaptured: c.leadsCaptured + 1 } : c
-            );
-            setLeadCaptureCampaigns(newCampaigns);
-            api.saveLeadCaptureCampaigns(newCampaigns);
+            if (campaignId) {
+                const newCampaigns = leadCaptureCampaigns.map(c => 
+                    c.id === campaignId ? { ...c, leadsCaptured: c.leadsCaptured + 1 } : c
+                );
+                await api.saveLeadCaptureCampaigns(newCampaigns);
+                setLeadCaptureCampaigns(newCampaigns);
+            }
+        } catch (error) {
+            console.error("Failed to save new lead:", error);
         }
     };
     
-    const updateLead = (updatedLead: Lead) => {
+    const updateLead = async (updatedLead: Lead) => {
         const newLeads = leads.map(l => (l.id === updatedLead.id ? updatedLead : l));
-        setLeads(newLeads);
-        api.saveLeads(newLeads);
+        try {
+            await api.saveLeads(newLeads);
+            setLeads(newLeads);
+        } catch (error) {
+            console.error("Failed to update lead:", error);
+        }
     };
 
-    const addLeadCaptureCampaign = (campaign: LeadCaptureCampaign) => {
+    const addLeadCaptureCampaign = async (campaign: LeadCaptureCampaign) => {
         const newCampaigns = [campaign, ...leadCaptureCampaigns];
-        setLeadCaptureCampaigns(newCampaigns);
-        api.saveLeadCaptureCampaigns(newCampaigns);
+        try {
+            await api.saveLeadCaptureCampaigns(newCampaigns);
+            setLeadCaptureCampaigns(newCampaigns);
+        } catch (error) {
+            console.error("Failed to save new campaign:", error);
+        }
     };
     
-    const addInvoice = (newInvoiceData: Omit<Invoice, 'id' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => {
+    const addInvoice = async (newInvoiceData: Omit<Invoice, 'id' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => {
         const student = students.find(s => s.id === newInvoiceData.studentId);
         if (!student) return;
 
@@ -154,138 +174,214 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             payments: [],
         };
         const newInvoices = [newInvoice, ...invoices];
-        setInvoices(newInvoices);
-        api.saveInvoices(newInvoices);
+        try {
+            await api.saveInvoices(newInvoices);
+            setInvoices(newInvoices);
+        } catch (error) {
+            console.error("Failed to save new invoice:", error);
+        }
     };
     
-    const updateInvoice = (updatedInvoice: Invoice) => {
+    const updateInvoice = async (updatedInvoice: Invoice) => {
         const newInvoices = invoices.map(inv => inv.id === updatedInvoice.id ? updatedInvoice : inv);
-        setInvoices(newInvoices);
-        api.saveInvoices(newInvoices);
+        try {
+            await api.saveInvoices(newInvoices);
+            setInvoices(newInvoices);
+        } catch (error) {
+            console.error("Failed to update invoice:", error);
+        }
     };
 
-    const deleteInvoice = (invoiceId: string) => {
+    const deleteInvoice = async (invoiceId: string) => {
         const newInvoices = invoices.filter(inv => inv.id !== invoiceId);
-        setInvoices(newInvoices);
-        api.saveInvoices(newInvoices);
+        try {
+            await api.saveInvoices(newInvoices);
+            setInvoices(newInvoices);
+        } catch (error) {
+            console.error("Failed to delete invoice:", error);
+        }
     };
 
-    const addExpense = (expenseData: Omit<Expense, 'id'>) => {
+    const addExpense = async (expenseData: Omit<Expense, 'id'>) => {
         const newExpense: Expense = { id: Date.now(), ...expenseData };
         const newExpenses = [newExpense, ...expenses].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        setExpenses(newExpenses);
-        api.saveExpenses(newExpenses);
+        try {
+            await api.saveExpenses(newExpenses);
+            setExpenses(newExpenses);
+        } catch (error) {
+            console.error("Failed to save new expense:", error);
+        }
     };
     
-    const updateExpense = (updatedExpense: Expense) => {
+    const updateExpense = async (updatedExpense: Expense) => {
         const newExpenses = expenses.map(e => e.id === updatedExpense.id ? updatedExpense : e).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        setExpenses(newExpenses);
-        api.saveExpenses(newExpenses);
+        try {
+            await api.saveExpenses(newExpenses);
+            setExpenses(newExpenses);
+        } catch (error) {
+            console.error("Failed to update expense:", error);
+        }
     };
 
-    const deleteExpense = (expenseId: number) => {
+    const deleteExpense = async (expenseId: number) => {
         const newExpenses = expenses.filter(e => e.id !== expenseId);
-        setExpenses(newExpenses);
-        api.saveExpenses(newExpenses);
+        try {
+            await api.saveExpenses(newExpenses);
+            setExpenses(newExpenses);
+        } catch (error) {
+            console.error("Failed to delete expense:", error);
+        }
     };
 
-    const addRevenue = (revenueData: Omit<Revenue, 'id'>) => {
+    const addRevenue = async (revenueData: Omit<Revenue, 'id'>) => {
         const newRevenue: Revenue = { id: Date.now(), ...revenueData };
         const newRevenues = [newRevenue, ...revenues].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        setRevenues(newRevenues);
-        api.saveRevenues(newRevenues);
+        try {
+            await api.saveRevenues(newRevenues);
+            setRevenues(newRevenues);
+        } catch (error) {
+            console.error("Failed to save new revenue:", error);
+        }
     };
 
-    const updateRevenue = (updatedRevenue: Revenue) => {
+    const updateRevenue = async (updatedRevenue: Revenue) => {
         const newRevenues = revenues.map(r => r.id === updatedRevenue.id ? updatedRevenue : r).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        setRevenues(newRevenues);
-        api.saveRevenues(newRevenues);
+        try {
+            await api.saveRevenues(newRevenues);
+            setRevenues(newRevenues);
+        } catch (error) {
+            console.error("Failed to update revenue:", error);
+        }
     };
 
-    const deleteRevenue = (revenueId: number) => {
+    const deleteRevenue = async (revenueId: number) => {
         const newRevenues = revenues.filter(r => r.id !== revenueId);
-        setRevenues(newRevenues);
-        api.saveRevenues(newRevenues);
+        try {
+            await api.saveRevenues(newRevenues);
+            setRevenues(newRevenues);
+        } catch (error) {
+            console.error("Failed to delete revenue:", error);
+        }
     };
 
 
-    const addStaff = (staffData: Omit<Staff, 'id' | 'status' | 'hireDate' | 'avatarUrl'>) => {
+    const addStaff = async (staffData: Omit<Staff, 'id' | 'status' | 'hireDate' | 'avatarUrl'>) => {
         const newStaff: Staff = {
             id: Date.now(), ...staffData, status: StaffStatus.Active,
             hireDate: new Date().toISOString().split('T')[0],
             avatarUrl: `https://picsum.photos/seed/staff${Date.now()}/100/100`,
         };
         const newStaffList = [newStaff, ...staff];
-        setStaff(newStaffList);
-        api.saveStaff(newStaffList);
+        try {
+            await api.saveStaff(newStaffList);
+            setStaff(newStaffList);
+        } catch (error) {
+            console.error("Failed to save new staff:", error);
+        }
     };
 
-    const updateStaff = (updatedStaff: Staff) => {
+    const updateStaff = async (updatedStaff: Staff) => {
         const newStaffList = staff.map(s => s.id === updatedStaff.id ? updatedStaff : s);
-        setStaff(newStaffList);
-        api.saveStaff(newStaffList);
+        try {
+            await api.saveStaff(newStaffList);
+            setStaff(newStaffList);
+        } catch (error) {
+            console.error("Failed to update staff:", error);
+        }
     };
 
-    const addCommunication = (commData: Omit<Communication, 'id' | 'sentDate'>) => {
+    const addCommunication = async (commData: Omit<Communication, 'id' | 'sentDate'>) => {
         const newComm: Communication = { id: Date.now(), ...commData, sentDate: new Date().toISOString() };
         const newComms = [newComm, ...communications];
-        setCommunications(newComms);
-        api.saveCommunications(newComms);
+        try {
+            await api.saveCommunications(newComms);
+            setCommunications(newComms);
+        } catch (error) {
+            console.error("Failed to save new communication:", error);
+        }
     };
 
-    const addAgendaItem = (itemData: Omit<AgendaItem, 'id' | 'isSent'>) => {
+    const addAgendaItem = async (itemData: Omit<AgendaItem, 'id' | 'isSent'>) => {
         const newItem: AgendaItem = { id: Date.now(), ...itemData, isSent: false };
         const newItems = [newItem, ...agendaItems].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        setAgendaItems(newItems);
-        api.saveAgendaItems(newItems);
+        try {
+            await api.saveAgendaItems(newItems);
+            setAgendaItems(newItems);
+        } catch (error) {
+            console.error("Failed to save new agenda item:", error);
+        }
     };
     
-    const updateAgendaItem = (updatedItem: AgendaItem) => {
+    const updateAgendaItem = async (updatedItem: AgendaItem) => {
         const newItems = agendaItems.map(item => item.id === updatedItem.id ? updatedItem : item);
-        setAgendaItems(newItems);
-        api.saveAgendaItems(newItems);
+        try {
+            await api.saveAgendaItems(newItems);
+            setAgendaItems(newItems);
+        } catch (error) {
+            console.error("Failed to update agenda item:", error);
+        }
     };
     
-    const addUser = (userData: Omit<User, 'id' | 'avatarUrl' | 'status'>) => {
+    const addUser = async (userData: Omit<User, 'id' | 'avatarUrl' | 'status'>) => {
         const newUser: User = {
             id: Date.now(), ...userData, status: UserStatus.Active,
             avatarUrl: `https://picsum.photos/seed/user${Date.now()}/100/100`,
         };
         const newUsers = [newUser, ...users];
-        setUsers(newUsers);
-        api.saveUsers(newUsers);
+        try {
+            await api.saveUsers(newUsers);
+            setUsers(newUsers);
+        } catch (error) {
+            console.error("Failed to save new user:", error);
+        }
     };
 
-    const updateUser = (updatedUser: User) => {
+    const updateUser = async (updatedUser: User) => {
         const newUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
-        setUsers(newUsers);
-        api.saveUsers(newUsers);
+        try {
+            await api.saveUsers(newUsers);
+            setUsers(newUsers);
+        } catch (error) {
+            console.error("Failed to update user:", error);
+        }
     };
 
-    const deleteUser = (userId: number) => {
+    const deleteUser = async (userId: number) => {
         const newUsers = users.filter(u => u.id !== userId);
-        setUsers(newUsers);
-        api.saveUsers(newUsers);
+        try {
+            await api.saveUsers(newUsers);
+            setUsers(newUsers);
+        } catch (error) {
+            console.error("Failed to delete user:", error);
+        }
     };
     
-    const addPhotoAlbum = (albumData: Omit<PhotoAlbum, 'id' | 'photos'>) => {
+    const addPhotoAlbum = async (albumData: Omit<PhotoAlbum, 'id' | 'photos'>) => {
         const newAlbum: PhotoAlbum = {
             id: Date.now(),
             ...albumData,
             photos: [],
         };
         const newAlbums = [newAlbum, ...photoAlbums];
-        setPhotoAlbums(newAlbums);
-        api.savePhotoAlbums(newAlbums);
+        try {
+            await api.savePhotoAlbums(newAlbums);
+            setPhotoAlbums(newAlbums);
+        } catch (error) {
+            console.error("Failed to save new photo album:", error);
+        }
     };
     
-    const deletePhotoAlbum = (albumId: number) => {
+    const deletePhotoAlbum = async (albumId: number) => {
         const newAlbums = photoAlbums.filter(album => album.id !== albumId);
-        setPhotoAlbums(newAlbums);
-        api.savePhotoAlbums(newAlbums);
+        try {
+            await api.savePhotoAlbums(newAlbums);
+            setPhotoAlbums(newAlbums);
+        } catch (error) {
+            console.error("Failed to delete photo album:", error);
+        }
     };
 
-    const addPhotoToAlbum = (albumId: number, photoData: { url: string; caption: string }) => {
+    const addPhotoToAlbum = async (albumId: number, photoData: { url: string; caption: string }) => {
         const newPhoto: Photo = {
             id: Date.now(),
             ...photoData,
@@ -296,20 +392,27 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
             return album;
         });
-        setPhotoAlbums(newAlbums);
-        api.savePhotoAlbums(newAlbums);
+        try {
+            await api.savePhotoAlbums(newAlbums);
+            setPhotoAlbums(newAlbums);
+        } catch (error) {
+            console.error("Failed to add photo to album:", error);
+        }
     };
     
-    const deletePhotoFromAlbum = (albumId: number, photoId: number) => {
+    const deletePhotoFromAlbum = async (albumId: number, photoId: number) => {
         const newAlbums = photoAlbums.map(album => {
             if (album.id === albumId) {
                 return { ...album, photos: album.photos.filter(p => p.id !== photoId) };
             }
             return album;
         });
-        // Also update the selected album if it's being viewed, to reflect the change immediately
-        setPhotoAlbums(newAlbums);
-        api.savePhotoAlbums(newAlbums);
+        try {
+            await api.savePhotoAlbums(newAlbums);
+            setPhotoAlbums(newAlbums);
+        } catch (error) {
+            console.error("Failed to delete photo from album:", error);
+        }
     };
 
     const value: DataContextType = { 

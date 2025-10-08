@@ -44,6 +44,8 @@ export enum IndividualAgendaItemType {
     Alimentacao = 'Alimentação',
     Sono = 'Sono',
     Higiene = 'Higiene',
+    Medicacao = 'Medicação',
+    Disposicao = 'Disposição',
     Atividade = 'Atividade',
     Observacao = 'Observação',
 }
@@ -122,7 +124,9 @@ export interface Occurrence {
 export interface IndividualAgendaItem {
     id: number;
     date: string;
+    createdAt: string;
     type: IndividualAgendaItemType;
+    selections?: string[];
     description: string;
     isSent: boolean;
 }
