@@ -54,6 +54,25 @@ const MainApp: React.FC = () => {
   const [initialSelectedItem, setInitialSelectedItem] = useState<Student | StaffType | null>(null);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const { hasPermission } = useAuth();
+  const [initialAction, setInitialAction] = useState<string | null>(null);
+
+  // Handle PWA shortcut actions
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+
+    if (action) {
+        if (action === 'new_student') {
+            setActiveView('students');
+            setInitialAction('new_student');
+        } else if (action === 'new_lead') {
+            setActiveView('leads');
+            setInitialAction('new_lead');
+        }
+        // Clean up the URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   const handleSearchSelect = (item: Student | StaffType) => {
     // Check if the item is a Student or Staff using a unique property
@@ -85,10 +104,10 @@ const MainApp: React.FC = () => {
 
     switch (activeView) {
       case 'dashboard': return <Dashboard />;
-      case 'students': return <Students initialStudent={isStudent ? initialSelectedItem as Student : null} />;
+      case 'students': return <Students initialStudent={isStudent ? initialSelectedItem as Student : null} initialAction={initialAction} />;
       case 'staff': return <Staff initialStaff={isStaff ? initialSelectedItem as StaffType : null} />;
       case 'financials': return <Financials />;
-      case 'leads': return <Leads />;
+      case 'leads': return <Leads initialAction={initialAction} />;
       case 'agenda': return <Agenda />;
       case 'communications': return <Communications />;
       case 'settings': return <Settings />;

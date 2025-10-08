@@ -37,12 +37,19 @@ const InstallPWABtn: React.FC<{ onInstall: () => void }> = ({ onInstall }) => (
     </button>
 );
 
+const OfflineIndicator: React.FC = () => (
+    <div className="flex items-center space-x-2 bg-amber-100 text-amber-800 font-bold py-2 px-3 rounded-lg" title="Você está offline. Algumas funcionalidades podem estar limitadas.">
+         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19.47 13.99a9 9 0 0 0-11.48-11.48"/><path d="M4.53 10.01a9 9 0 0 0 11.48 11.48"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+        <span className="hidden lg:inline">Offline</span>
+    </div>
+);
+
 
 const Header: React.FC<HeaderProps> = ({ currentView, onMenuClick, onSearchSelect }) => {
     const title = viewTitles[currentView];
     const [isNotificationsOpen, setNotificationsOpen] = useState(false);
     const [hasUnread, setHasUnread] = useState(true); // Assume there are unread notifications initially
-    const { canInstall, triggerInstall } = usePWA();
+    const { canInstall, triggerInstall, isOnline } = usePWA();
 
     const handleNotificationClick = () => {
         setNotificationsOpen(prev => !prev);
@@ -66,6 +73,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onMenuClick, onSearchSelec
             </div>
 
             <div className="flex items-center space-x-4">
+                {!isOnline && <OfflineIndicator />}
                 {canInstall && <InstallPWABtn onInstall={triggerInstall} />}
                 <div className="relative">
                     <button 

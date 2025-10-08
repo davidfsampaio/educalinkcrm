@@ -12,12 +12,14 @@ interface BeforeInstallPromptEvent extends Event {
 interface PWAContextType {
   canInstall: boolean;
   triggerInstall: () => void;
+  isOnline: boolean; // Add online status to context
 }
 
 const PWAContext = createContext<PWAContextType | undefined>(undefined);
 
 export const PWAProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -27,8 +29,17 @@ export const PWAProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
+    // Listen to online/offline events
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
@@ -47,6 +58,7 @@ export const PWAProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const value = {
     canInstall: !!installPromptEvent,
     triggerInstall,
+    isOnline,
   };
 
   return <PWAContext.Provider value={value}>{children}</PWAContext.Provider>;

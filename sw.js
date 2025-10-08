@@ -4,6 +4,7 @@ const CACHE_NAME = 'educalink-crm-cache-v3';
 // Lista de arquivos essenciais para o "app shell" que serão cacheados
 const APP_SHELL_URLS = [
   '/index.html',
+  '/index.tsx', // Add main script to shell
   '/icon.svg',
   '/manifest.json',
 ];
@@ -14,6 +15,9 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME).then((cache) => {
       console.log('SW install: Caching app shell');
       return cache.addAll(APP_SHELL_URLS);
+    }).then(() => {
+      // Força o novo service worker a se tornar ativo assim que a instalação for concluída.
+      return self.skipWaiting();
     })
   );
 });

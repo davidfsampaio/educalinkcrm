@@ -9,8 +9,31 @@
   "icons": [
     {
       "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Adicionar Aluno",
+      "short_name": "Novo Aluno",
+      "description": "Adicionar um novo aluno ao sistema",
+      "url": "/?action=new_student",
+      "icons": [{ "src": "/icon.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Adicionar Lead",
+      "short_name": "Novo Lead",
+      "description": "Adicionar um novo lead de admissão",
+      "url": "/?action=new_lead",
+      "icons": [{ "src": "/icon.svg", "sizes": "192x192" }]
     }
   ]
 }
