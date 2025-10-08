@@ -22,7 +22,7 @@ const getData = <T>(key: string, mockData: T): T => {
 };
 
 // Helper function to save data to localStorage
-const saveData = async <T>(key: string, data: T): Promise<void> => {
+const saveData = <T>(key: string, data: T): void => {
     try {
         localStorage.setItem(key, JSON.stringify(data));
     } catch (error) {
@@ -35,38 +35,38 @@ const saveData = async <T>(key: string, data: T): Promise<void> => {
 const simulateDelay = <T>(data: T): Promise<T> => new Promise(resolve => setTimeout(() => resolve(data), 100)); // Reduced delay for faster UI feedback
 
 export const getStudents = (): Promise<Student[]> => simulateDelay(getData('students', mockStudents));
-export const saveStudents = (data: Student[]): Promise<void> => saveData('students', data);
+export const saveStudents = (data: Student[]): void => saveData('students', data);
 
 export const getInvoices = (): Promise<Invoice[]> => simulateDelay(getData('invoices', mockInvoices));
-export const saveInvoices = (data: Invoice[]): Promise<void> => saveData('invoices', data);
+export const saveInvoices = (data: Invoice[]): void => saveData('invoices', data);
 
 export const getLeads = (): Promise<Lead[]> => simulateDelay(getData('leads', mockLeads));
-export const saveLeads = (data: Lead[]): Promise<void> => saveData('leads', data);
+export const saveLeads = (data: Lead[]): void => saveData('leads', data);
 
 export const getStaff = (): Promise<Staff[]> => simulateDelay(getData('staff', mockStaff));
-export const saveStaff = (data: Staff[]): Promise<void> => saveData('staff', data);
+export const saveStaff = (data: Staff[]): void => saveData('staff', data);
 
 export const getCommunications = (): Promise<Communication[]> => simulateDelay(getData('communications', mockCommunications));
-export const saveCommunications = (data: Communication[]): Promise<void> => saveData('communications', data);
+export const saveCommunications = (data: Communication[]): void => saveData('communications', data);
 
 export const getAgendaItems = (): Promise<AgendaItem[]> => simulateDelay(getData('agendaItems', mockAgendaItems));
-export const saveAgendaItems = (data: AgendaItem[]): Promise<void> => saveData('agendaItems', data);
+export const saveAgendaItems = (data: AgendaItem[]): void => saveData('agendaItems', data);
 
 export const getLibraryBooks = (): Promise<LibraryBook[]> => simulateDelay(getData('libraryBooks', mockLibraryBooks));
 
 export const getPhotoAlbums = (): Promise<PhotoAlbum[]> => simulateDelay(getData('photoAlbums', mockPhotoAlbums));
-export const savePhotoAlbums = (data: PhotoAlbum[]): Promise<void> => saveData('photoAlbums', data);
+export const savePhotoAlbums = (data: PhotoAlbum[]): void => saveData('photoAlbums', data);
 
 export const getFinancialSummary = (): Promise<FinancialSummaryPoint[]> => simulateDelay(financialSummaryData); // This one doesn't need saving as it's static for the demo
 
 export const getUsers = (): Promise<User[]> => simulateDelay(getData('users', mockUsers));
-export const saveUsers = (data: User[]): Promise<void> => saveData('users', data);
+export const saveUsers = (data: User[]): void => saveData('users', data);
 
 export const getExpenses = (): Promise<Expense[]> => simulateDelay(getData('expenses', mockExpenses));
-export const saveExpenses = (data: Expense[]): Promise<void> => saveData('expenses', data);
+export const saveExpenses = (data: Expense[]): void => saveData('expenses', data);
 
 export const getRevenues = (): Promise<Revenue[]> => simulateDelay(getData('revenues', mockRevenues));
-export const saveRevenues = (data: Revenue[]): Promise<void> => saveData('revenues', data);
+export const saveRevenues = (data: Revenue[]): void => saveData('revenues', data);
 
 export const getLeadCaptureCampaigns = (): Promise<LeadCaptureCampaign[]> => simulateDelay(getData('leadCaptureCampaigns', mockLeadCaptureCampaigns));
-export const saveLeadCaptureCampaigns = (data: LeadCaptureCampaign[]): Promise<void> => saveData('leadCaptureCampaigns', data);
+export const saveLeadCaptureCampaigns = (data: LeadCaptureCampaign[]): void => saveData('leadCaptureCampaigns', data);

@@ -92,7 +92,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [loadData]);
 
 
-    const addStudent = async (studentData: Omit<Student, 'id'|'status'|'enrollmentDate'|'avatarUrl'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuitionPlanId'|'medicalNotes'>) => {
+    const addStudent = (studentData: Omit<Student, 'id'|'status'|'enrollmentDate'|'avatarUrl'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuitionPlanId'|'medicalNotes'>) => {
         const newStudent: Student = {
             id: Date.now(),
             ...studentData,
@@ -105,46 +105,46 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
         const newStudents = [newStudent, ...students];
         setStudents(newStudents);
-        await api.saveStudents(newStudents);
+        api.saveStudents(newStudents);
     };
 
-    const updateStudent = async (updatedStudent: Student) => {
+    const updateStudent = (updatedStudent: Student) => {
         const newStudents = students.map(s => s.id === updatedStudent.id ? updatedStudent : s);
         setStudents(newStudents);
-        await api.saveStudents(newStudents);
+        api.saveStudents(newStudents);
     };
 
-    const addLead = async (leadData: Omit<Lead, 'id'>, campaignId?: string) => {
+    const addLead = (leadData: Omit<Lead, 'id'>, campaignId?: string) => {
         const newLead: Lead = {
             id: Date.now(),
             ...leadData,
         };
         const newLeads = [newLead, ...leads];
         setLeads(newLeads);
-        await api.saveLeads(newLeads);
+        api.saveLeads(newLeads);
 
         if (campaignId) {
             const newCampaigns = leadCaptureCampaigns.map(c => 
                 c.id === campaignId ? { ...c, leadsCaptured: c.leadsCaptured + 1 } : c
             );
             setLeadCaptureCampaigns(newCampaigns);
-            await api.saveLeadCaptureCampaigns(newCampaigns);
+            api.saveLeadCaptureCampaigns(newCampaigns);
         }
     };
     
-    const updateLead = async (updatedLead: Lead) => {
+    const updateLead = (updatedLead: Lead) => {
         const newLeads = leads.map(l => (l.id === updatedLead.id ? updatedLead : l));
         setLeads(newLeads);
-        await api.saveLeads(newLeads);
+        api.saveLeads(newLeads);
     };
 
-    const addLeadCaptureCampaign = async (campaign: LeadCaptureCampaign) => {
+    const addLeadCaptureCampaign = (campaign: LeadCaptureCampaign) => {
         const newCampaigns = [campaign, ...leadCaptureCampaigns];
         setLeadCaptureCampaigns(newCampaigns);
-        await api.saveLeadCaptureCampaigns(newCampaigns);
+        api.saveLeadCaptureCampaigns(newCampaigns);
     };
     
-    const addInvoice = async (newInvoiceData: Omit<Invoice, 'id' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => {
+    const addInvoice = (newInvoiceData: Omit<Invoice, 'id' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => {
         const student = students.find(s => s.id === newInvoiceData.studentId);
         if (!student) return;
 
@@ -155,61 +155,61 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
         const newInvoices = [newInvoice, ...invoices];
         setInvoices(newInvoices);
-        await api.saveInvoices(newInvoices);
+        api.saveInvoices(newInvoices);
     };
     
-    const updateInvoice = async (updatedInvoice: Invoice) => {
+    const updateInvoice = (updatedInvoice: Invoice) => {
         const newInvoices = invoices.map(inv => inv.id === updatedInvoice.id ? updatedInvoice : inv);
         setInvoices(newInvoices);
-        await api.saveInvoices(newInvoices);
+        api.saveInvoices(newInvoices);
     };
 
-    const deleteInvoice = async (invoiceId: string) => {
+    const deleteInvoice = (invoiceId: string) => {
         const newInvoices = invoices.filter(inv => inv.id !== invoiceId);
         setInvoices(newInvoices);
-        await api.saveInvoices(newInvoices);
+        api.saveInvoices(newInvoices);
     };
 
-    const addExpense = async (expenseData: Omit<Expense, 'id'>) => {
+    const addExpense = (expenseData: Omit<Expense, 'id'>) => {
         const newExpense: Expense = { id: Date.now(), ...expenseData };
         const newExpenses = [newExpense, ...expenses].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setExpenses(newExpenses);
-        await api.saveExpenses(newExpenses);
+        api.saveExpenses(newExpenses);
     };
     
-    const updateExpense = async (updatedExpense: Expense) => {
+    const updateExpense = (updatedExpense: Expense) => {
         const newExpenses = expenses.map(e => e.id === updatedExpense.id ? updatedExpense : e).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setExpenses(newExpenses);
-        await api.saveExpenses(newExpenses);
+        api.saveExpenses(newExpenses);
     };
 
-    const deleteExpense = async (expenseId: number) => {
+    const deleteExpense = (expenseId: number) => {
         const newExpenses = expenses.filter(e => e.id !== expenseId);
         setExpenses(newExpenses);
-        await api.saveExpenses(newExpenses);
+        api.saveExpenses(newExpenses);
     };
 
-    const addRevenue = async (revenueData: Omit<Revenue, 'id'>) => {
+    const addRevenue = (revenueData: Omit<Revenue, 'id'>) => {
         const newRevenue: Revenue = { id: Date.now(), ...revenueData };
         const newRevenues = [newRevenue, ...revenues].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setRevenues(newRevenues);
-        await api.saveRevenues(newRevenues);
+        api.saveRevenues(newRevenues);
     };
 
-    const updateRevenue = async (updatedRevenue: Revenue) => {
+    const updateRevenue = (updatedRevenue: Revenue) => {
         const newRevenues = revenues.map(r => r.id === updatedRevenue.id ? updatedRevenue : r).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setRevenues(newRevenues);
-        await api.saveRevenues(newRevenues);
+        api.saveRevenues(newRevenues);
     };
 
-    const deleteRevenue = async (revenueId: number) => {
+    const deleteRevenue = (revenueId: number) => {
         const newRevenues = revenues.filter(r => r.id !== revenueId);
         setRevenues(newRevenues);
-        await api.saveRevenues(newRevenues);
+        api.saveRevenues(newRevenues);
     };
 
 
-    const addStaff = async (staffData: Omit<Staff, 'id' | 'status' | 'hireDate' | 'avatarUrl'>) => {
+    const addStaff = (staffData: Omit<Staff, 'id' | 'status' | 'hireDate' | 'avatarUrl'>) => {
         const newStaff: Staff = {
             id: Date.now(), ...staffData, status: StaffStatus.Active,
             hireDate: new Date().toISOString().split('T')[0],
@@ -217,58 +217,58 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
         const newStaffList = [newStaff, ...staff];
         setStaff(newStaffList);
-        await api.saveStaff(newStaffList);
+        api.saveStaff(newStaffList);
     };
 
-    const updateStaff = async (updatedStaff: Staff) => {
+    const updateStaff = (updatedStaff: Staff) => {
         const newStaffList = staff.map(s => s.id === updatedStaff.id ? updatedStaff : s);
         setStaff(newStaffList);
-        await api.saveStaff(newStaffList);
+        api.saveStaff(newStaffList);
     };
 
-    const addCommunication = async (commData: Omit<Communication, 'id' | 'sentDate'>) => {
+    const addCommunication = (commData: Omit<Communication, 'id' | 'sentDate'>) => {
         const newComm: Communication = { id: Date.now(), ...commData, sentDate: new Date().toISOString() };
         const newComms = [newComm, ...communications];
         setCommunications(newComms);
-        await api.saveCommunications(newComms);
+        api.saveCommunications(newComms);
     };
 
-    const addAgendaItem = async (itemData: Omit<AgendaItem, 'id' | 'isSent'>) => {
+    const addAgendaItem = (itemData: Omit<AgendaItem, 'id' | 'isSent'>) => {
         const newItem: AgendaItem = { id: Date.now(), ...itemData, isSent: false };
         const newItems = [newItem, ...agendaItems].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setAgendaItems(newItems);
-        await api.saveAgendaItems(newItems);
+        api.saveAgendaItems(newItems);
     };
     
-    const updateAgendaItem = async (updatedItem: AgendaItem) => {
+    const updateAgendaItem = (updatedItem: AgendaItem) => {
         const newItems = agendaItems.map(item => item.id === updatedItem.id ? updatedItem : item);
         setAgendaItems(newItems);
-        await api.saveAgendaItems(newItems);
+        api.saveAgendaItems(newItems);
     };
     
-    const addUser = async (userData: Omit<User, 'id' | 'avatarUrl' | 'status'>) => {
+    const addUser = (userData: Omit<User, 'id' | 'avatarUrl' | 'status'>) => {
         const newUser: User = {
             id: Date.now(), ...userData, status: UserStatus.Active,
             avatarUrl: `https://picsum.photos/seed/user${Date.now()}/100/100`,
         };
         const newUsers = [newUser, ...users];
         setUsers(newUsers);
-        await api.saveUsers(newUsers);
+        api.saveUsers(newUsers);
     };
 
-    const updateUser = async (updatedUser: User) => {
+    const updateUser = (updatedUser: User) => {
         const newUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
         setUsers(newUsers);
-        await api.saveUsers(newUsers);
+        api.saveUsers(newUsers);
     };
 
-    const deleteUser = async (userId: number) => {
+    const deleteUser = (userId: number) => {
         const newUsers = users.filter(u => u.id !== userId);
         setUsers(newUsers);
-        await api.saveUsers(newUsers);
+        api.saveUsers(newUsers);
     };
     
-    const addPhotoAlbum = async (albumData: Omit<PhotoAlbum, 'id' | 'photos'>) => {
+    const addPhotoAlbum = (albumData: Omit<PhotoAlbum, 'id' | 'photos'>) => {
         const newAlbum: PhotoAlbum = {
             id: Date.now(),
             ...albumData,
@@ -276,16 +276,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
         const newAlbums = [newAlbum, ...photoAlbums];
         setPhotoAlbums(newAlbums);
-        await api.savePhotoAlbums(newAlbums);
+        api.savePhotoAlbums(newAlbums);
     };
     
-    const deletePhotoAlbum = async (albumId: number) => {
+    const deletePhotoAlbum = (albumId: number) => {
         const newAlbums = photoAlbums.filter(album => album.id !== albumId);
         setPhotoAlbums(newAlbums);
-        await api.savePhotoAlbums(newAlbums);
+        api.savePhotoAlbums(newAlbums);
     };
 
-    const addPhotoToAlbum = async (albumId: number, photoData: { url: string; caption: string }) => {
+    const addPhotoToAlbum = (albumId: number, photoData: { url: string; caption: string }) => {
         const newPhoto: Photo = {
             id: Date.now(),
             ...photoData,
@@ -297,10 +297,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return album;
         });
         setPhotoAlbums(newAlbums);
-        await api.savePhotoAlbums(newAlbums);
+        api.savePhotoAlbums(newAlbums);
     };
     
-    const deletePhotoFromAlbum = async (albumId: number, photoId: number) => {
+    const deletePhotoFromAlbum = (albumId: number, photoId: number) => {
         const newAlbums = photoAlbums.map(album => {
             if (album.id === albumId) {
                 return { ...album, photos: album.photos.filter(p => p.id !== photoId) };
@@ -309,7 +309,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
         // Also update the selected album if it's being viewed, to reflect the change immediately
         setPhotoAlbums(newAlbums);
-        await api.savePhotoAlbums(newAlbums);
+        api.savePhotoAlbums(newAlbums);
     };
 
     const value: DataContextType = { 
