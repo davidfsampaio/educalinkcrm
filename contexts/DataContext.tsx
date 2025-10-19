@@ -119,16 +119,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 medicalNotes: ''
             };
             const newStudentFromDb = await api.addStudent(newStudentPayload);
-            if (newStudentFromDb) {
-                // Rehydrate the object with empty arrays for local state consistency
-                const newStudentForState: Student = {
-                    ...newStudentFromDb,
-                    grades: [], attendance: [], occurrences: [], documents: [], individualAgenda: [], communicationLog: []
-                }
-                setStudents(prev => [newStudentForState, ...prev]);
+            // Rehydrate the object with empty arrays for local state consistency
+            const newStudentForState: Student = {
+                ...newStudentFromDb,
+                grades: [], attendance: [], occurrences: [], documents: [], individualAgenda: [], communicationLog: []
             }
+            setStudents(prev => [newStudentForState, ...prev]);
         } catch (error) {
-            console.error('Failed to add student:', error);
+            console.error('Falha ao adicionar aluno:', error);
+            alert(`Erro ao salvar aluno: ${(error as Error).message}`);
         }
     };
 
@@ -136,16 +135,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const { id, school_id, grades, attendance, occurrences, documents, individualAgenda, communicationLog, ...studentColumns } = updatedStudent;
             const updatedFromDb = await api.updateStudent(id, studentColumns);
-            if (updatedFromDb) {
-                // Re-attach the relational arrays to the updated object for local state consistency
-                const rehydratedStudent: Student = {
-                    ...updatedFromDb,
-                    grades, attendance, occurrences, documents, individualAgenda, communicationLog
-                };
-                setStudents(prev => prev.map(s => (s.id === id ? rehydratedStudent : s)));
-            }
+            // Re-attach the relational arrays to the updated object for local state consistency
+            const rehydratedStudent: Student = {
+                ...updatedFromDb,
+                grades, attendance, occurrences, documents, individualAgenda, communicationLog
+            };
+            setStudents(prev => prev.map(s => (s.id === id ? rehydratedStudent : s)));
         } catch (error) {
-            console.error('Failed to update student:', error);
+            console.error('Falha ao atualizar aluno:', error);
+            alert(`Erro ao atualizar aluno: ${(error as Error).message}`);
         }
     };
     
@@ -157,23 +155,22 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 ...leadData,
             };
             const newLeadFromDb = await api.addLead(newLeadPayload);
-            if (newLeadFromDb) {
-                // Rehydrate for local state
-                const newLeadForState: Lead = {
-                    ...newLeadFromDb,
-                    tasks: leadData.tasks || [],
-                    requiredDocuments: leadData.requiredDocuments || [],
-                    communicationLog: leadData.communicationLog || []
-                };
-                setLeads(prev => [newLeadForState, ...prev]);
-                if (campaignId) {
-                    setLeadCaptureCampaigns(prev => prev.map(c => 
-                        c.id === campaignId ? { ...c, leadsCaptured: c.leadsCaptured + 1 } : c
-                    ));
-                }
+            // Rehydrate for local state
+            const newLeadForState: Lead = {
+                ...newLeadFromDb,
+                tasks: leadData.tasks || [],
+                requiredDocuments: leadData.requiredDocuments || [],
+                communicationLog: leadData.communicationLog || []
+            };
+            setLeads(prev => [newLeadForState, ...prev]);
+            if (campaignId) {
+                setLeadCaptureCampaigns(prev => prev.map(c => 
+                    c.id === campaignId ? { ...c, leadsCaptured: c.leadsCaptured + 1 } : c
+                ));
             }
         } catch(error) {
-            console.error("Failed to add lead:", error);
+            console.error("Falha ao adicionar lead:", error);
+            alert(`Erro ao salvar lead: ${(error as Error).message}`);
         }
     };
     
@@ -181,15 +178,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
              const { id, school_id, tasks, requiredDocuments, communicationLog, ...leadColumns } = updatedLead;
             const updatedFromDb = await api.updateLead(id, leadColumns);
-            if (updatedFromDb) {
-                const rehydratedLead: Lead = {
-                    ...updatedFromDb,
-                    tasks, requiredDocuments, communicationLog
-                };
-                setLeads(prev => prev.map(l => (l.id === id ? rehydratedLead : l)));
-            }
+            const rehydratedLead: Lead = {
+                ...updatedFromDb,
+                tasks, requiredDocuments, communicationLog
+            };
+            setLeads(prev => prev.map(l => (l.id === id ? rehydratedLead : l)));
         } catch(error) {
-            console.error("Failed to update lead:", error);
+            console.error("Falha ao atualizar lead:", error);
+            alert(`Erro ao atualizar lead: ${(error as Error).message}`);
         }
     };
 
@@ -208,12 +204,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 status: new Date(newInvoiceData.dueDate) < new Date() ? PaymentStatus.Overdue : PaymentStatus.Pending,
             };
             const newInvoiceFromDb = await api.addInvoice(payload);
-            if (newInvoiceFromDb) {
-                 const newInvoiceForState: Invoice = { ...newInvoiceFromDb, school_id: currentUser.school_id, payments: [] };
-                setInvoices(prev => [newInvoiceForState, ...prev]);
-            }
+            const newInvoiceForState: Invoice = { ...newInvoiceFromDb, school_id: currentUser.school_id, payments: [] };
+            setInvoices(prev => [newInvoiceForState, ...prev]);
         } catch(error) {
-            console.error("Failed to add invoice:", error);
+            console.error("Falha ao adicionar fatura:", error);
+            alert(`Erro ao salvar fatura: ${(error as Error).message}`);
         }
     };
 
@@ -221,12 +216,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const { id, school_id, studentId, studentName, payments, ...invoiceColumns } = updatedInvoice;
             const updatedFromDb = await api.updateInvoice(id, invoiceColumns);
-            if(updatedFromDb) {
-                const rehydratedInvoice: Invoice = { ...updatedFromDb, school_id, studentId, studentName, payments };
-                setInvoices(prev => prev.map(inv => (inv.id === id ? rehydratedInvoice : inv)));
-            }
+            const rehydratedInvoice: Invoice = { ...updatedFromDb, school_id, studentId, studentName, payments };
+            setInvoices(prev => prev.map(inv => (inv.id === id ? rehydratedInvoice : inv)));
         } catch(error) {
-            console.error("Failed to update invoice:", error);
+            console.error("Falha ao atualizar fatura:", error);
+            alert(`Erro ao atualizar fatura: ${(error as Error).message}`);
         }
     };
 
@@ -235,13 +229,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             await api.deleteInvoice(invoiceId);
             setInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
         } catch(error) {
-            console.error("Failed to delete invoice:", error);
+            console.error("Falha ao excluir fatura:", error);
+            alert(`Erro ao excluir fatura: ${(error as Error).message}`);
         }
     };
 
     const createCrudOperations = <T extends { id: number | string }>(
         setState: React.Dispatch<React.SetStateAction<T[]>>,
-        apiService: { add: (item: any) => Promise<T>, update: (id: any, item: any) => Promise<T>, delete: (id: any) => Promise<void> }
+        apiService: { add: (item: any) => Promise<T>, update: (id: any, item: any) => Promise<T>, delete: (id: any) => Promise<void> },
+        itemName: string
     ) => ({
         add: async (itemData: Omit<T, 'id' | 'school_id'>) => {
             if (!currentUser?.school_id) return;
@@ -249,7 +245,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const newPayload = { school_id: currentUser.school_id, ...itemData };
                 const newItem = await apiService.add(newPayload);
                 if (newItem) setState(prev => [newItem, ...prev]);
-            } catch (error) { console.error(`Failed to add item:`, error); }
+            } catch (error) { 
+                console.error(`Falha ao adicionar ${itemName}:`, error);
+                alert(`Erro ao salvar ${itemName}: ${(error as Error).message}`);
+            }
         },
         update: async (updatedItem: T) => {
             try {
@@ -257,19 +256,25 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 delete (itemData as Partial<T & { school_id?: string }>).school_id;
                 const updated = await apiService.update(id, itemData);
                 if(updated) setState(prev => prev.map(item => (item.id === updated.id ? updated : item)));
-            } catch (error) { console.error(`Failed to update item:`, error); }
+            } catch (error) { 
+                console.error(`Falha ao atualizar ${itemName}:`, error);
+                alert(`Erro ao atualizar ${itemName}: ${(error as Error).message}`);
+            }
         },
         delete: async (itemId: number | string) => {
             try {
                 await apiService.delete(itemId);
                 setState(prev => prev.filter(item => item.id !== itemId));
-            } catch (error) { console.error(`Failed to delete item:`, error); }
+            } catch (error) { 
+                console.error(`Falha ao excluir ${itemName}:`, error);
+                alert(`Erro ao excluir ${itemName}: ${(error as Error).message}`);
+            }
         }
     });
     
-    const expenseOps = createCrudOperations(setExpenses, { add: api.addExpense, update: api.updateExpense, delete: api.deleteExpense });
-    const revenueOps = createCrudOperations(setRevenues, { add: api.addRevenue, update: api.updateRevenue, delete: api.deleteRevenue });
-    const staffOps = createCrudOperations(setStaff, { add: api.addStaff, update: api.updateStaff, delete: () => Promise.resolve() });
+    const expenseOps = createCrudOperations(setExpenses, { add: api.addExpense, update: api.updateExpense, delete: api.deleteExpense }, "despesa");
+    const revenueOps = createCrudOperations(setRevenues, { add: api.addRevenue, update: api.updateRevenue, delete: api.deleteRevenue }, "receita");
+    const staffOps = createCrudOperations(setStaff, { add: api.addStaff, update: api.updateStaff, delete: () => Promise.resolve() }, "funcionário");
     
     const addUser = async (userData: Omit<User, 'id' | 'school_id' | 'avatarUrl' | 'status'>) => {
         if (!currentUser?.school_id) return;
@@ -281,25 +286,32 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 avatarUrl: `https://picsum.photos/seed/user${Date.now()}/100/100`
             };
             const newUser = await api.addUser(payload);
-            if (newUser) {
-                setUsers(prev => [newUser, ...prev]);
-            }
-        } catch (error) { console.error("Failed to add user:", error); }
+            setUsers(prev => [newUser, ...prev]);
+        } catch (error) { 
+            console.error("Falha ao adicionar usuário:", error);
+            alert(`Erro ao salvar usuário: ${(error as Error).message}`);
+        }
     };
 
     const updateUser = async (updatedUser: User) => {
         try {
             const { id, school_id, ...userData } = updatedUser;
             const updated = await api.updateUser(id, userData);
-            if (updated) setUsers(prev => prev.map(u => u.id === id ? updated : u));
-        } catch(e) { console.error("Failed to update user", e); }
+            setUsers(prev => prev.map(u => u.id === id ? updated : u));
+        } catch(e) { 
+            console.error("Falha ao atualizar usuário", e);
+            alert(`Erro ao atualizar usuário: ${(e as Error).message}`);
+        }
     };
 
     const deleteUser = async (userId: string) => {
         try {
             await api.deleteUser(userId);
             setUsers(prev => prev.filter(u => u.id !== userId));
-        } catch(e) { console.error("Failed to delete user", e); }
+        } catch(e) { 
+            console.error("Falha ao excluir usuário", e);
+            alert(`Erro ao excluir usuário: ${(e as Error).message}`);
+        }
     }
 
     // Non-standard CRUD
@@ -308,8 +320,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const payload = { school_id: currentUser.school_id, ...commData, sentDate: new Date().toISOString() };
             const newComm = await api.addCommunication(payload);
-            if(newComm) setCommunications(prev => [newComm, ...prev]);
-        } catch (error) { console.error("Failed to add communication:", error); }
+            setCommunications(prev => [newComm, ...prev]);
+        } catch (error) { 
+            console.error("Falha ao adicionar comunicação:", error);
+            alert(`Erro ao enviar comunicação: ${(error as Error).message}`);
+        }
     };
     
     const addAgendaItem = async (itemData: Omit<AgendaItem, 'id' | 'school_id' | 'isSent'>) => {
@@ -317,16 +332,22 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const payload = { school_id: currentUser.school_id, ...itemData, isSent: false };
             const newItem = await api.addAgendaItem(payload);
-            if(newItem) setAgendaItems(prev => [newItem, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-        } catch (error) { console.error("Failed to add agenda item:", error); }
+            setAgendaItems(prev => [newItem, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        } catch (error) { 
+            console.error("Falha ao adicionar item na agenda:", error);
+            alert(`Erro ao salvar item na agenda: ${(error as Error).message}`);
+        }
     };
 
     const updateAgendaItem = async (updatedItem: AgendaItem) => {
         try {
             const { id, school_id, ...itemData } = updatedItem;
             const updated = await api.updateAgendaItem(id, itemData);
-            if(updated) setAgendaItems(prev => prev.map(item => item.id === updated.id ? updated : item));
-        } catch (error) { console.error("Failed to update agenda item:", error); }
+            setAgendaItems(prev => prev.map(item => item.id === updated.id ? updated : item));
+        } catch (error) { 
+            console.error("Falha ao atualizar item na agenda:", error);
+            alert(`Erro ao atualizar item na agenda: ${(error as Error).message}`);
+        }
     };
 
     const addLeadCaptureCampaign = async (campaignData: Omit<LeadCaptureCampaign, 'id' | 'school_id' | 'publicUrl' | 'createdAt' | 'leadsCaptured'>) => {
@@ -342,8 +363,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 leadsCaptured: 0,
             };
             const newCampaign = await api.addLeadCaptureCampaign(payload);
-            if(newCampaign) setLeadCaptureCampaigns(prev => [newCampaign, ...prev]);
-        } catch (error) { console.error("Failed to add campaign:", error); }
+            setLeadCaptureCampaigns(prev => [newCampaign, ...prev]);
+        } catch (error) { 
+            console.error("Falha ao adicionar campanha:", error);
+            alert(`Erro ao criar campanha: ${(error as Error).message}`);
+        }
     };
 
     const addPhotoAlbum = async (albumData: Omit<PhotoAlbum, 'id' | 'school_id' | 'photos'>) => {
@@ -351,25 +375,32 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const payload: PhotoAlbumColumns = { school_id: currentUser.school_id, ...albumData };
             const newAlbumFromDb = await api.addPhotoAlbum(payload);
-            if(newAlbumFromDb) {
-                const newAlbumForState: PhotoAlbum = { ...newAlbumFromDb, photos: [] };
-                setPhotoAlbums(prev => [newAlbumForState, ...prev]);
-            }
-        } catch (error) { console.error("Failed to add album:", error); }
+            const newAlbumForState: PhotoAlbum = { ...newAlbumFromDb, photos: [] };
+            setPhotoAlbums(prev => [newAlbumForState, ...prev]);
+        } catch (error) { 
+            console.error("Falha ao adicionar álbum:", error);
+            alert(`Erro ao criar álbum: ${(error as Error).message}`);
+        }
     };
 
     const deletePhotoAlbum = async (albumId: number) => {
         try {
             await api.deletePhotoAlbum(albumId);
             setPhotoAlbums(prev => prev.filter(album => album.id !== albumId));
-        } catch (error) { console.error("Failed to delete album:", error); }
+        } catch (error) { 
+            console.error("Falha ao excluir álbum:", error);
+            alert(`Erro ao excluir álbum: ${(error as Error).message}`);
+        }
     };
     
     const updateAlbumPhotos = async (albumId: number, photos: Photo[]) => {
         try {
             const updatedAlbum = await api.updateAlbumPhotos(albumId, photos);
-            if(updatedAlbum) setPhotoAlbums(prev => prev.map(a => a.id === albumId ? updatedAlbum : a));
-        } catch (error) { console.error("Failed to update photos in album:", error); }
+            setPhotoAlbums(prev => prev.map(a => a.id === albumId ? updatedAlbum : a));
+        } catch (error) { 
+            console.error("Falha ao atualizar fotos no álbum:", error);
+            alert(`Erro ao salvar fotos: ${(error as Error).message}`);
+        }
     };
     
     const addPhotoToAlbum = (albumId: number, photoData: { url: string; caption: string }) => {
