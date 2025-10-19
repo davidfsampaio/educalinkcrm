@@ -32,8 +32,8 @@ const AddAlbumModal: React.FC<AddAlbumModalProps> = ({ isOpen, onClose }) => {
             return;
         }
         
-        // FIX: Corrected type to align with DataContext function signature.
-        const newAlbumData: Omit<PhotoAlbum, 'id' | 'school_id' | 'photos'> = { title, date, coverUrl };
+        // FIX: Corrected Omit type to use 'schoolId' (camelCase) instead of 'school_id' (snake_case) to correctly match the property in the PhotoAlbum type and resolve the TypeScript error.
+        const newAlbumData: Omit<PhotoAlbum, 'id' | 'schoolId' | 'photos'> = { title, date, coverUrl };
         addPhotoAlbum(newAlbumData);
 
         // Reset and close

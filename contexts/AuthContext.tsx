@@ -38,7 +38,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     // Auto-correction logic for admin metadata
                     const isAdmin = user.email === 'admin@educalink.com' || user.email === 'david.fsampaio@gmail.com';
                     const needsRoleUpdate = isAdmin && !user_metadata.role;
-                    const needsSchoolUpdate = isAdmin && (!user_metadata.school_id || user_metadata.school_id === 'school-123');
+                    const needsSchoolUpdate = isAdmin && (!user_metadata.schoolId || user_metadata.schoolId === 'school-123');
 
                     if ((needsRoleUpdate || needsSchoolUpdate) && !isAwaitingCorrection) {
                         setIsAwaitingCorrection(true);
@@ -47,7 +47,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         
                         const newMetadata: { [key: string]: any } = { ...user_metadata };
                         if (needsRoleUpdate) newMetadata.role = 'Admin';
-                        if (needsSchoolUpdate) newMetadata.school_id = '123e4567-e89b-12d3-a456-426614174000';
+                        if (needsSchoolUpdate) newMetadata.schoolId = '123e4567-e89b-12d3-a456-426614174000';
 
                         const { error: updateUserError } = await supabase.auth.updateUser({ data: newMetadata });
                         
@@ -62,7 +62,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     } else {
                         // If no correction was needed OR if this is the event after correction
                         const role: UserRoleName | undefined = user_metadata?.role;
-                        const schoolId: string | undefined = user_metadata?.school_id;
+                        const schoolId: string | undefined = user_metadata?.schoolId;
 
                         if (role && schoolId) {
                             console.log("Valid session found. Setting user profile.");
@@ -74,7 +74,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                                 role: role,
                                 status: UserStatus.Active,
                                 studentId: user_metadata?.student_id,
-                                school_id: schoolId,
+                                schoolId: schoolId,
                             };
                             setCurrentUser(profile);
                             setAuthError(null);
@@ -82,7 +82,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         } else {
                             let missingFields = [];
                             if (!role) missingFields.push("'role'");
-                            if (!schoolId) missingFields.push("'school_id'");
+                            if (!schoolId) missingFields.push("'schoolId'");
                             throw new Error(`A 'carga' (${missingFields.join(' e ')}) do usuário não foi encontrada nos metadados. Acesso não permitido.`);
                         }
                     }

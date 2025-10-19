@@ -1,5 +1,6 @@
 
 
+
 import React, { useState } from 'react';
 import Modal from '../common/Modal';
 // FIX: Corrected import path for types.
@@ -8,8 +9,8 @@ import { Student, Invoice } from '../../types';
 interface AddInvoiceModalProps {
     isOpen: boolean;
     onClose: () => void;
-    // FIX: Update prop type to omit 'school_id' as it's handled by the DataContext.
-    onAddInvoice: (invoiceData: Omit<Invoice, 'id' | 'school_id' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => void;
+    // FIX: Corrected Omit type to use 'schoolId' (camelCase) instead of 'school_id' (snake_case) to correctly match the property in the Invoice type and resolve the TypeScript error.
+    onAddInvoice: (invoiceData: Omit<Invoice, 'id' | 'schoolId' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => void;
     students: Student[];
 }
 

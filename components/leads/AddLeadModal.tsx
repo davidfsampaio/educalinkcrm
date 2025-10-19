@@ -6,8 +6,8 @@ import { Lead, LeadStatus } from '../../types';
 interface AddLeadModalProps {
     isOpen: boolean;
     onClose: () => void;
-    // FIX: Aligned prop type with DataContext, which handles adding id and school_id.
-    onAddLead: (lead: Omit<Lead, 'id' | 'school_id'>) => void;
+    // FIX: Corrected Omit type to use 'schoolId' (camelCase) instead of 'school_id' (snake_case) to correctly match the property in the Lead type and resolve the TypeScript error.
+    onAddLead: (lead: Omit<Lead, 'id' | 'schoolId'>) => void;
 }
 
 const AddLeadModal: React.FC<AddLeadModalProps> = ({ isOpen, onClose, onAddLead }) => {
@@ -24,7 +24,7 @@ const AddLeadModal: React.FC<AddLeadModalProps> = ({ isOpen, onClose, onAddLead 
         }
 
         // FIX: Corrected the type of the newLead object to match what the onAddLead function expects.
-        const newLead: Omit<Lead, 'id' | 'school_id'> = {
+        const newLead: Omit<Lead, 'id' | 'schoolId'> = {
             name,
             parentName,
             contact,

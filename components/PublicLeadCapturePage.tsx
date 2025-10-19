@@ -26,8 +26,8 @@ const PublicLeadCapturePage: React.FC = () => {
         setIsSubmitting(true);
         setError('');
 
-        // FIX: Corrected type to Omit<Lead, 'id' | 'school_id'> to align with addLead function signature.
-        const newLead: Omit<Lead, 'id' | 'school_id'> = {
+        // FIX: Corrected Omit type to use 'schoolId' (camelCase) instead of 'school_id' (snake_case) to correctly match the property in the Lead type and resolve the TypeScript error.
+        const newLead: Omit<Lead, 'id' | 'schoolId'> = {
             name: `Lead de ${parentName} (Aluno: ${studentName})`,
             parentName,
             contact: `${phone} / ${email}`,

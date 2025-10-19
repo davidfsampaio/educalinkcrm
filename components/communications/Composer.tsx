@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, lazy, Suspense } from 'react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { Communication } from '../../types';
@@ -8,8 +9,8 @@ import { Communication } from '../../types';
 const AIAssistantModal = lazy(() => import('./AIAssistantModal'));
 
 interface ComposerProps {
-    // FIX: Update prop type to omit 'school_id' as it's handled by the DataContext.
-    onSend: (newComm: Omit<Communication, 'id' | 'sentDate' | 'school_id'>) => void;
+    // FIX: Corrected Omit type to use 'schoolId' (camelCase) instead of 'school_id' (snake_case) to correctly match the property in the Communication type and resolve the TypeScript error.
+    onSend: (newComm: Omit<Communication, 'id' | 'sentDate' | 'schoolId'>) => void;
 }
 
 const SparklesIcon: React.FC<{ className?: string }> = ({ className }) => (

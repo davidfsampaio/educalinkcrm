@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState } from 'react';
 import Modal from '../common/Modal';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -10,8 +11,8 @@ import { Student } from '../../types';
 interface AddStudentModalProps {
     isOpen: boolean;
     onClose: () => void;
-    // FIX: Update prop type to omit 'school_id' as it's handled by the DataContext.
-    onAddStudent: (student: Omit<Student, 'id'|'school_id'|'status'|'enrollmentDate'|'avatarUrl'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuition_plan_id'|'medicalNotes'>) => void;
+    // FIX: Corrected Omit type to use 'schoolId' and 'tuitionPlanId' (camelCase) instead of their snake_case versions to correctly match the properties in the Student type and resolve the TypeScript error.
+    onAddStudent: (student: Omit<Student, 'id'|'schoolId'|'status'|'enrollmentDate'|'avatarUrl'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuitionPlanId'|'medicalNotes'>) => void;
 }
 
 const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAddStudent }) => {

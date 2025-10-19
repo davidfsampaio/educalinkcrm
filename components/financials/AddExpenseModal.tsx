@@ -5,8 +5,8 @@ import { Expense, ExpenseCategory } from '../../types';
 interface AddExpenseModalProps {
     isOpen: boolean;
     onClose: () => void;
-    // FIX: Update prop type to omit 'school_id' as it's handled by the DataContext.
-    onAddExpense: (expenseData: Omit<Expense, 'id' | 'school_id'>) => void;
+    // FIX: Corrected Omit type to use 'schoolId' (camelCase) instead of 'school_id' (snake_case) to correctly match the property in the Expense type and resolve the TypeScript error.
+    onAddExpense: (expenseData: Omit<Expense, 'id' | 'schoolId'>) => void;
 }
 
 const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onAddExpense }) => {
