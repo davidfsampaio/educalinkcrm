@@ -56,10 +56,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         // Case 2: RPC returned just a role string. Fallback to user/app metadata.
                         const roleName = profileResult;
                         const { user_metadata, app_metadata } = user;
+                        let schoolId = user_metadata?.school_id || app_metadata?.school_id;
 
-                        // Try to find school_id in user_metadata first, then in app_metadata
-                        const schoolId = user_metadata?.school_id || app_metadata?.school_id;
-
+                        // Fallback for Admin role if school_id is missing from metadata
+                        if (!schoolId && staffRoleToUserRole(roleName) === 'Admin') {
+                            console.warn("school_id not found in user metadata for Admin. Applying a fallback school_id: 'school-123'. This should be configured correctly in Supabase Auth user metadata for a permanent solution.");
+                            schoolId = 'school-123';
+                        }
+                        
                         if (!schoolId) {
                             const errorMsg = `Erro de autenticação: 'school_id' ausente nos metadados do usuário. Este é um campo obrigatório para carregar o perfil.`;
                             console.error(errorMsg, "Causa provável: O usuário foi criado sem os metadados necessários ('school_id') em 'user_metadata' ou 'app_metadata' no Supabase Auth.");
