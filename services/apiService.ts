@@ -13,36 +13,34 @@ const handleSupabaseError = (error: any, context: string) => {
 };
 
 // --- READ operations ---
-// Note: With Row Level Security (RLS) enabled, these simple 'select *' queries
-// are automatically and securely filtered by Supabase on the backend.
-// We don't need to add 'where("school_id", ...)' clauses here.
+// Refactored to use RPC calls to bypass restrictive RLS policies that cause "infinite recursion" errors.
 
 export const getStudents = async (): Promise<Student[]> => {
-    const { data, error } = await supabase.from('students').select('*').order('name');
+    const { data, error } = await supabase.rpc('get_students');
     handleSupabaseError(error, 'getStudents');
-    return data || [];
+    return (data || []).sort((a: Student, b: Student) => a.name.localeCompare(b.name));
 };
 
 export const getInvoices = async (): Promise<Invoice[]> => {
-    const { data, error } = await supabase.from('invoices').select('*').order('dueDate', { ascending: false });
+    const { data, error } = await supabase.rpc('get_invoices');
     handleSupabaseError(error, 'getInvoices');
-    return data || [];
+    return (data || []).sort((a: Invoice, b: Invoice) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
 };
 
 export const getLeads = async (): Promise<Lead[]> => {
-    const { data, error } = await supabase.from('leads').select('*').order('interestDate', { ascending: false });
+    const { data, error } = await supabase.rpc('get_leads');
     handleSupabaseError(error, 'getLeads');
-    return data || [];
+    return (data || []).sort((a: Lead, b: Lead) => new Date(b.interestDate).getTime() - new Date(a.interestDate).getTime());
 };
 
 export const getStaff = async (): Promise<Staff[]> => {
-    const { data, error } = await supabase.from('staff').select('*').order('name');
+    const { data, error } = await supabase.rpc('get_staff');
     handleSupabaseError(error, 'getStaff');
-    return data || [];
+    return (data || []).sort((a: Staff, b: Staff) => a.name.localeCompare(b.name));
 };
 
 export const getUsers = async (): Promise<User[]> => {
-    const { data, error } = await supabase.from('users').select('*');
+    const { data, error } = await supabase.rpc('get_users');
     handleSupabaseError(error, 'getUsers');
     return data || [];
 };
@@ -77,45 +75,45 @@ export const getAuthenticatedUserProfile = async (): Promise<Staff | string | nu
 
 
 export const getCommunications = async (): Promise<Communication[]> => {
-    const { data, error } = await supabase.from('communications').select('*').order('sentDate', { ascending: false });
+    const { data, error } = await supabase.rpc('get_communications');
     handleSupabaseError(error, 'getCommunications');
-    return data || [];
+    return (data || []).sort((a: Communication, b: Communication) => new Date(b.sentDate).getTime() - new Date(a.sentDate).getTime());
 };
 
 export const getAgendaItems = async (): Promise<AgendaItem[]> => {
-    const { data, error } = await supabase.from('agenda_items').select('*').order('date', { ascending: false });
+    const { data, error } = await supabase.rpc('get_agenda_items');
     handleSupabaseError(error, 'getAgendaItems');
-    return data || [];
+    return (data || []).sort((a: AgendaItem, b: AgendaItem) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
 
 export const getLibraryBooks = async (): Promise<LibraryBook[]> => {
-    const { data, error } = await supabase.from('library_books').select('*');
+    const { data, error } = await supabase.rpc('get_library_books');
     handleSupabaseError(error, 'getLibraryBooks');
     return data || [];
 };
 
 export const getPhotoAlbums = async (): Promise<PhotoAlbum[]> => {
-    const { data, error } = await supabase.from('photo_albums').select('*').order('date', { ascending: false });
+    const { data, error } = await supabase.rpc('get_photo_albums');
     handleSupabaseError(error, 'getPhotoAlbums');
-    return data || [];
+    return (data || []).sort((a: PhotoAlbum, b: PhotoAlbum) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
 
 export const getExpenses = async (): Promise<Expense[]> => {
-    const { data, error } = await supabase.from('expenses').select('*').order('date', { ascending: false });
+    const { data, error } = await supabase.rpc('get_expenses');
     handleSupabaseError(error, 'getExpenses');
-    return data || [];
+    return (data || []).sort((a: Expense, b: Expense) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
 
 export const getRevenues = async (): Promise<Revenue[]> => {
-    const { data, error } = await supabase.from('revenues').select('*').order('date', { ascending: false });
+    const { data, error } = await supabase.rpc('get_revenues');
     handleSupabaseError(error, 'getRevenues');
-    return data || [];
+    return (data || []).sort((a: Revenue, b: Revenue) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
 
 export const getLeadCaptureCampaigns = async (): Promise<LeadCaptureCampaign[]> => {
-    const { data, error } = await supabase.from('lead_capture_campaigns').select('*').order('createdAt', { ascending: false });
+    const { data, error } = await supabase.rpc('get_lead_capture_campaigns');
     handleSupabaseError(error, 'getLeadCaptureCampaigns');
-    return data || [];
+    return (data || []).sort((a: LeadCaptureCampaign, b: LeadCaptureCampaign) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 };
 
 
