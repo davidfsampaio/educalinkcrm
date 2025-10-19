@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { Student, Invoice, AgendaItem, PaymentStatus, AgendaItemType } from '../../types';
 import Card from '../common/Card';
@@ -34,7 +35,8 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ student, invoices, ag
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold text-brand-text-dark">Olá, {student.parentName}!</h1>
+            {/* FIX: Corrected property access from parentName to parent_name to match the Student type. */}
+            <h1 className="text-2xl font-bold text-brand-text-dark">Olá, {student.parent_name}!</h1>
             
             {/* Quick Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

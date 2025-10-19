@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import Modal from '../common/Modal';
 // FIX: Corrected import path for types.
@@ -8,7 +9,8 @@ import { useSettings } from '../../contexts/SettingsContext';
 interface AddEventModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAddEvent: (event: Omit<AgendaItem, 'id' | 'isSent'>) => void;
+    // FIX: Update prop type to omit 'school_id' as it's handled by the DataContext.
+    onAddEvent: (event: Omit<AgendaItem, 'id' | 'isSent' | 'school_id'>) => void;
 }
 
 const AddEventModal: React.FC<AddEventModalProps> = ({ isOpen, onClose, onAddEvent }) => {

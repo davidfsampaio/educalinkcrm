@@ -6,7 +6,8 @@ import { Staff, StaffRole } from '../../types';
 interface AddStaffModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAddStaff: (staff: Omit<Staff, 'id' | 'status' | 'hireDate' | 'avatarUrl'>) => void;
+    // FIX: Update prop type to omit 'school_id' as it's handled by the DataContext.
+    onAddStaff: (staff: Omit<Staff, 'id' | 'school_id' | 'status' | 'hireDate' | 'avatarUrl'>) => void;
 }
 
 const AddStaffModal: React.FC<AddStaffModalProps> = ({ isOpen, onClose, onAddStaff }) => {

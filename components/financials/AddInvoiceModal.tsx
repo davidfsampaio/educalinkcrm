@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import Modal from '../common/Modal';
 // FIX: Corrected import path for types.
@@ -7,7 +8,8 @@ import { Student, Invoice } from '../../types';
 interface AddInvoiceModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAddInvoice: (invoiceData: Omit<Invoice, 'id' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => void;
+    // FIX: Update prop type to omit 'school_id' as it's handled by the DataContext.
+    onAddInvoice: (invoiceData: Omit<Invoice, 'id' | 'school_id' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => void;
     students: Student[];
 }
 

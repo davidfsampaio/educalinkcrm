@@ -1,4 +1,5 @@
 
+
 import React, { useState, lazy, Suspense } from 'react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { Communication } from '../../types';
@@ -7,7 +8,8 @@ import { Communication } from '../../types';
 const AIAssistantModal = lazy(() => import('./AIAssistantModal'));
 
 interface ComposerProps {
-    onSend: (newComm: Omit<Communication, 'id' | 'sentDate'>) => void;
+    // FIX: Update prop type to omit 'school_id' as it's handled by the DataContext.
+    onSend: (newComm: Omit<Communication, 'id' | 'sentDate' | 'school_id'>) => void;
 }
 
 const SparklesIcon: React.FC<{ className?: string }> = ({ className }) => (

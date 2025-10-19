@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Modal from '../common/Modal';
 import { User, UserRoleName } from '../../types';
@@ -8,7 +7,8 @@ import { useData } from '../../contexts/DataContext';
 interface AddUserModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAddUser: (user: Omit<User, 'id' | 'avatarUrl' | 'status'>) => void;
+    // FIX: Update prop type to omit 'school_id' as it's handled by the DataContext.
+    onAddUser: (user: Omit<User, 'id' | 'school_id' | 'avatarUrl' | 'status'> & { password?: string }) => void;
 }
 
 const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onAddUser }) => {
@@ -51,6 +51,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onAddUser 
             name,
             email,
             role,
+            password,
             studentId: role === 'Pai/Responsável' ? linkedStudentId || undefined : undefined
         });
 

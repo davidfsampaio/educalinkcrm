@@ -5,7 +5,8 @@ import { Revenue, RevenueCategory } from '../../types';
 interface AddRevenueModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAddRevenue: (revenueData: Omit<Revenue, 'id'>) => void;
+    // FIX: Update prop type to omit 'school_id' as it's handled by the DataContext.
+    onAddRevenue: (revenueData: Omit<Revenue, 'id' | 'school_id'>) => void;
 }
 
 const AddRevenueModal: React.FC<AddRevenueModalProps> = ({ isOpen, onClose, onAddRevenue }) => {

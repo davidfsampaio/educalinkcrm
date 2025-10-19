@@ -276,7 +276,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const revenueOps = createCrudOperations(setRevenues, { add: api.addRevenue, update: api.updateRevenue, delete: api.deleteRevenue }, "receita");
     const staffOps = createCrudOperations(setStaff, { add: api.addStaff, update: api.updateStaff, delete: () => Promise.resolve() }, "funcionário");
     
-    const addUser = async (userData: Omit<User, 'id' | 'school_id' | 'avatarUrl' | 'status'>) => {
+    const addUser = async (userData: Omit<User, 'id' | 'school_id' | 'avatarUrl' | 'status'> & { password?: string }) => {
         if (!currentUser?.school_id) return;
         try {
             const payload = {

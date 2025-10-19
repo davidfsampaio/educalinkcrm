@@ -357,7 +357,7 @@ export interface DataContextType {
     addCommunication: (commData: Omit<Communication, 'id' | 'school_id' | 'sentDate'>) => void;
     addAgendaItem: (itemData: Omit<AgendaItem, 'id' | 'school_id' | 'isSent'>) => void;
     updateAgendaItem: (updatedItem: AgendaItem) => void;
-    addUser: (userData: Omit<User, 'id' | 'school_id' | 'avatarUrl' | 'status'>) => void;
+    addUser: (userData: Omit<User, 'id' | 'school_id' | 'avatarUrl' | 'status'> & { password?: string }) => void;
     updateUser: (updatedUser: User) => void;
     deleteUser: (userId: string) => void;
     addLeadCaptureCampaign: (campaign: Omit<LeadCaptureCampaign, 'id' | 'school_id' | 'publicUrl' | 'createdAt' | 'leadsCaptured'>) => void;

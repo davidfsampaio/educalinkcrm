@@ -1,5 +1,6 @@
 
 
+
 import React, { useState } from 'react';
 import Modal from '../common/Modal';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -9,7 +10,8 @@ import { Student } from '../../types';
 interface AddStudentModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAddStudent: (student: Omit<Student, 'id'|'status'|'enrollment_date'|'avatar_url'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuition_plan_id'|'medical_notes'>) => void;
+    // FIX: Update prop type to omit 'school_id' as it's handled by the DataContext.
+    onAddStudent: (student: Omit<Student, 'id'|'school_id'|'status'|'enrollment_date'|'avatar_url'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuition_plan_id'|'medical_notes'>) => void;
 }
 
 const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAddStudent }) => {

@@ -31,7 +31,7 @@ const Users: React.FC = () => {
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
 
-    const handleAddUser = (newUserData: Omit<User, 'id' | 'avatarUrl' | 'status'>) => {
+    const handleAddUser = (newUserData: Omit<User, 'id' | 'avatarUrl' | 'status'> & { password?: string }) => {
         addUser(newUserData);
         setAddModalOpen(false);
     };

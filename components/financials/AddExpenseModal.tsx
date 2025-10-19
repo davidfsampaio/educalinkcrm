@@ -5,7 +5,8 @@ import { Expense, ExpenseCategory } from '../../types';
 interface AddExpenseModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAddExpense: (expenseData: Omit<Expense, 'id'>) => void;
+    // FIX: Update prop type to omit 'school_id' as it's handled by the DataContext.
+    onAddExpense: (expenseData: Omit<Expense, 'id' | 'school_id'>) => void;
 }
 
 const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onAddExpense }) => {
