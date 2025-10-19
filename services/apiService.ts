@@ -47,10 +47,7 @@ export const getUsers = async (): Promise<User[]> => {
     return data || [];
 };
 
-export const getAuthenticatedUserProfile = async (): Promise<Staff | null> => {
-    // Based on the DB error hint "Perhaps you meant to call the function public.get_my_role",
-    // we are calling this RPC. We assume it's a SECURITY DEFINER function that can bypass RLS
-    // and return the full staff profile of the authenticated user.
+export const getAuthenticatedUserProfile = async (): Promise<Staff | string | null> => {
     const { data, error } = await supabase.rpc('get_my_role');
     
     if (error) {
@@ -58,21 +55,23 @@ export const getAuthenticatedUserProfile = async (): Promise<Staff | null> => {
       return null;
     }
     
-    // The RPC might return an array or a single object. Let's handle both.
-    // If data is null or an empty array, it means no profile was found.
-    if (!data || (Array.isArray(data) && data.length === 0)) {
+    if (data === null || (Array.isArray(data) && data.length === 0)) {
         return null;
     }
 
-    // If it returns an array, take the first element. Otherwise, use the object directly.
-    const profile = Array.isArray(data) ? data[0] : data;
+    const result = Array.isArray(data) ? data[0] : data;
 
-    // We optimistically assume the returned object has the shape of a Staff profile.
-    if (typeof profile === 'object' && profile !== null) {
-        return profile as Staff;
+    // Case 1: RPC returns the full profile object (ideal)
+    if (typeof result === 'object' && result !== null) {
+        return result as Staff;
+    }
+    
+    // Case 2: RPC returns just the role name as a string
+    if (typeof result === 'string' && result.length > 0) {
+        return result;
     }
 
-    console.warn("RPC 'get_my_role' did not return a valid profile object.", profile);
+    console.warn("RPC 'get_my_role' returned an unexpected value.", result);
     return null;
 };
 

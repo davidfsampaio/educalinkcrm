@@ -24,10 +24,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setAuthLoading(true);
 
         const staffRoleToUserRole = (role: string): UserRoleName => {
-            if (role === 'Diretor(a)') return 'Admin';
+            if (role === 'Diretor(a)' || role === 'Admin') return 'Admin';
             if (role === 'Secretário(a)') return 'Secretário(a)';
             if (role === 'Coordenador(a)') return 'Coordenador(a)';
-            // Default fallback role if something unexpected is returned
             return 'Coordenador(a)'; 
         };
 
@@ -36,27 +35,51 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (session?.user) {
                     const { user } = session;
                     
-                    // Use the RPC call suggested by the database error hint to avoid RLS issues.
-                    const staffProfile = await api.getAuthenticatedUserProfile();
+                    const profileResult = await api.getAuthenticatedUserProfile();
 
-                    if (staffProfile && typeof staffProfile === 'object') {
+                    if (profileResult && typeof profileResult === 'object') {
+                        // Case 1: RPC returned a full staff profile object (ideal case).
+                        const staffProfile = profileResult;
                         setAuthError(null);
                         const profile: User = {
-                            id: user.id, // Use the auth user ID
-                            email: user.email!, // Use the auth user email
+                            id: user.id,
+                            email: user.email!,
                             name: staffProfile.name,
                             avatarUrl: staffProfile.avatarUrl || `https://picsum.photos/seed/user${user.id}/100/100`,
                             role: staffRoleToUserRole(staffProfile.role),
                             status: staffProfile.status === StaffStatus.Active ? UserStatus.Active : UserStatus.Inactive,
-                            studentId: undefined, // It's a staff member
+                            studentId: undefined,
                             school_id: staffProfile.school_id,
                         };
                         setCurrentUser(profile);
+                    } else if (profileResult && typeof profileResult === 'string') {
+                        // Case 2: RPC returned just a role string. Fallback to user_metadata.
+                        const roleName = profileResult;
+                        const { user_metadata } = user;
+                        
+                        if (!user_metadata.school_id) {
+                            const errorMsg = `Erro de autenticação: 'school_id' ausente nos metadados do usuário. Este é um campo obrigatório para carregar o perfil.`;
+                            console.error(errorMsg, "Causa provável: O usuário foi criado sem os metadados necessários no Supabase Auth.");
+                            setAuthError(errorMsg);
+                            await supabase.auth.signOut();
+                        } else {
+                            setAuthError(null);
+                            const profile: User = {
+                                id: user.id,
+                                email: user.email!,
+                                name: user_metadata.full_name || user_metadata.name || user.email,
+                                avatarUrl: user_metadata.avatar_url || `https://picsum.photos/seed/user${user.id}/100/100`,
+                                role: staffRoleToUserRole(roleName),
+                                status: UserStatus.Active,
+                                studentId: undefined,
+                                school_id: user_metadata.school_id,
+                            };
+                            setCurrentUser(profile);
+                        }
                     } else {
-                        // This case handles when the RPC call succeeds but returns no profile,
-                        // or returns something other than an object (like just the role as a string).
-                        const errorMsg = `Erro de autenticação: Perfil de funcionário não encontrado ou inválido. O acesso não é permitido.`;
-                        console.error(errorMsg, "Causa provável: O usuário autenticado não tem um perfil correspondente na tabela 'staff' ou a função 'get_my_role' não retornou os dados esperados.");
+                        // Case 3: RPC failed or returned nothing.
+                        const errorMsg = `Erro de autenticação: Não foi possível carregar o perfil do funcionário. O acesso não é permitido.`;
+                        console.error(errorMsg, "Causa provável: A função RPC 'get_my_role' falhou ou o usuário não tem um perfil de funcionário correspondente.");
                         setAuthError(errorMsg);
                         await supabase.auth.signOut();
                     }
