@@ -9,7 +9,7 @@ import { Student } from '../../types';
 interface AddStudentModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAddStudent: (student: Omit<Student, 'id'|'status'|'enrollment_date'|'avatarUrl'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuitionPlanId'|'medicalNotes'>) => void;
+    onAddStudent: (student: Omit<Student, 'id'|'status'|'enrollment_date'|'avatar_url'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuition_plan_id'|'medical_notes'>) => void;
 }
 
 const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAddStudent }) => {
@@ -34,8 +34,8 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
         onAddStudent({
             name,
             class: studentClass,
-            parentName,
-            parentContact,
+            parent_name: parentName,
+            parent_contact: parentContact,
             cpf,
             address,
             email,

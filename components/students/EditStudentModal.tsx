@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -29,8 +30,8 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, onClose, st
         if (student) {
             setName(student.name);
             setStudentClass(student.class);
-            setParentName(student.parentName);
-            setParentContact(student.parentContact);
+            setParentName(student.parent_name);
+            setParentContact(student.parent_contact);
             setCpf(student.cpf);
             setAddress(student.address);
             setEmail(student.email);
@@ -48,8 +49,8 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, onClose, st
             ...student,
             name,
             class: studentClass,
-            parentName,
-            parentContact,
+            parent_name: parentName,
+            parent_contact: parentContact,
             cpf,
             address,
             email,

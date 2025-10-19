@@ -70,7 +70,7 @@ const Students: React.FC<StudentsProps> = ({ initialStudent, initialAction }) =>
         setEditingStudent(null);
     };
 
-    const handleAddStudent = (newStudentData: Omit<Student, 'id'|'status'|'enrollment_date'|'avatarUrl'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuitionPlanId'|'medicalNotes'>) => {
+    const handleAddStudent = (newStudentData: Omit<Student, 'id'|'status'|'enrollment_date'|'avatar_url'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuition_plan_id'|'medical_notes'>) => {
         addStudent(newStudentData);
         setAddModalOpen(false);
     };
@@ -132,13 +132,13 @@ const Students: React.FC<StudentsProps> = ({ initialStudent, initialAction }) =>
                                 <tr key={student.id} onClick={() => handleRowClick(student)} className="cursor-pointer hover:bg-slate-50 transition-colors duration-200">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
-                                            <img className="h-10 w-10 rounded-full mr-4" src={student.avatarUrl} alt={student.name} />
+                                            <img className="h-10 w-10 rounded-full mr-4" src={student.avatar_url} alt={student.name} />
                                             <div className="font-medium text-brand-text-dark">{student.name}</div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-brand-text-dark">{student.class}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-brand-text-dark">{student.status}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-brand-text-dark">{student.parentName}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-brand-text-dark">{student.parent_name}</td>
                                 </tr>
                             ))}
                         </tbody>

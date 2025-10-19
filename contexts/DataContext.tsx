@@ -106,7 +106,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loadData();
     }, [loadData]);
 
-    const addStudent = async (studentData: Omit<Student, 'id' | 'school_id' | 'status' | 'enrollment_date' | 'avatarUrl' | 'grades' | 'attendance' | 'occurrences' | 'documents' | 'individualAgenda' | 'communicationLog' | 'tuitionPlanId' | 'medicalNotes'>) => {
+    const addStudent = async (studentData: Omit<Student, 'id' | 'school_id' | 'status' | 'enrollment_date' | 'avatar_url' | 'grades' | 'attendance' | 'occurrences' | 'documents' | 'individualAgenda' | 'communicationLog' | 'tuition_plan_id' | 'medical_notes'>) => {
         if (!currentUser?.school_id) return;
         try {
             const newStudentPayload: StudentColumns = {
@@ -114,9 +114,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 ...studentData,
                 status: StudentStatus.Active,
                 enrollment_date: new Date().toISOString().split('T')[0],
-                avatarUrl: `https://picsum.photos/seed/student${Date.now()}/100/100`,
-                tuitionPlanId: 1, 
-                medicalNotes: ''
+                avatar_url: `https://picsum.photos/seed/student${Date.now()}/100/100`,
+                tuition_plan_id: 1, 
+                medical_notes: ''
             };
             const newStudentFromDb = await api.addStudent(newStudentPayload);
             // Rehydrate the object with empty arrays for local state consistency

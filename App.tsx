@@ -79,7 +79,7 @@ const MainApp: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
 
   const handleSearchSelect = (item: Student | StaffType) => {
     // Check if the item is a Student or Staff using a unique property
-    if ('parentName' in item) { // This is a simple way to differentiate Student
+    if ('parent_name' in item) { // This is a simple way to differentiate Student
       setActiveView('students');
     } else {
       setActiveView('staff');
@@ -102,8 +102,8 @@ const MainApp: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         return <AccessDenied />;
     }
 
-    const isStudent = initialSelectedItem && 'parentName' in initialSelectedItem;
-    const isStaff = initialSelectedItem && !('parentName' in initialSelectedItem);
+    const isStudent = initialSelectedItem && 'parent_name' in initialSelectedItem;
+    const isStaff = initialSelectedItem && !('parent_name' in initialSelectedItem);
 
     switch (activeView) {
       case 'dashboard': return <Dashboard />;
