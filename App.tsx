@@ -51,7 +51,7 @@ const LoadingFallback: React.FC = () => (
 );
 
 
-const MainApp: React.FC = () => {
+const MainApp: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const [activeView, setActiveView] = useState<View>('dashboard');
   const [initialSelectedItem, setInitialSelectedItem] = useState<Student | StaffType | null>(null);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -131,7 +131,7 @@ const MainApp: React.FC = () => {
         setIsOpen={setSidebarOpen}
       />
       <div className="flex-1 flex flex-col min-w-0"> {/* Added min-w-0 to prevent content overflow */}
-        <Header currentView={activeView} onMenuClick={() => setSidebarOpen(true)} onSearchSelect={handleSearchSelect} />
+        <Header currentView={activeView} onMenuClick={() => setSidebarOpen(true)} onSearchSelect={handleSearchSelect} onLogout={onLogout} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 p-4 md:p-6">
           <Suspense fallback={<LoadingFallback />}>
             {renderView()}
@@ -357,7 +357,7 @@ const App: React.FC = () => {
     if (userType === 'staff') {
       return (
         <AuthProvider>
-          <MainApp />
+          <MainApp onLogout={handleLogout} />
         </AuthProvider>
       );
     }

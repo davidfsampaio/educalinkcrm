@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Student, Staff } from '../types';
 import NotificationPanel from './common/NotificationPanel';
 import GlobalSearch from './common/GlobalSearch';
 import { usePWA } from '../contexts/PWAContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface HeaderProps {
     currentView: View;
     onMenuClick: () => void;
     onSearchSelect: (item: Student | Staff) => void;
+    onLogout: () => void;
 }
 
 const viewTitles: Record<View, string> = {
@@ -45,11 +48,25 @@ const OfflineIndicator: React.FC = () => (
 );
 
 
-const Header: React.FC<HeaderProps> = ({ currentView, onMenuClick, onSearchSelect }) => {
+const Header: React.FC<HeaderProps> = ({ currentView, onMenuClick, onSearchSelect, onLogout }) => {
     const title = viewTitles[currentView];
     const [isNotificationsOpen, setNotificationsOpen] = useState(false);
-    const [hasUnread, setHasUnread] = useState(true); // Assume there are unread notifications initially
+    const [hasUnread, setHasUnread] = useState(true);
     const { canInstall, triggerInstall, isOnline } = usePWA();
+    const { currentUser } = useAuth();
+    const [isUserMenuOpen, setUserMenuOpen] = useState(false);
+    const userMenuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+                setUserMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
 
     const handleNotificationClick = () => {
         setNotificationsOpen(prev => !prev);
@@ -97,12 +114,31 @@ const Header: React.FC<HeaderProps> = ({ currentView, onMenuClick, onSearchSelec
                         setHasUnread={setHasUnread}
                     />
                 </div>
-                <div className="flex items-center space-x-2">
-                    <img className="h-10 w-10 rounded-full" src="https://picsum.photos/seed/user/100/100" alt="User Avatar" />
-                    <div className="hidden sm:block">
-                        <p className="font-semibold text-brand-text-dark">Diretor(a)</p>
-                        <p className="text-sm text-brand-text-light">Admin</p>
-                    </div>
+                <div className="relative" ref={userMenuRef}>
+                    <button onClick={() => setUserMenuOpen(prev => !prev)} className="flex items-center space-x-2 p-1 rounded-lg hover:bg-slate-100 transition-colors">
+                        <img className="h-10 w-10 rounded-full" src={currentUser?.avatarUrl || "https://picsum.photos/seed/user/100/100"} alt="User Avatar" />
+                        <div className="hidden sm:block text-left">
+                            <p className="font-semibold text-brand-text-dark truncate max-w-28">{currentUser?.name || 'Usuário'}</p>
+                            <p className="text-sm text-brand-text-light">{currentUser?.role || 'Cargo'}</p>
+                        </div>
+                         <svg className={`w-5 h-5 text-slate-500 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                    </button>
+
+                    {isUserMenuOpen && (
+                        <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-slate-200 z-50">
+                            <div className="py-1">
+                                <button
+                                    onClick={onLogout}
+                                    className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                >
+                                    <svg className="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                                    Sair
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </header>
