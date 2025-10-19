@@ -5,7 +5,7 @@ import { useAuth } from './AuthContext'; // We'll need this to get the school_id
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-// Helper to generate a somewhat unique numeric ID
+// Helper to generate a somewhat unique numeric ID for non-DB-backed items
 const generateNumericId = () => Date.now() + Math.floor(Math.random() * 1000);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -105,8 +105,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const addStudent = async (studentData: Omit<Student, 'id' | 'school_id' | 'status' | 'enrollmentDate' | 'avatarUrl' | 'grades' | 'attendance' | 'occurrences' | 'documents' | 'individualAgenda' | 'communicationLog' | 'tuitionPlanId' | 'medicalNotes'>) => {
         if (!currentUser?.school_id) return;
         try {
-            const newStudentPayload: Student = {
-                id: generateNumericId(),
+            const newStudentPayload = {
                 school_id: currentUser.school_id,
                 ...studentData,
                 status: StudentStatus.Active,
@@ -139,8 +138,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const addLead = async (leadData: Omit<Lead, 'id' | 'school_id'>, campaignId?: string) => {
         if (!currentUser?.school_id) return;
         try {
-            const newLeadPayload: Lead = {
-                id: generateNumericId(),
+            const newLeadPayload = {
                 school_id: currentUser.school_id,
                 ...leadData,
             };
@@ -178,9 +176,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (!student) throw new Error("Student not found");
 
             const id = `INV-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(Date.now()).slice(-5)}`;
-            const payload: Invoice = {
+            const payload: Omit<Invoice, 'school_id'> = {
                 id,
-                school_id: currentUser.school_id,
                 ...newInvoiceData,
                 studentName: student.name,
                 status: new Date(newInvoiceData.dueDate) < new Date() ? PaymentStatus.Overdue : PaymentStatus.Pending,
@@ -216,21 +213,22 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const createCrudOperations = <T extends { id: number | string, school_id: string }>(
+    const createCrudOperations = <T extends { id: number | string }>(
         setState: React.Dispatch<React.SetStateAction<T[]>>,
         apiService: { add: (item: any) => Promise<T>, update: (id: any, item: any) => Promise<T>, delete: (id: any) => Promise<void> }
     ) => ({
         add: async (itemData: Omit<T, 'id' | 'school_id'>) => {
             if (!currentUser?.school_id) return;
             try {
-                const newPayload = { id: generateNumericId(), school_id: currentUser.school_id, ...itemData } as T;
+                const newPayload = { school_id: currentUser.school_id, ...itemData };
                 const newItem = await apiService.add(newPayload);
                 if (newItem) setState(prev => [newItem, ...prev]);
             } catch (error) { console.error(`Failed to add item:`, error); }
         },
         update: async (updatedItem: T) => {
             try {
-                const { id, school_id, ...itemData } = updatedItem;
+                const { id, ...itemData } = updatedItem as T & { school_id?: string };
+                delete (itemData as Partial<T & { school_id?: string }>).school_id;
                 const updated = await apiService.update(id, itemData);
                 if(updated) setState(prev => prev.map(item => (item.id === updated.id ? updated : item)));
             } catch (error) { console.error(`Failed to update item:`, error); }
@@ -252,9 +250,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             // In a real app, user creation would be a complex flow involving auth.
             // For now, we just associate with the current user's school.
-            const payload: User = {
-                // FIX: User ID should be a number. Changed from empty string to a generated numeric ID.
-                id: generateNumericId(), // Will be set by Supabase trigger from auth
+            const payload = {
                 school_id: currentUser.school_id, 
                 ...userData, 
                 status: UserStatus.Active,
@@ -274,8 +270,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } catch(e) { console.error("Failed to update user", e); }
     };
 
-    // FIX: Changed userId from string to number to match the User type and API service definition.
-    const deleteUser = async (userId: number) => {
+    const deleteUser = async (userId: string) => {
         try {
             await api.deleteUser(userId);
             setUsers(prev => prev.filter(u => u.id !== userId));
@@ -286,7 +281,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const addCommunication = async (commData: Omit<Communication, 'id' | 'school_id' | 'sentDate'>) => {
         if (!currentUser?.school_id) return;
         try {
-            const payload: Communication = { id: generateNumericId(), school_id: currentUser.school_id, ...commData, sentDate: new Date().toISOString() };
+            const payload = { school_id: currentUser.school_id, ...commData, sentDate: new Date().toISOString() };
             const newComm = await api.addCommunication(payload);
             if(newComm) setCommunications(prev => [newComm, ...prev]);
         } catch (error) { console.error("Failed to add communication:", error); }
@@ -295,7 +290,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const addAgendaItem = async (itemData: Omit<AgendaItem, 'id' | 'school_id' | 'isSent'>) => {
         if (!currentUser?.school_id) return;
         try {
-            const payload: AgendaItem = { id: generateNumericId(), school_id: currentUser.school_id, ...itemData, isSent: false };
+            const payload = { school_id: currentUser.school_id, ...itemData, isSent: false };
             const newItem = await api.addAgendaItem(payload);
             if(newItem) setAgendaItems(prev => [newItem, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         } catch (error) { console.error("Failed to add agenda item:", error); }
@@ -313,7 +308,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (!currentUser?.school_id) return;
         try {
             const campaignId = `campaign-${Date.now()}`;
-            const payload: LeadCaptureCampaign = {
+            const payload = {
                 id: campaignId,
                 school_id: currentUser.school_id,
                 ...campaignData,
@@ -329,7 +324,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const addPhotoAlbum = async (albumData: Omit<PhotoAlbum, 'id' | 'school_id' | 'photos'>) => {
         if (!currentUser?.school_id) return;
         try {
-            const payload: PhotoAlbum = { id: generateNumericId(), school_id: currentUser.school_id, ...albumData, photos: [] };
+            const payload = { school_id: currentUser.school_id, ...albumData, photos: [] };
             const newAlbum = await api.addPhotoAlbum(payload);
             if(newAlbum) setPhotoAlbums(prev => [newAlbum, ...prev]);
         } catch (error) { console.error("Failed to add album:", error); }

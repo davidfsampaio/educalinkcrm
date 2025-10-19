@@ -41,7 +41,7 @@ const Users: React.FC = () => {
         setEditingUser(null);
     };
 
-    const handleDeleteUser = (userId: number) => {
+    const handleDeleteUser = (userId: string) => {
         if (window.confirm('Tem certeza de que deseja excluir este usuário? Esta ação não pode ser desfeita.')) {
             deleteUser(userId);
         }

@@ -25,10 +25,10 @@ export const mockStaff: Staff[] = [
     { id: 4, name: 'Professora Joana', role: 'Professor(a)', email: 'joana.prof@educalink.com', phone: '(11) 98765-4324', hireDate: '2022-02-10', status: StaffStatus.Active, avatarUrl: 'https://picsum.photos/seed/staff4/100/100', cpf: '444.444.444-44', address: 'Rua da Escola, 4', school_id: 'school-123' },
 ];
 export const mockUsers: User[] = [
-    { id: 1, name: 'Diretor(a)', email: 'admin@educalink.com', role: 'Admin', status: UserStatus.Active, avatarUrl: 'https://picsum.photos/seed/user/100/100', school_id: 'school-123' },
-    { id: 2, name: 'Maria Secretária', email: 'secretaria@educalink.com', role: 'Secretário(a)', status: UserStatus.Active, avatarUrl: 'https://picsum.photos/seed/user2/100/100', school_id: 'school-123' },
-    { id: 3, name: 'Carlos Coordenador', email: 'coordenador@educalink.com', role: 'Coordenador(a)', status: UserStatus.Active, avatarUrl: 'https://picsum.photos/seed/user3/100/100', school_id: 'school-123' },
-    { id: 4, name: 'Ana Silva (Responsável)', email: 'ana.silva@email.com', role: 'Pai/Responsável', status: UserStatus.Active, avatarUrl: 'https://picsum.photos/seed/user4/100/100', studentId: 1, school_id: 'school-123' },
+    { id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef', name: 'Diretor(a)', email: 'admin@educalink.com', role: 'Admin', status: UserStatus.Active, avatarUrl: 'https://picsum.photos/seed/user/100/100', school_id: 'school-123' },
+    { id: 'b2c3d4e5-f6a7-8901-2345-67890abcdef1', name: 'Maria Secretária', email: 'secretaria@educalink.com', role: 'Secretário(a)', status: UserStatus.Active, avatarUrl: 'https://picsum.photos/seed/user2/100/100', school_id: 'school-123' },
+    { id: 'c3d4e5f6-a7b8-9012-3456-7890abcdef12', name: 'Carlos Coordenador', email: 'coordenador@educalink.com', role: 'Coordenador(a)', status: UserStatus.Active, avatarUrl: 'https://picsum.photos/seed/user3/100/100', school_id: 'school-123' },
+    { id: 'd4e5f6a7-b8c9-0123-4567-890abcdef123', name: 'Ana Silva (Responsável)', email: 'ana.silva@email.com', role: 'Pai/Responsável', status: UserStatus.Active, avatarUrl: 'https://picsum.photos/seed/user4/100/100', studentId: 1, school_id: 'school-123' },
 ];
 export const mockLeadCaptureCampaigns: LeadCaptureCampaign[] = [
     { id: 'campaign-1', name: 'Matrículas 2025 - Facebook', publicUrl: '/#/capture/campaign-1', createdAt: '2024-07-01', leadsCaptured: 12, school_id: 'school-123' },

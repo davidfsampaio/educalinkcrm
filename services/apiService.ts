@@ -1,5 +1,3 @@
-
-
 import {
     Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum,
     User, Expense, Revenue, LeadCaptureCampaign, Photo
@@ -104,7 +102,7 @@ export const getLeadCaptureCampaigns = async (): Promise<LeadCaptureCampaign[]> 
 // --- WRITE operations ---
 
 // Students
-export const addStudent = async (studentData: Student) => {
+export const addStudent = async (studentData: Omit<Student, 'id'>) => {
     const { data, error } = await supabase.from('students').insert(studentData).select().single();
     handleSupabaseError(error, 'addStudent');
     return data;
@@ -116,7 +114,7 @@ export const updateStudent = async (studentId: number, studentData: Partial<Omit
 };
 
 // Invoices
-export const addInvoice = async (invoiceData: Invoice) => {
+export const addInvoice = async (invoiceData: Omit<Invoice, 'school_id'>) => {
     const { data, error } = await supabase.from('invoices').insert(invoiceData).select().single();
     handleSupabaseError(error, 'addInvoice');
     return data;
@@ -132,7 +130,7 @@ export const deleteInvoice = async (invoiceId: string) => {
 }
 
 // Leads
-export const addLead = async (leadData: Lead) => {
+export const addLead = async (leadData: Omit<Lead, 'id'>) => {
     const { data, error } = await supabase.from('leads').insert(leadData).select().single();
     handleSupabaseError(error, 'addLead');
     return data;
@@ -144,7 +142,7 @@ export const updateLead = async (leadId: number, leadData: Partial<Omit<Lead, 'i
 }
 
 // Staff
-export const addStaff = async (staffData: Staff) => {
+export const addStaff = async (staffData: Omit<Staff, 'id'>) => {
     const { data, error } = await supabase.from('staff').insert(staffData).select().single();
     handleSupabaseError(error, 'addStaff');
     return data;
@@ -156,7 +154,7 @@ export const updateStaff = async (staffId: number, staffData: Partial<Omit<Staff
 }
 
 // Expenses
-export const addExpense = async (expenseData: Expense) => {
+export const addExpense = async (expenseData: Omit<Expense, 'id'>) => {
     const { data, error } = await supabase.from('expenses').insert(expenseData).select().single();
     handleSupabaseError(error, 'addExpense');
     return data;
@@ -172,7 +170,7 @@ export const deleteExpense = async (id: number) => {
 };
 
 // Revenues
-export const addRevenue = async (revenueData: Revenue) => {
+export const addRevenue = async (revenueData: Omit<Revenue, 'id'>) => {
     const { data, error } = await supabase.from('revenues').insert(revenueData).select().single();
     handleSupabaseError(error, 'addRevenue');
     return data;
@@ -188,14 +186,14 @@ export const deleteRevenue = async (id: number) => {
 };
 
 // Communications
-export const addCommunication = async (commData: Communication) => {
+export const addCommunication = async (commData: Omit<Communication, 'id'>) => {
     const { data, error } = await supabase.from('communications').insert(commData).select().single();
     handleSupabaseError(error, 'addCommunication');
     return data;
 };
 
 // Agenda
-export const addAgendaItem = async (itemData: AgendaItem) => {
+export const addAgendaItem = async (itemData: Omit<AgendaItem, 'id'>) => {
     const { data, error } = await supabase.from('agenda_items').insert(itemData).select().single();
     handleSupabaseError(error, 'addAgendaItem');
     return data;
@@ -207,7 +205,7 @@ export const updateAgendaItem = async (id: number, itemData: Partial<Omit<Agenda
 };
 
 // Users
-export const addUser = async (userData: User) => {
+export const addUser = async (userData: Omit<User, 'id'>) => {
     // This would be handled by a server-side function in a real multi-tenant app
     // to securely associate the new auth user with a profile.
     // For now, we insert directly.
@@ -215,12 +213,12 @@ export const addUser = async (userData: User) => {
     handleSupabaseError(error, 'addUser');
     return data;
 };
-export const updateUser = async (id: number, userData: Partial<Omit<User, 'id' | 'school_id'>>) => {
+export const updateUser = async (id: string, userData: Partial<Omit<User, 'id' | 'school_id'>>) => {
     const { data, error } = await supabase.from('users').update(userData).eq('id', id).select().single();
     handleSupabaseError(error, 'updateUser');
     return data;
 };
-export const deleteUser = async (id: number) => {
+export const deleteUser = async (id: string) => {
     // This should also be a secure server-side function
     const { error } = await supabase.from('users').delete().eq('id', id);
     handleSupabaseError(error, 'deleteUser');
@@ -234,7 +232,7 @@ export const addLeadCaptureCampaign = async (campaignData: LeadCaptureCampaign) 
 }
 
 // Photo Albums
-export const addPhotoAlbum = async (albumData: PhotoAlbum) => {
+export const addPhotoAlbum = async (albumData: Omit<PhotoAlbum, 'id'>) => {
     const { data, error } = await supabase.from('photo_albums').insert(albumData).select().single();
     handleSupabaseError(error, 'addPhotoAlbum');
     return data;
@@ -250,7 +248,7 @@ export const updateAlbumPhotos = async (albumId: number, photos: Photo[]) => {
 }
 
 // Library
-export const addLibraryBook = async (bookData: LibraryBook) => {
+export const addLibraryBook = async (bookData: Omit<LibraryBook, 'id'>) => {
     const { data, error } = await supabase.from('library_books').insert(bookData).select().single();
     handleSupabaseError(error, 'addLibraryBook');
     return data;

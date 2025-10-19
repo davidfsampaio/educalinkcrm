@@ -99,7 +99,7 @@ export interface Revenue {
 }
 
 export interface User {
-    id: number; // Changed from string to number to match DB bigint
+    id: string; // Changed from number to string to match Supabase auth UUIDs
     name: string;
     email: string;
     role: UserRoleName;
@@ -344,7 +344,7 @@ export interface DataContextType {
     updateAgendaItem: (updatedItem: AgendaItem) => void;
     addUser: (userData: Omit<User, 'id' | 'school_id' | 'avatarUrl' | 'status'>) => void;
     updateUser: (updatedUser: User) => void;
-    deleteUser: (userId: number) => void;
+    deleteUser: (userId: string) => void;
     addLeadCaptureCampaign: (campaign: Omit<LeadCaptureCampaign, 'id' | 'school_id' | 'publicUrl' | 'createdAt' | 'leadsCaptured'>) => void;
     addPhotoAlbum: (albumData: Omit<PhotoAlbum, 'id' | 'school_id' | 'photos'>) => void;
     deletePhotoAlbum: (albumId: number) => void;

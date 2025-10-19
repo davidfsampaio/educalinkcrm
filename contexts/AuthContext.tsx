@@ -20,29 +20,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         setAuthLoading(true);
 
-        // Explicitly check for an existing session on initial load
-        supabase.auth.getSession().then(async ({ data: { session } }) => {
-            if (session?.user?.email) {
-                const profile = await api.getUserProfileByEmail(session.user.email);
-                setCurrentUser(profile);
-            } else {
-                setCurrentUser(null);
-            }
-            setAuthLoading(false);
-        });
-
-        // Listen for subsequent auth state changes (login, logout)
+        // The onAuthStateChange listener handles both initial session check and subsequent changes.
+        // It fires with an 'INITIAL_SESSION' event on page load.
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (session?.user?.email) {
-                const profile = await api.getUserProfileByEmail(session.user.email);
-                setCurrentUser(profile);
-            } else {
+            try {
+                if (session?.user?.email) {
+                    const profile = await api.getUserProfileByEmail(session.user.email);
+                    setCurrentUser(profile);
+                } else {
+                    setCurrentUser(null);
+                }
+            } catch (error) {
+                console.error("Error processing auth state change:", error);
                 setCurrentUser(null);
+            } finally {
+                // The first event resolves the initial loading state.
+                setAuthLoading(false);
             }
         });
 
         return () => {
-            authListener.subscription.unsubscribe();
+            // Safely unsubscribe to prevent errors on cleanup
+            authListener?.subscription?.unsubscribe();
         };
     }, []);
     
