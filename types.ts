@@ -158,7 +158,7 @@ export interface Student {
     id: number;
     name: string;
     class: string;
-    enrollmentDate: string;
+    enrollment_date: string;
     status: StudentStatus;
     parentName: string;
     parentContact: string;
@@ -339,7 +339,7 @@ export interface DataContextType {
     revenues: Revenue[];
     leadCaptureCampaigns: LeadCaptureCampaign[];
     loading: boolean;
-    addStudent: (studentData: Omit<Student, 'id' | 'school_id' | 'status' | 'enrollmentDate' | 'avatarUrl' | 'grades' | 'attendance' | 'occurrences' | 'documents' | 'individualAgenda' | 'communicationLog' | 'tuitionPlanId' | 'medicalNotes'>) => void;
+    addStudent: (studentData: Omit<Student, 'id' | 'school_id' | 'status' | 'enrollment_date' | 'avatarUrl' | 'grades' | 'attendance' | 'occurrences' | 'documents' | 'individualAgenda' | 'communicationLog' | 'tuitionPlanId' | 'medicalNotes'>) => void;
     updateStudent: (updatedStudent: Student) => void;
     addLead: (leadData: Omit<Lead, 'id' | 'school_id'>, campaignId?: string) => void;
     updateLead: (updatedLead: Lead) => void;

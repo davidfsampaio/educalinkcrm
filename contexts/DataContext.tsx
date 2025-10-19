@@ -106,14 +106,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loadData();
     }, [loadData]);
 
-    const addStudent = async (studentData: Omit<Student, 'id' | 'school_id' | 'status' | 'enrollmentDate' | 'avatarUrl' | 'grades' | 'attendance' | 'occurrences' | 'documents' | 'individualAgenda' | 'communicationLog' | 'tuitionPlanId' | 'medicalNotes'>) => {
+    const addStudent = async (studentData: Omit<Student, 'id' | 'school_id' | 'status' | 'enrollment_date' | 'avatarUrl' | 'grades' | 'attendance' | 'occurrences' | 'documents' | 'individualAgenda' | 'communicationLog' | 'tuitionPlanId' | 'medicalNotes'>) => {
         if (!currentUser?.school_id) return;
         try {
             const newStudentPayload: StudentColumns = {
                 school_id: currentUser.school_id,
                 ...studentData,
                 status: StudentStatus.Active,
-                enrollmentDate: new Date().toISOString().split('T')[0],
+                enrollment_date: new Date().toISOString().split('T')[0],
                 avatarUrl: `https://picsum.photos/seed/student${Date.now()}/100/100`,
                 tuitionPlanId: 1, 
                 medicalNotes: ''

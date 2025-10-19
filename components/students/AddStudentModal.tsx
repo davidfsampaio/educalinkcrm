@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import Modal from '../common/Modal';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -8,7 +9,7 @@ import { Student } from '../../types';
 interface AddStudentModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAddStudent: (student: Omit<Student, 'id'|'status'|'enrollmentDate'|'avatarUrl'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuitionPlanId'|'medicalNotes'>) => void;
+    onAddStudent: (student: Omit<Student, 'id'|'status'|'enrollment_date'|'avatarUrl'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuitionPlanId'|'medicalNotes'>) => void;
 }
 
 const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAddStudent }) => {
