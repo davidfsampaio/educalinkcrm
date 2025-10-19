@@ -1,5 +1,3 @@
-
-
 import React, { createContext, useContext, ReactNode, useState, useMemo, useEffect } from 'react';
 import { User, Permission } from '../types';
 import { useSettings } from './SettingsContext';
@@ -21,7 +19,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     useEffect(() => {
         setAuthLoading(true);
-        const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+
+        // Explicitly check for an existing session on initial load
+        supabase.auth.getSession().then(async ({ data: { session } }) => {
             if (session?.user?.email) {
                 const profile = await api.getUserProfileByEmail(session.user.email);
                 setCurrentUser(profile);
@@ -29,6 +29,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 setCurrentUser(null);
             }
             setAuthLoading(false);
+        });
+
+        // Listen for subsequent auth state changes (login, logout)
+        const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (session?.user?.email) {
+                const profile = await api.getUserProfileByEmail(session.user.email);
+                setCurrentUser(profile);
+            } else {
+                setCurrentUser(null);
+            }
         });
 
         return () => {
