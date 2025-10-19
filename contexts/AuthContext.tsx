@@ -27,10 +27,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     const { user } = session;
                     const { user_metadata, app_metadata } = user;
 
-                    // Build profile exclusively from metadata, removing the problematic RPC call.
-                    // This is the standard approach and avoids RLS recursion issues.
-                    const role: UserRoleName | undefined = user_metadata?.role || app_metadata?.role;
+                    // Build profile from metadata.
+                    let role: UserRoleName | undefined = user_metadata?.role || app_metadata?.role;
                     let schoolId: string | undefined = user_metadata?.school_id || app_metadata?.school_id;
+
+                    // If role is missing, apply a specific fallback for the known admin user.
+                    if (!role && user.email === 'admin@educalink.com') {
+                        console.warn("O cargo (role) não foi encontrado nos metadados para o usuário admin. Aplicando fallback 'Admin'. Para uma solução permanente, configure o campo 'role' nos metadados do usuário no Supabase Auth.");
+                        role = 'Admin';
+                    }
 
                     if (!role) {
                         const errorMsg = "Erro de autenticação: O 'cargo' (role) do usuário não foi encontrado nos metadados. Acesso não permitido.";
