@@ -31,8 +31,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     let role: UserRoleName | undefined = user_metadata?.role || app_metadata?.role;
                     let schoolId: string | undefined = user_metadata?.school_id || app_metadata?.school_id;
 
-                    // Apply specific fallbacks if information is missing for the admin user.
-                    if (user.email === 'admin@educalink.com') {
+                    // Apply specific fallbacks if information is missing for admin users.
+                    if (user.email === 'admin@educalink.com' || user.email === 'david.fsampaio@gmail.com') {
                         if (!role) {
                             role = 'Admin';
                         }
@@ -57,12 +57,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         setAuthError(null);
                     } else {
                         // If critical info is still missing, throw an error.
-                        if (!role) {
-                            throw new Error("O 'cargo' (role) do usuário não foi encontrado nos metadados. Acesso não permitido.");
-                        }
-                        if (!schoolId) {
-                             throw new Error("O 'school_id' do usuário não foi encontrado nos metadados. Acesso não permitido.");
-                        }
+                        let missingFields = [];
+                        if (!role) missingFields.push("'role'");
+                        if (!schoolId) missingFields.push("'school_id'");
+
+                        throw new Error(`A 'carga' (${missingFields.join(' e ')}) do usuário não foi encontrada nos metadados. Acesso não permitido.`);
                     }
                 } else {
                     // No session, so no user.
