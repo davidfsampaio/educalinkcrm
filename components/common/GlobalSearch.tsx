@@ -22,8 +22,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onSelect }) => {
             const studentResults = students
                 .filter(s =>
                     s.name.toLowerCase().includes(lowerCaseQuery) ||
-                    // FIX: Changed parentName to parent_name to match the Student type.
-                    s.parent_name.toLowerCase().includes(lowerCaseQuery)
+                    s.parentName.toLowerCase().includes(lowerCaseQuery)
                 )
                 .map(s => ({ ...s, type: 'student' as const }));
 
@@ -59,7 +58,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onSelect }) => {
     return (
         <div className="relative" ref={searchRef}>
             <div className="relative">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 <input
                     type="text"
                     placeholder="Buscar alunos, pais ou funcionários..."
@@ -74,8 +73,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onSelect }) => {
                         {results.map((item, index) => (
                             <li key={`${item.type}-${item.id}-${index}`} onClick={() => handleSelect(item)} className="px-4 py-3 hover:bg-slate-100 cursor-pointer border-b last:border-b-0">
                                 <p className="font-semibold text-brand-text-dark">{item.name}</p>
-                                {/* FIX: Changed parentName to parent_name to match the Student type. */}
-                                {item.type === 'student' && <p className="text-sm text-brand-text-light">Aluno(a) - Turma: {item.class} (Responsável: {item.parent_name})</p>}
+                                {item.type === 'student' && <p className="text-sm text-brand-text-light">Aluno(a) - Turma: {item.class} (Responsável: {item.parentName})</p>}
                                 {item.type === 'staff' && <p className="text-sm text-brand-text-light">Funcionário(a) - Cargo: {item.role}</p>}
                             </li>
                         ))}

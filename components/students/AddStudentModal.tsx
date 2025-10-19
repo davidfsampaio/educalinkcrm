@@ -11,7 +11,7 @@ interface AddStudentModalProps {
     isOpen: boolean;
     onClose: () => void;
     // FIX: Update prop type to omit 'school_id' as it's handled by the DataContext.
-    onAddStudent: (student: Omit<Student, 'id'|'school_id'|'status'|'enrollment_date'|'avatar_url'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuition_plan_id'|'medical_notes'>) => void;
+    onAddStudent: (student: Omit<Student, 'id'|'school_id'|'status'|'enrollmentDate'|'avatarUrl'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuition_plan_id'|'medicalNotes'>) => void;
 }
 
 const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAddStudent }) => {
@@ -36,8 +36,8 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
         onAddStudent({
             name,
             class: studentClass,
-            parent_name: parentName,
-            parent_contact: parentContact,
+            parentName: parentName,
+            parentContact: parentContact,
             cpf,
             address,
             email,

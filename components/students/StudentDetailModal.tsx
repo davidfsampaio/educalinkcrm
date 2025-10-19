@@ -142,7 +142,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ isOpen, onClose
             reader.onloadend = () => {
                 const updatedStudent: Student = {
                     ...student,
-                    avatar_url: reader.result as string,
+                    avatarUrl: reader.result as string,
                 };
                 onUpdateStudent(updatedStudent);
             };
@@ -183,7 +183,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ isOpen, onClose
                     <div className="w-full md:w-1/4 bg-slate-100 rounded-xl p-6 border border-slate-200">
                         <div className="flex flex-col items-center text-center">
                             <div className="relative group">
-                                <img src={student.avatar_url} alt={student.name} className="w-24 h-24 rounded-full mb-4 ring-4 ring-brand-primary/20 group-hover:opacity-75 transition-opacity" />
+                                <img src={student.avatarUrl} alt={student.name} className="w-24 h-24 rounded-full mb-4 ring-4 ring-brand-primary/20 group-hover:opacity-75 transition-opacity" />
                                 <ProtectedComponent requiredPermission='edit_students'>
                                     <div 
                                         className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity mb-4"
@@ -209,8 +209,8 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ isOpen, onClose
                         </div>
                         <div className="mt-6 border-t pt-4 text-center">
                             <h4 className="font-bold text-brand-text-dark mb-2">Responsável</h4>
-                            <p className="text-brand-text-dark">{student.parent_name}</p>
-                            <p className="text-brand-text-dark text-sm">{student.parent_contact}</p>
+                            <p className="text-brand-text-dark">{student.parentName}</p>
+                            <p className="text-brand-text-dark text-sm">{student.parentContact}</p>
                         </div>
                         <div className="mt-6 border-t pt-4">
                             <ProtectedComponent requiredPermission='edit_students'>

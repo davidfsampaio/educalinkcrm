@@ -15,7 +15,7 @@ export const generateDeclaration = (student: Student, type: DeclarationType, set
     let processedText = template;
     const replacements: Record<string, string> = {
         '{{student.name}}': student.name,
-        '{{student.parentName}}': student.parent_name,
+        '{{student.parentName}}': student.parentName,
         '{{student.cpf}}': student.cpf,
         '{{student.class}}': student.class,
         '{{schoolInfo.name}}': schoolInfo.name,

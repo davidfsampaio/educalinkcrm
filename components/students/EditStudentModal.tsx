@@ -30,8 +30,8 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, onClose, st
         if (student) {
             setName(student.name);
             setStudentClass(student.class);
-            setParentName(student.parent_name);
-            setParentContact(student.parent_contact);
+            setParentName(student.parentName);
+            setParentContact(student.parentContact);
             setCpf(student.cpf);
             setAddress(student.address);
             setEmail(student.email);
@@ -49,8 +49,8 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, onClose, st
             ...student,
             name,
             class: studentClass,
-            parent_name: parentName,
-            parent_contact: parentContact,
+            parentName: parentName,
+            parentContact: parentContact,
             cpf,
             address,
             email,
