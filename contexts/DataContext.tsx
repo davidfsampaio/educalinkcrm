@@ -248,17 +248,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const addUser = async (userData: Omit<User, 'id' | 'school_id' | 'avatarUrl' | 'status'>) => {
         if (!currentUser?.school_id) return;
         try {
-            // In a real app, user creation would be a complex flow involving auth.
-            // For now, we just associate with the current user's school.
             const payload = {
                 school_id: currentUser.school_id, 
                 ...userData, 
                 status: UserStatus.Active,
                 avatarUrl: `https://picsum.photos/seed/user${Date.now()}/100/100`
             };
-            // The API call for addUser would need to be a server-side function call
-            // await api.addUser(payload); 
-            console.log("Simulating add user:", payload);
+            const newUser = await api.addUser(payload);
+            if (newUser) {
+                setUsers(prev => [newUser, ...prev]);
+            }
         } catch (error) { console.error("Failed to add user:", error); }
     };
 
