@@ -1,9 +1,12 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum, FinancialSummaryPoint, User, Expense, Revenue, LeadCaptureCampaign, LeadStatus, StudentStatus, PaymentStatus, StaffStatus, UserStatus, Photo, DataContextType } from '../types';
+import { Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum, FinancialSummaryPoint, User, Expense, Revenue, LeadCaptureCampaign, LeadStatus, StudentStatus, PaymentStatus, StaffStatus, UserStatus, Photo, DataContextType, RevenueCategory } from '../types';
 import * as api from '../services/apiService';
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
+
+// Helper to generate a somewhat unique numeric ID
+const generateNumericId = () => Date.now() + Math.floor(Math.random() * 1000);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [students, setStudents] = useState<Student[]>([]);
@@ -21,19 +24,27 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [leadCaptureCampaigns, setLeadCaptureCampaigns] = useState<LeadCaptureCampaign[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const loadData = useCallback(async () => {
+    const loadData = useCallback(async (isSeedingRetry = false) => {
         setLoading(true);
         try {
+            const studentsCheck = await api.getStudents();
+            if (studentsCheck.length === 0 && !isSeedingRetry) {
+                await api.seedDatabase();
+                // Recursively call to reload data after seeding
+                loadData(true);
+                return;
+            }
+
             const [
-                studentsData, invoicesData, leadsData, staffData, usersData,
+                invoicesData, leadsData, staffData, usersData,
                 communicationsData, agendaData, libraryData, albumData,
-                financialData, expensesData, revenuesData, campaignsData,
+                expensesData, revenuesData, campaignsData,
             ] = await Promise.all([
-                api.getStudents(), api.getInvoices(), api.getLeads(), api.getStaff(), api.getUsers(),
+                api.getInvoices(), api.getLeads(), api.getStaff(), api.getUsers(),
                 api.getCommunications(), api.getAgendaItems(), api.getLibraryBooks(), api.getPhotoAlbums(),
-                api.getFinancialSummary(), api.getExpenses(), api.getRevenues(), api.getLeadCaptureCampaigns(),
+                api.getExpenses(), api.getRevenues(), api.getLeadCaptureCampaigns(),
             ]);
-            setStudents(studentsData);
+            setStudents(studentsCheck);
             setInvoices(invoicesData);
             setLeads(leadsData);
             setStaff(staffData);
@@ -42,10 +53,43 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setAgendaItems(agendaData);
             setLibraryBooks(libraryData);
             setPhotoAlbums(albumData);
-            setFinancialSummary(financialData);
             setExpenses(expensesData);
             setRevenues(revenuesData);
             setLeadCaptureCampaigns(campaignsData);
+            
+            // Calculate Financial Summary Dynamically
+            const summaryByMonth: { [key: string]: FinancialSummaryPoint & { year: number, monthIndex: number } } = {};
+            const monthFormatter = new Intl.DateTimeFormat('pt-BR', { month: 'short' });
+
+            [...revenuesData, ...expensesData].forEach(transaction => {
+                const date = new Date(transaction.date);
+                const year = date.getUTCFullYear();
+                const monthIndex = date.getUTCMonth();
+                const key = `${year}-${monthIndex}`;
+                
+                if (!summaryByMonth[key]) {
+                    const monthName = monthFormatter.format(date).replace('.', '');
+                    summaryByMonth[key] = { 
+                        name: monthName.charAt(0).toUpperCase() + monthName.slice(1),
+                        year,
+                        monthIndex,
+                        revenue: 0, 
+                        expenses: 0 
+                    };
+                }
+                if ('category' in transaction && Object.values(RevenueCategory).includes(transaction.category as any)) {
+                     summaryByMonth[key].revenue += transaction.amount;
+                } else {
+                     summaryByMonth[key].expenses += transaction.amount;
+                }
+            });
+
+            const finalSummary = Object.values(summaryByMonth)
+                .sort((a, b) => (a.year - b.year) || (a.monthIndex - b.monthIndex))
+                .slice(-6);
+
+            setFinancialSummary(finalSummary);
+
         } catch (error) {
             console.error("Failed to load data from Supabase", error);
         } finally {
@@ -59,7 +103,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const addStudent = async (studentData: Omit<Student, 'id' | 'status' | 'enrollmentDate' | 'avatarUrl' | 'grades' | 'attendance' | 'occurrences' | 'documents' | 'individualAgenda' | 'communicationLog' | 'tuitionPlanId' | 'medicalNotes'>) => {
         try {
-            const newStudentPayload: Omit<Student, 'id'> = {
+            const newStudentPayload: Student = {
+                id: generateNumericId(),
                 ...studentData,
                 status: StudentStatus.Active,
                 enrollmentDate: new Date().toISOString().split('T')[0],
@@ -90,12 +135,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const addLead = async (leadData: Omit<Lead, 'id'>, campaignId?: string) => {
         try {
-            const newLead = await api.addLead(leadData);
+            const newLeadPayload: Lead = {
+                id: generateNumericId(),
+                ...leadData,
+            };
+            const newLead = await api.addLead(newLeadPayload);
             if (newLead) {
                 setLeads(prev => [newLead, ...prev]);
                 if (campaignId) {
-                    // In a real app, you might increment the campaign counter
-                    console.log(`Lead added to campaign ${campaignId}`);
+                    setLeadCaptureCampaigns(prev => prev.map(c => 
+                        c.id === campaignId ? { ...c, leadsCaptured: c.leadsCaptured + 1 } : c
+                    ));
                 }
             }
         } catch(error) {
@@ -120,7 +170,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const student = students.find(s => s.id === newInvoiceData.studentId);
             if (!student) throw new Error("Student not found");
 
-            const payload: Omit<Invoice, 'id'> = {
+            const id = `INV-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(Date.now()).slice(-5)}`;
+            const payload: Invoice = {
+                id,
                 ...newInvoiceData,
                 studentName: student.name,
                 status: new Date(newInvoiceData.dueDate) < new Date() ? PaymentStatus.Overdue : PaymentStatus.Pending,
@@ -156,15 +208,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    // Generic CRUD operations for expenses, revenues, etc.
     const createCrudOperations = <T extends { id: number | string }>(
-        state: T[],
         setState: React.Dispatch<React.SetStateAction<T[]>>,
         apiService: { add: (item: any) => Promise<T>, update: (id: any, item: any) => Promise<T>, delete: (id: any) => Promise<void> }
     ) => ({
         add: async (itemData: Omit<T, 'id'>) => {
             try {
-                const newItem = await apiService.add(itemData);
+                const newPayload = { id: generateNumericId(), ...itemData } as T;
+                const newItem = await apiService.add(newPayload);
                 if (newItem) setState(prev => [newItem, ...prev]);
             } catch (error) { console.error(`Failed to add item:`, error); }
         },
@@ -183,15 +234,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     });
 
-    const expenseOps = createCrudOperations(expenses, setExpenses, { add: api.addExpense, update: api.updateExpense, delete: api.deleteExpense });
-    const revenueOps = createCrudOperations(revenues, setRevenues, { add: api.addRevenue, update: api.updateRevenue, delete: api.deleteRevenue });
-    const staffOps = createCrudOperations(staff, setStaff, { add: api.addStaff, update: api.updateStaff, delete: () => Promise.resolve() }); // No delete for staff yet
-    const userOps = createCrudOperations(users, setUsers, { add: api.addUser, update: api.updateUser, delete: api.deleteUser });
+    const expenseOps = createCrudOperations(setExpenses, { add: api.addExpense, update: api.updateExpense, delete: api.deleteExpense });
+    const revenueOps = createCrudOperations(setRevenues, { add: api.addRevenue, update: api.updateRevenue, delete: api.deleteRevenue });
+    const staffOps = createCrudOperations(setStaff, { add: api.addStaff, update: api.updateStaff, delete: () => Promise.resolve() });
+    const userOps = createCrudOperations(setUsers, { add: api.addUser, update: api.updateUser, delete: api.deleteUser });
     
     // Non-standard CRUD
     const addCommunication = async (commData: Omit<Communication, 'id' | 'sentDate'>) => {
         try {
-            const payload = { ...commData, sentDate: new Date().toISOString() };
+            const payload: Communication = { id: generateNumericId(), ...commData, sentDate: new Date().toISOString() };
             const newComm = await api.addCommunication(payload);
             if(newComm) setCommunications(prev => [newComm, ...prev]);
         } catch (error) { console.error("Failed to add communication:", error); }
@@ -199,7 +250,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const addAgendaItem = async (itemData: Omit<AgendaItem, 'id' | 'isSent'>) => {
         try {
-            const payload = { ...itemData, isSent: false };
+            const payload: AgendaItem = { id: generateNumericId(), ...itemData, isSent: false };
             const newItem = await api.addAgendaItem(payload);
             if(newItem) setAgendaItems(prev => [newItem, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         } catch (error) { console.error("Failed to add agenda item:", error); }
@@ -215,15 +266,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const addLeadCaptureCampaign = async (campaign: LeadCaptureCampaign) => {
         try {
-            const { id, ...campaignData } = campaign;
-            const newCampaign = await api.addLeadCaptureCampaign(campaignData);
+            const newCampaign = await api.addLeadCaptureCampaign(campaign);
             if(newCampaign) setLeadCaptureCampaigns(prev => [newCampaign, ...prev]);
         } catch (error) { console.error("Failed to add campaign:", error); }
     };
 
     const addPhotoAlbum = async (albumData: Omit<PhotoAlbum, 'id' | 'photos'>) => {
         try {
-            const payload = { ...albumData, photos: [] };
+            const payload: PhotoAlbum = { id: generateNumericId(), ...albumData, photos: [] };
             const newAlbum = await api.addPhotoAlbum(payload);
             if(newAlbum) setPhotoAlbums(prev => [newAlbum, ...prev]);
         } catch (error) { console.error("Failed to add album:", error); }
@@ -246,7 +296,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const addPhotoToAlbum = (albumId: number, photoData: { url: string; caption: string }) => {
         const album = photoAlbums.find(a => a.id === albumId);
         if (!album) return;
-        const newPhoto: Photo = { id: Date.now(), ...photoData };
+        const newPhoto: Photo = { id: generateNumericId(), ...photoData };
         const updatedPhotos = [...album.photos, newPhoto];
         updateAlbumPhotos(albumId, updatedPhotos);
     };

@@ -3,7 +3,10 @@ import {
     Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum,
     FinancialSummaryPoint, User, Expense, Revenue, LeadCaptureCampaign, Photo
 } from '../types';
-import { financialSummaryData } from '../data/mockData';
+import {
+    mockStudents, mockInvoices, mockLeads, mockStaff, mockUsers, mockCommunications,
+    mockAgendaItems, mockLibraryBooks, mockPhotoAlbums, mockExpenses, mockRevenues, mockLeadCaptureCampaigns
+} from '../data/mockData';
 import { supabase } from './supabaseClient';
 
 // Helper for error handling
@@ -13,6 +16,56 @@ const handleSupabaseError = (error: any, context: string) => {
         throw new Error(error.message);
     }
 };
+
+// --- DATABASE SEEDING ---
+export const seedDatabase = async () => {
+    console.log("Seeding database with initial mock data...");
+    try {
+        // Insert data with no dependencies first
+        const { error: staffError } = await supabase.from('staff').insert(mockStaff);
+        handleSupabaseError(staffError, 'seed staff');
+
+        const { error: studentsError } = await supabase.from('students').insert(mockStudents);
+        handleSupabaseError(studentsError, 'seed students');
+        
+        // Insert data with dependencies
+        const { error: usersError } = await supabase.from('users').insert(mockUsers);
+        handleSupabaseError(usersError, 'seed users');
+        
+        const { error: invoicesError } = await supabase.from('invoices').insert(mockInvoices);
+        handleSupabaseError(invoicesError, 'seed invoices');
+
+        // Insert remaining data
+        const { error: leadsError } = await supabase.from('leads').insert(mockLeads);
+        handleSupabaseError(leadsError, 'seed leads');
+
+        const { error: commsError } = await supabase.from('communications').insert(mockCommunications);
+        handleSupabaseError(commsError, 'seed communications');
+
+        const { error: agendaError } = await supabase.from('agenda_items').insert(mockAgendaItems);
+        handleSupabaseError(agendaError, 'seed agenda_items');
+        
+        const { error: libraryError } = await supabase.from('library_books').insert(mockLibraryBooks);
+        handleSupabaseError(libraryError, 'seed library_books');
+
+        const { error: albumsError } = await supabase.from('photo_albums').insert(mockPhotoAlbums);
+        handleSupabaseError(albumsError, 'seed photo_albums');
+
+        const { error: expensesError } = await supabase.from('expenses').insert(mockExpenses);
+        handleSupabaseError(expensesError, 'seed expenses');
+        
+        const { error: revenuesError } = await supabase.from('revenues').insert(mockRevenues);
+        handleSupabaseError(revenuesError, 'seed revenues');
+
+        const { error: campaignsError } = await supabase.from('lead_capture_campaigns').insert(mockLeadCaptureCampaigns);
+        handleSupabaseError(campaignsError, 'seed lead_capture_campaigns');
+
+        console.log("Database seeding completed successfully.");
+    } catch (error) {
+        console.error("A critical error occurred during database seeding:", error);
+    }
+};
+
 
 // --- READ operations ---
 
@@ -88,16 +141,11 @@ export const getLeadCaptureCampaigns = async (): Promise<LeadCaptureCampaign[]> 
     return data || [];
 };
 
-export const getFinancialSummary = (): Promise<FinancialSummaryPoint[]> => {
-    // This could be a call to a Supabase Function in a real scenario
-    return new Promise(resolve => setTimeout(() => resolve(financialSummaryData), 250));
-};
-
 
 // --- WRITE operations ---
 
 // Students
-export const addStudent = async (studentData: Omit<Student, 'id'>) => {
+export const addStudent = async (studentData: Student) => {
     const { data, error } = await supabase.from('students').insert(studentData).select().single();
     handleSupabaseError(error, 'addStudent');
     return data;
@@ -109,7 +157,7 @@ export const updateStudent = async (studentId: number, studentData: Partial<Stud
 };
 
 // Invoices
-export const addInvoice = async (invoiceData: Omit<Invoice, 'id'>) => {
+export const addInvoice = async (invoiceData: Invoice) => {
     const { data, error } = await supabase.from('invoices').insert(invoiceData).select().single();
     handleSupabaseError(error, 'addInvoice');
     return data;
@@ -125,7 +173,7 @@ export const deleteInvoice = async (invoiceId: string) => {
 }
 
 // Leads
-export const addLead = async (leadData: Omit<Lead, 'id'>) => {
+export const addLead = async (leadData: Lead) => {
     const { data, error } = await supabase.from('leads').insert(leadData).select().single();
     handleSupabaseError(error, 'addLead');
     return data;
@@ -137,7 +185,7 @@ export const updateLead = async (leadId: number, leadData: Partial<Lead>) => {
 }
 
 // Staff
-export const addStaff = async (staffData: Omit<Staff, 'id'>) => {
+export const addStaff = async (staffData: Staff) => {
     const { data, error } = await supabase.from('staff').insert(staffData).select().single();
     handleSupabaseError(error, 'addStaff');
     return data;
@@ -148,12 +196,8 @@ export const updateStaff = async (staffId: number, staffData: Partial<Staff>) =>
     return data;
 }
 
-// ... and so on for all other entities ...
-// This covers the main ones requested. We can expand this pattern.
-// For brevity, I'll add the remaining key functions needed by DataContext.
-
 // Expenses
-export const addExpense = async (expenseData: Omit<Expense, 'id'>) => {
+export const addExpense = async (expenseData: Expense) => {
     const { data, error } = await supabase.from('expenses').insert(expenseData).select().single();
     handleSupabaseError(error, 'addExpense');
     return data;
@@ -169,7 +213,7 @@ export const deleteExpense = async (id: number) => {
 };
 
 // Revenues
-export const addRevenue = async (revenueData: Omit<Revenue, 'id'>) => {
+export const addRevenue = async (revenueData: Revenue) => {
     const { data, error } = await supabase.from('revenues').insert(revenueData).select().single();
     handleSupabaseError(error, 'addRevenue');
     return data;
@@ -185,14 +229,14 @@ export const deleteRevenue = async (id: number) => {
 };
 
 // Communications
-export const addCommunication = async (commData: Omit<Communication, 'id'>) => {
+export const addCommunication = async (commData: Communication) => {
     const { data, error } = await supabase.from('communications').insert(commData).select().single();
     handleSupabaseError(error, 'addCommunication');
     return data;
 };
 
 // Agenda
-export const addAgendaItem = async (itemData: Omit<AgendaItem, 'id'>) => {
+export const addAgendaItem = async (itemData: AgendaItem) => {
     const { data, error } = await supabase.from('agenda_items').insert(itemData).select().single();
     handleSupabaseError(error, 'addAgendaItem');
     return data;
@@ -204,7 +248,7 @@ export const updateAgendaItem = async (id: number, itemData: Partial<AgendaItem>
 };
 
 // Users
-export const addUser = async (userData: Omit<User, 'id'>) => {
+export const addUser = async (userData: User) => {
     const { data, error } = await supabase.from('users').insert(userData).select().single();
     handleSupabaseError(error, 'addUser');
     return data;
@@ -220,14 +264,14 @@ export const deleteUser = async (id: number) => {
 };
 
 // Campaigns
-export const addLeadCaptureCampaign = async (campaignData: Omit<LeadCaptureCampaign, 'id'>) => {
+export const addLeadCaptureCampaign = async (campaignData: LeadCaptureCampaign) => {
     const { data, error } = await supabase.from('lead_capture_campaigns').insert(campaignData).select().single();
     handleSupabaseError(error, 'addLeadCaptureCampaign');
     return data;
 }
 
 // Photo Albums
-export const addPhotoAlbum = async (albumData: Omit<PhotoAlbum, 'id'>) => {
+export const addPhotoAlbum = async (albumData: PhotoAlbum) => {
     const { data, error } = await supabase.from('photo_albums').insert(albumData).select().single();
     handleSupabaseError(error, 'addPhotoAlbum');
     return data;
@@ -236,9 +280,15 @@ export const deletePhotoAlbum = async (id: number) => {
     const { error } = await supabase.from('photo_albums').delete().eq('id', id);
     handleSupabaseError(error, 'deletePhotoAlbum');
 }
-// For photos, we'd typically update the 'photos' JSONB column in the album row.
 export const updateAlbumPhotos = async (albumId: number, photos: Photo[]) => {
     const { data, error } = await supabase.from('photo_albums').update({ photos }).eq('id', albumId).select().single();
     handleSupabaseError(error, 'updateAlbumPhotos');
     return data;
 }
+
+// Library
+export const addLibraryBook = async (bookData: LibraryBook) => {
+    const { data, error } = await supabase.from('library_books').insert(bookData).select().single();
+    handleSupabaseError(error, 'addLibraryBook');
+    return data;
+};
