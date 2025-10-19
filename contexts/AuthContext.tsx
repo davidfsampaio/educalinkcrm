@@ -17,18 +17,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [authLoading, setAuthLoading] = useState(true);
     const [authError, setAuthError] = useState<string | null>(null);
-    const [isAwaitingCorrection, setIsAwaitingCorrection] = useState(false);
-
 
     useEffect(() => {
         const handleAuthStateChange = async (event: string, session: any) => {
             console.log(`Auth event: ${event}`);
-
-            // If a correction has been triggered, we wait for the USER_UPDATED event.
-            if (isAwaitingCorrection && event !== 'USER_UPDATED') {
-                console.log("Awaiting user update after correction...");
-                return; 
-            }
 
             try {
                 if (session?.user) {
@@ -40,27 +32,52 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     const needsRoleUpdate = isAdmin && !user_metadata.role;
                     const needsSchoolUpdate = isAdmin && (!user_metadata.schoolId || user_metadata.schoolId === 'school-123');
 
-                    if ((needsRoleUpdate || needsSchoolUpdate) && !isAwaitingCorrection) {
-                        setIsAwaitingCorrection(true);
-                        setAuthLoading(true); // Keep loading screen on
-                        console.log("Metadata missing or invalid, attempting auto-correction...");
+                    if (needsRoleUpdate || needsSchoolUpdate) {
+                        setAuthLoading(true);
+                        console.log("Metadata missing or invalid, attempting synchronous auto-correction...");
                         
                         const newMetadata: { [key: string]: any } = { ...user_metadata };
                         if (needsRoleUpdate) newMetadata.role = 'Admin';
                         if (needsSchoolUpdate) newMetadata.schoolId = '123e4567-e89b-12d3-a456-426614174000';
 
-                        const { error: updateUserError } = await supabase.auth.updateUser({ data: newMetadata });
-                        
+                        // Use the direct response from updateUser to avoid race conditions
+                        const { data: updateData, error: updateUserError } = await supabase.auth.updateUser({ data: newMetadata });
+
                         if (updateUserError) {
                             throw new Error(`Falha ao auto-corrigir metadados do usuário: ${updateUserError.message}`);
                         }
-                        
-                        // After updating, we STOP. The `updateUser` call triggers a new onAuthStateChange event.
-                        console.log("User update triggered. Waiting for new session...");
-                        return;
 
+                        if (updateData.user) {
+                            const updatedUser = updateData.user;
+                            const { user_metadata: updatedMetadata } = updatedUser;
+                            
+                            const role: UserRoleName | undefined = updatedMetadata?.role;
+                            const schoolId: string | undefined = updatedMetadata?.schoolId;
+
+                            if (role && schoolId && schoolId !== 'school-123') {
+                                console.log("Correction successful. Manually setting user profile from updateUser response.");
+                                const profile: User = {
+                                    id: updatedUser.id,
+                                    email: updatedUser.email!,
+                                    name: updatedMetadata?.name || updatedUser.email!,
+                                    avatarUrl: updatedMetadata?.avatarUrl || `https://picsum.photos/seed/user${updatedUser.id}/100/100`,
+                                    role: role,
+                                    status: UserStatus.Active,
+                                    studentId: updatedMetadata?.studentId,
+                                    schoolId: schoolId,
+                                };
+                                setCurrentUser(profile);
+                                setAuthError(null);
+                                setAuthLoading(false); // We can stop loading now
+                                return; // Exit handler since we've manually processed the update
+                            } else {
+                                throw new Error("A correção falhou em retornar os metadados atualizados.");
+                            }
+                        } else {
+                            throw new Error("A chamada de atualização do usuário não retornou um objeto de usuário.");
+                        }
                     } else {
-                        // If no correction was needed OR if this is the event after correction
+                        // No correction needed, proceed normally
                         const role: UserRoleName | undefined = user_metadata?.role;
                         const schoolId: string | undefined = user_metadata?.schoolId;
 
@@ -69,21 +86,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                             const profile: User = {
                                 id: user.id,
                                 email: user.email!,
-                                name: user_metadata?.full_name || user_metadata?.name || user.email!,
-                                avatarUrl: user_metadata?.avatar_url || `https://picsum.photos/seed/user${user.id}/100/100`,
+                                name: user_metadata?.name || user.email!,
+                                avatarUrl: user_metadata?.avatarUrl || `https://picsum.photos/seed/user${user.id}/100/100`,
                                 role: role,
                                 status: UserStatus.Active,
-                                studentId: user_metadata?.student_id,
+                                studentId: user_metadata?.studentId,
                                 schoolId: schoolId,
                             };
                             setCurrentUser(profile);
                             setAuthError(null);
-                            setIsAwaitingCorrection(false); // Correction is complete
                         } else {
                             let missingFields = [];
                             if (!role) missingFields.push("'role'");
                             if (!schoolId) missingFields.push("'schoolId'");
-                            throw new Error(`A 'carga' (${missingFields.join(' e ')}) do usuário não foi encontrada nos metadados. Acesso não permitido.`);
+                            throw new Error(`Os metadados do usuário (${missingFields.join(' e ')}) não foram encontrados. Acesso não permitido.`);
                         }
                     }
                 } else {
@@ -93,16 +109,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 }
             } catch (error: any) {
                 const errorMessage = `Erro de autenticação: ${error.message}`;
-                const actionMessage = "Ação necessária: Verifique os 'user_metadata' do usuário no painel do Supabase Auth.";
-                console.error(errorMessage, actionMessage);
-                setAuthError(`${errorMessage}\n${actionMessage}`);
+                console.error(errorMessage);
+                setAuthError(errorMessage);
                 setCurrentUser(null);
-                setIsAwaitingCorrection(false);
             } finally {
-                // Only stop loading if we are not waiting for a correction to complete.
-                if (!isAwaitingCorrection) {
-                    setAuthLoading(false);
-                }
+                setAuthLoading(false);
             }
         };
 
@@ -110,18 +121,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             handleAuthStateChange(event, session);
         });
         
-        // Initial check on component mount
+        // Initial check on component mount to trigger the process
         supabase.auth.getSession().then(({ data: { session } }) => {
             if (!session) {
                 setAuthLoading(false);
             }
         });
 
-
         return () => {
             authListener?.subscription?.unsubscribe();
         };
-    }, [isAwaitingCorrection]);
+    }, []); // Empty dependency array ensures this runs only once on mount
     
     const userPermissions = useMemo((): Set<Permission> => {
         if (!currentUser || !settings.roles) {
