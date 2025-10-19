@@ -12,7 +12,7 @@ interface AddStudentModalProps {
     isOpen: boolean;
     onClose: () => void;
     // FIX: Corrected Omit type to use snake_case to correctly match the properties in the Student type and resolve the TypeScript error.
-    onAddStudent: (student: Omit<Student, 'id'|'school_id'|'status'|'enrollment_date'|'avatar_url'|'grades'|'attendance'|'occurrences'|'documents'|'individual_agenda'|'communication_log'|'tuition_plan_id'|'medical_notes'>) => void;
+    onAddStudent: (student: Omit<Student, 'id'|'school_id'|'status'|'admission_date'|'avatar_url'|'grades'|'attendance'|'occurrences'|'documents'|'individual_agenda'|'communication_log'|'tuition_plan_id'|'medical_notes'>) => void;
 }
 
 const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAddStudent }) => {

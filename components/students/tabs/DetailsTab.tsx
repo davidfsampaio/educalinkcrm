@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 // FIX: Corrected import path for types.
 import { Student } from '../../../types';
@@ -22,7 +23,7 @@ const DetailsTab: React.FC<DetailsTabProps> = ({ student }) => {
             <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
                 <DetailItem label="Nome Completo" value={student.name} />
                 <DetailItem label="Turma" value={student.class} />
-                <DetailItem label="Data de Matrícula" value={student.enrollment_date} />
+                <DetailItem label="Data de Matrícula" value={student.admission_date} />
                 <DetailItem label="CPF" value={student.cpf} />
                 <DetailItem label="Endereço" value={student.address} />
             </dl>

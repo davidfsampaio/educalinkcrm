@@ -114,7 +114,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 ...studentData,
                 school_id: currentUser.school_id,
                 status: StudentStatus.Active,
-                enrollment_date: new Date().toISOString().split('T')[0],
+                admission_date: new Date().toISOString().split('T')[0],
                 avatar_url: `https://picsum.photos/seed/student${Date.now()}/100/100`,
                 tuition_plan_id: 1, 
                 medical_notes: ''

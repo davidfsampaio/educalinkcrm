@@ -158,7 +158,7 @@ export interface Student {
     id: number;
     name: string;
     class: string;
-    enrollment_date: string;
+    admission_date: string;
     status: StudentStatus;
     parent_name: string;
     parent_contact: string;
