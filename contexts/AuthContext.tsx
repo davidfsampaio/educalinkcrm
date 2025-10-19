@@ -21,68 +21,44 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         const handleAuthStateChange = async (event: string, session: any) => {
             console.log(`Auth event: ${event}`);
-
             try {
                 if (session?.user) {
                     const { user } = session;
                     const { user_metadata } = user;
 
-                    // Auto-correction logic for admin metadata
                     const isAdmin = user.email === 'admin@educalink.com' || user.email === 'david.fsampaio@gmail.com';
-                    const needsRoleUpdate = isAdmin && !user_metadata.role;
-                    const needsSchoolUpdate = isAdmin && (!user_metadata.schoolId || user_metadata.schoolId === 'school-123');
+                    const needsCorrection = isAdmin && (!user_metadata.schoolId || user_metadata.schoolId === 'school-123' || !user_metadata.role);
 
-                    if (needsRoleUpdate || needsSchoolUpdate) {
+                    if (needsCorrection && event !== 'USER_UPDATED') {
+                        // If correction is needed and this isn't the event triggered by our fix,
+                        // we start the process but don't finalize the state yet.
                         setAuthLoading(true);
-                        console.log("Metadata missing or invalid, attempting synchronous auto-correction...");
-                        
+                        console.log("User metadata needs correction. Initiating update and session refresh.");
+
                         const newMetadata: { [key: string]: any } = { ...user_metadata };
-                        if (needsRoleUpdate) newMetadata.role = 'Admin';
-                        if (needsSchoolUpdate) newMetadata.schoolId = '123e4567-e89b-12d3-a456-426614174000';
-
-                        // Use the direct response from updateUser to avoid race conditions
-                        const { data: updateData, error: updateUserError } = await supabase.auth.updateUser({ data: newMetadata });
-
-                        if (updateUserError) {
-                            throw new Error(`Falha ao auto-corrigir metadados do usuário: ${updateUserError.message}`);
+                        if (!user_metadata.role) newMetadata.role = 'Admin';
+                        if (!user_metadata.schoolId || user_metadata.schoolId === 'school-123') {
+                            newMetadata.schoolId = '123e4567-e89b-12d3-a456-426614174000';
                         }
 
-                        if (updateData.user) {
-                            const updatedUser = updateData.user;
-                            const { user_metadata: updatedMetadata } = updatedUser;
-                            
-                            const role: UserRoleName | undefined = updatedMetadata?.role;
-                            const schoolId: string | undefined = updatedMetadata?.schoolId;
+                        const { error: updateUserError } = await supabase.auth.updateUser({ data: newMetadata });
+                        if (updateUserError) throw updateUserError;
 
-                            if (role && schoolId && schoolId !== 'school-123') {
-                                console.log("Correction successful. Manually setting user profile from updateUser response.");
-                                const profile: User = {
-                                    id: updatedUser.id,
-                                    email: updatedUser.email!,
-                                    name: updatedMetadata?.name || updatedUser.email!,
-                                    avatarUrl: updatedMetadata?.avatarUrl || `https://picsum.photos/seed/user${updatedUser.id}/100/100`,
-                                    role: role,
-                                    status: UserStatus.Active,
-                                    studentId: updatedMetadata?.studentId,
-                                    schoolId: schoolId,
-                                };
-                                setCurrentUser(profile);
-                                setAuthError(null);
-                                setAuthLoading(false); // We can stop loading now
-                                return; // Exit handler since we've manually processed the update
-                            } else {
-                                throw new Error("A correção falhou em retornar os metadados atualizados.");
-                            }
-                        } else {
-                            throw new Error("A chamada de atualização do usuário não retornou um objeto de usuário.");
-                        }
+                        // After updating, we must refresh the session to get a new JWT.
+                        // This will trigger this onAuthStateChange listener again with USER_UPDATED event.
+                        const { error: refreshError } = await supabase.auth.refreshSession();
+                        if (refreshError) throw refreshError;
+
+                        // We return here and wait for the auth event from refreshSession.
+                        // The UI will keep showing "Carregando sistema...".
+                        return;
                     } else {
-                        // No correction needed, proceed normally
+                        // Metadata is correct (or this is the USER_UPDATED event with fresh data),
+                        // so we can build the user profile.
                         const role: UserRoleName | undefined = user_metadata?.role;
                         const schoolId: string | undefined = user_metadata?.schoolId;
 
-                        if (role && schoolId) {
-                            console.log("Valid session found. Setting user profile.");
+                        if (role && schoolId && schoolId !== 'school-123') {
                             const profile: User = {
                                 id: user.id,
                                 email: user.email!,
@@ -95,25 +71,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                             };
                             setCurrentUser(profile);
                             setAuthError(null);
+                            setAuthLoading(false); // Final state, stop loading.
                         } else {
-                            let missingFields = [];
-                            if (!role) missingFields.push("'role'");
-                            if (!schoolId) missingFields.push("'schoolId'");
-                            throw new Error(`Os metadados do usuário (${missingFields.join(' e ')}) não foram encontrados. Acesso não permitido.`);
+                            // This case handles users who are not admin and have missing metadata.
+                            throw new Error(`Os metadados do usuário (role ou schoolId) estão ausentes ou inválidos.`);
                         }
                     }
                 } else {
-                    // Handles logout or initial state with no user
-                    console.log("No active session. Clearing user.");
+                    // No session, user is logged out.
                     setCurrentUser(null);
+                    setAuthLoading(false); // Final state, stop loading.
                 }
             } catch (error: any) {
                 const errorMessage = `Erro de autenticação: ${error.message}`;
                 console.error(errorMessage);
                 setAuthError(errorMessage);
                 setCurrentUser(null);
-            } finally {
-                setAuthLoading(false);
+                setAuthLoading(false); // Final state on error, stop loading.
+                // Log the user out to be safe and clear any bad state.
+                await supabase.auth.signOut();
             }
         };
 
@@ -121,7 +97,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             handleAuthStateChange(event, session);
         });
         
-        // Initial check on component mount to trigger the process
+        // Initial check on component mount to trigger the process.
+        // The listener will handle the session if it exists.
         supabase.auth.getSession().then(({ data: { session } }) => {
             if (!session) {
                 setAuthLoading(false);
