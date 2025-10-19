@@ -1,35 +1,39 @@
-import { Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, TuitionPlan, PhotoAlbum, User, UserRoleName, UserStatus, Expense, Revenue, ExpenseCategory, RevenueCategory, AgendaItemType, LeadStatus, StudentStatus, StaffStatus, PaymentStatus, LeadCaptureCampaign } from '../types';
+// FIX: Added 'IndividualAgendaItemType' to the import list to resolve a TypeScript error.
+import { Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, TuitionPlan, PhotoAlbum, User, UserRoleName, UserStatus, Expense, Revenue, ExpenseCategory, RevenueCategory, AgendaItemType, LeadStatus, StudentStatus, StaffStatus, PaymentStatus, LeadCaptureCampaign, IndividualAgendaItemType } from '../types';
 
 export const mockStudents: Student[] = [
-    { 
-        id: 1, name: 'Ana Clara Souza', class: 'Turma A', enrollmentDate: '2023-01-15', status: StudentStatus.Active, parentName: 'Marcos Souza', parentContact: '(11) 98765-4321', avatarUrl: 'https://picsum.photos/seed/student1/100/100', cpf: '123.456.789-10', address: 'Rua das Flores, 123', email: 'marcos.souza@example.com', phone: '(11) 98765-4321', tuitionPlanId: 1, grades: [], attendance: [], occurrences: [], documents: [], individualAgenda: [], communicationLog: []
-    },
-    { 
-        id: 2, name: 'Lucas Oliveira', class: 'Turma B', enrollmentDate: '2023-01-16', status: StudentStatus.Active, parentName: 'Fernanda Oliveira', parentContact: '(21) 91234-5678', avatarUrl: 'https://picsum.photos/seed/student2/100/100', cpf: '234.567.890-11', address: 'Avenida Principal, 456', email: 'fernanda.oliveira@example.com', phone: '(21) 91234-5678', tuitionPlanId: 2, grades: [], attendance: [], occurrences: [], documents: [], individualAgenda: [], communicationLog: []
-    },
+    { id: 1, name: 'Lucas Silva', class: 'Turma A', enrollmentDate: '2023-02-01', status: StudentStatus.Active, parentName: 'Ana Silva', parentContact: '(11) 91234-5678', avatarUrl: 'https://picsum.photos/seed/student1/100/100', cpf: '123.456.789-10', address: 'Rua das Flores, 123', email: 'ana.silva@email.com', phone: '(11) 91234-5678', tuitionPlanId: 1, medicalNotes: 'Alergia a amendoim.', grades: [{subject: 'Matemática', score: 8.5, term: '1º Trimestre', type: 'Prova', weight: 2}, {subject: 'Português', score: 9.0, term: '1º Trimestre', type: 'Prova', weight: 2}], attendance: [{date: '2024-07-28', status: 'Presente'}], occurrences: [], documents: [], individualAgenda: [{id: 1, date: '2024-07-29', createdAt: '2024-07-29T10:00:00Z', type: IndividualAgendaItemType.Alimentacao, selections: ['Comeu tudo'], description: 'Almoçou bem!', isSent: true}], communicationLog: [] },
+    { id: 2, name: 'Mariana Oliveira', class: 'Turma B', enrollmentDate: '2023-02-01', status: StudentStatus.Active, parentName: 'João Oliveira', parentContact: '(11) 92345-6789', avatarUrl: 'https://picsum.photos/seed/student2/100/100', cpf: '234.567.890-12', address: 'Avenida Brasil, 456', email: 'joao.oliveira@email.com', phone: '(11) 92345-6789', tuitionPlanId: 2, grades: [], attendance: [], occurrences: [], documents: [], individualAgenda: [], communicationLog: [] },
+    { id: 3, name: 'Pedro Santos', class: 'Turma A', enrollmentDate: '2022-08-10', status: StudentStatus.Active, parentName: 'Carla Santos', parentContact: '(11) 93456-7890', avatarUrl: 'https://picsum.photos/seed/student3/100/100', cpf: '345.678.901-23', address: 'Praça da Sé, 789', email: 'carla.santos@email.com', phone: '(11) 93456-7890', tuitionPlanId: 1, grades: [], attendance: [], occurrences: [], documents: [], individualAgenda: [], communicationLog: [] },
+    { id: 4, name: 'Julia Souza', class: 'Turma C', enrollmentDate: '2023-02-01', status: StudentStatus.Inactive, parentName: 'Marcos Souza', parentContact: '(11) 94567-8901', avatarUrl: 'https://picsum.photos/seed/student4/100/100', cpf: '456.789.012-34', address: 'Rua Augusta, 101', email: 'marcos.souza@email.com', phone: '(11) 94567-8901', tuitionPlanId: 2, grades: [], attendance: [], occurrences: [], documents: [], individualAgenda: [], communicationLog: [] },
 ];
-
 export const mockInvoices: Invoice[] = [
-    { id: 'INV-20240701', studentName: 'Ana Clara Souza', studentId: 1, amount: 850.00, dueDate: '2024-07-05', status: PaymentStatus.Paid, paidDate: '2024-07-03', payments: [] },
-    { id: 'INV-20240702', studentName: 'Lucas Oliveira', studentId: 2, amount: 1350.00, dueDate: '2024-07-05', status: PaymentStatus.Pending, payments: [] },
+    { id: 'INV-20240701', studentId: 1, studentName: 'Lucas Silva', amount: 850.00, dueDate: '2024-07-05', status: PaymentStatus.Overdue, payments: [] },
+    { id: 'INV-20240702', studentId: 2, studentName: 'Mariana Oliveira', amount: 1350.00, dueDate: '2024-07-05', status: PaymentStatus.Paid, paidDate: '2024-07-03', payments: [{ id: 1, amount: 1350, date: '2024-07-03', method: 'PIX' }] },
+    { id: 'INV-20240703', studentId: 3, studentName: 'Pedro Santos', amount: 850.00, dueDate: '2024-08-05', status: PaymentStatus.Pending, payments: [] },
+    { id: 'INV-20240601', studentId: 1, studentName: 'Lucas Silva', amount: 850.00, dueDate: '2024-06-05', status: PaymentStatus.Paid, paidDate: '2024-06-04', payments: [{ id: 2, amount: 850, date: '2024-06-04', method: 'Boleto' }] },
 ];
-
 export const mockLeads: Lead[] = [
-    { id: 1, name: 'Família Silva', parentName: 'Carlos Silva', contact: '(11) 99999-8888', status: LeadStatus.New, interestDate: '2024-07-10', notes: 'Interesse no período integral.', tasks: [], isConverted: false, requiredDocuments: [], communicationLog: [] },
-    { id: 2, name: 'Família Pereira', parentName: 'Juliana Pereira', contact: 'juliana.p@example.com', status: LeadStatus.Contacted, interestDate: '2024-07-08', notes: 'Solicitou visita.', tasks: [], isConverted: false, requiredDocuments: [], communicationLog: [] },
+    { id: 1, name: 'Família Andrade', parentName: 'Beatriz Andrade', contact: '(11) 95678-9012', status: LeadStatus.New, interestDate: '2024-07-10', notes: 'Interesse na Turma B para o filho João.', tasks: [], isConverted: false, requiredDocuments: [], communicationLog: [] },
+    { id: 2, name: 'Família Costa', parentName: 'Ricardo Costa', contact: 'ricardo.costa@email.com', status: LeadStatus.Contacted, interestDate: '2024-07-08', notes: 'Primeiro contato realizado. Agendar visita.', tasks: [{ id: 1, description: 'Agendar visita para a próxima semana', isCompleted: false }], isConverted: false, requiredDocuments: [], communicationLog: [] },
+    { id: 3, name: 'Família Ferreira', parentName: 'Fernanda Ferreira', contact: '(11) 96789-0123', status: LeadStatus.VisitScheduled, interestDate: '2024-07-05', notes: 'Visita agendada para 15/07.', tasks: [], isConverted: false, requiredDocuments: [], communicationLog: [] },
 ];
-
 export const mockStaff: Staff[] = [
-    { id: 1, name: 'Mariana Costa', role: 'Coordenador(a)', email: 'mariana.costa@educalink.com', phone: '(11) 98888-7777', hireDate: '2022-02-01', status: StaffStatus.Active, avatarUrl: 'https://picsum.photos/seed/staff1/100/100', cpf: '345.678.901-22', address: 'Rua dos Professores, 789' },
-    { id: 2, name: 'Ricardo Alves', role: 'Professor(a)', email: 'ricardo.alves@educalink.com', phone: '(11) 97777-6666', hireDate: '2022-08-10', status: StaffStatus.Active, avatarUrl: 'https://picsum.photos/seed/staff2/100/100', cpf: '456.789.012-33', address: 'Avenida da Escola, 101' },
+    { id: 1, name: 'Diretor(a) Admin', role: 'Diretor(a)', email: 'admin@educalink.com', phone: '(11) 98765-4321', hireDate: '2020-01-15', status: StaffStatus.Active, avatarUrl: 'https://picsum.photos/seed/user/100/100', cpf: '111.111.111-11', address: 'Rua da Escola, 1' },
+    { id: 2, name: 'Maria Secretária', role: 'Secretário(a)', email: 'secretaria@educalink.com', phone: '(11) 98765-4322', hireDate: '2021-03-20', status: StaffStatus.Active, avatarUrl: 'https://picsum.photos/seed/staff2/100/100', cpf: '222.222.222-22', address: 'Rua da Escola, 2' },
+    { id: 3, name: 'Carlos Coordenador', role: 'Coordenador(a)', email: 'coordenador@educalink.com', phone: '(11) 98765-4323', hireDate: '2019-08-01', status: StaffStatus.Active, avatarUrl: 'https://picsum.photos/seed/staff3/100/100', cpf: '333.333.333-33', address: 'Rua da Escola, 3' },
+    { id: 4, name: 'Professora Joana', role: 'Professor(a)', email: 'joana.prof@educalink.com', phone: '(11) 98765-4324', hireDate: '2022-02-10', status: StaffStatus.Active, avatarUrl: 'https://picsum.photos/seed/staff4/100/100', cpf: '444.444.444-44', address: 'Rua da Escola, 4' },
 ];
-
-
 export const mockUsers: User[] = [
-    { id: 1, name: 'Administrador', email: 'admin@educalink.com', role: 'Admin', status: UserStatus.Active, avatarUrl: 'https://picsum.photos/seed/admin/100/100' },
+    { id: 1, name: 'Diretor(a)', email: 'admin@educalink.com', role: 'Admin', status: UserStatus.Active, avatarUrl: 'https://picsum.photos/seed/user/100/100' },
+    { id: 2, name: 'Maria Secretária', email: 'secretaria@educalink.com', role: 'Secretário(a)', status: UserStatus.Active, avatarUrl: 'https://picsum.photos/seed/user2/100/100' },
+    { id: 3, name: 'Carlos Coordenador', email: 'coordenador@educalink.com', role: 'Coordenador(a)', status: UserStatus.Active, avatarUrl: 'https://picsum.photos/seed/user3/100/100' },
+    { id: 4, name: 'Ana Silva (Responsável)', email: 'ana.silva@email.com', role: 'Pai/Responsável', status: UserStatus.Active, avatarUrl: 'https://picsum.photos/seed/user4/100/100', studentId: 1 },
 ];
-
-export const mockLeadCaptureCampaigns: LeadCaptureCampaign[] = [];
+export const mockLeadCaptureCampaigns: LeadCaptureCampaign[] = [
+    { id: 'campaign-1', name: 'Matrículas 2025 - Facebook', publicUrl: '/#/capture/campaign-1', createdAt: '2024-07-01', leadsCaptured: 12 },
+    { id: 'campaign-2', name: 'Google Ads - Período Integral', publicUrl: '/#/capture/campaign-2', createdAt: '2024-06-20', leadsCaptured: 8 },
+];
 
 // --- Generic data that can be kept ---
 

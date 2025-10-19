@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 // FIX: Added missing StaffStatus and UserStatus imports.
 import { Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum, FinancialSummaryPoint, User, Expense, Revenue, LeadCaptureCampaign, LeadStatus, StudentStatus, PaymentStatus, StaffStatus, UserStatus, Photo, DataContextType } from '../types';
@@ -75,7 +76,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loadData().finally(() => setLoading(false));
     }, [loadData]);
 
-    // Effect for syncing data across tabs
+    // Effect for syncing data across tabs (less relevant now with a backend)
     useEffect(() => {
         const handleStorageChange = (event: StorageEvent) => {
             const crmKeys = ['students', 'invoices', 'leads', 'staff', 'users', 'communications', 'agendaItems', 'expenses', 'revenues', 'leadCaptureCampaigns', 'photoAlbums'];
@@ -92,76 +93,53 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [loadData]);
 
 
-    const addStudent = async (studentData: Omit<Student, 'id'|'status'|'enrollmentDate'|'avatarUrl'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuitionPlanId'|'medicalNotes'>) => {
+    const addStudent = (studentData: Omit<Student, 'id'|'status'|'enrollmentDate'|'avatarUrl'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuitionPlanId'|'medicalNotes'>) => {
+        const newId = students.length > 0 ? Math.max(...students.map(s => s.id)) + 1 : 1;
         const newStudent: Student = {
-            id: Date.now(),
             ...studentData,
-            tuitionPlanId: 1,
-            medicalNotes: '',
+            id: newId,
             status: StudentStatus.Active,
             enrollmentDate: new Date().toISOString().split('T')[0],
-            avatarUrl: `https://picsum.photos/seed/student${Date.now()}/100/100`,
-            grades: [], attendance: [], occurrences: [], documents: [], individualAgenda: [], communicationLog: [],
+            avatarUrl: `https://picsum.photos/seed/student${newId}/100/100`,
+            grades: [],
+            attendance: [],
+            occurrences: [],
+            documents: [],
+            individualAgenda: [],
+            communicationLog: [],
+            tuitionPlanId: 1, // Defaulting to plan 1
         };
-        const newStudents = [newStudent, ...students];
-        try {
-            await api.saveStudents(newStudents);
-            setStudents(newStudents);
-        } catch (error) {
-            console.error("Failed to save new student:", error);
-        }
+
+        setStudents(prev => [newStudent, ...prev]);
     };
 
-    const updateStudent = async (updatedStudent: Student) => {
-        const newStudents = students.map(s => s.id === updatedStudent.id ? updatedStudent : s);
-        try {
-            await api.saveStudents(newStudents);
-            setStudents(newStudents);
-        } catch (error) {
-            console.error("Failed to update student:", error);
-        }
+    const updateStudent = (updatedStudent: Student) => {
+        setStudents(prev => prev.map(s => (s.id === updatedStudent.id ? updatedStudent : s)));
     };
 
     const addLead = async (leadData: Omit<Lead, 'id'>, campaignId?: string) => {
-        const newLead: Lead = {
-            id: Date.now(),
-            ...leadData,
-        };
+        const newLead: Lead = { id: Date.now(), ...leadData };
         const newLeads = [newLead, ...leads];
-        try {
-            await api.saveLeads(newLeads);
-            setLeads(newLeads);
-
-            if (campaignId) {
-                const newCampaigns = leadCaptureCampaigns.map(c => 
-                    c.id === campaignId ? { ...c, leadsCaptured: c.leadsCaptured + 1 } : c
-                );
-                await api.saveLeadCaptureCampaigns(newCampaigns);
-                setLeadCaptureCampaigns(newCampaigns);
-            }
-        } catch (error) {
-            console.error("Failed to save new lead:", error);
-        }
+        // TODO: Refactor to use Supabase insert
+        // await api.saveLeads(newLeads);
+        setLeads(newLeads);
+        console.warn('addLead needs to be refactored for Supabase');
     };
     
     const updateLead = async (updatedLead: Lead) => {
         const newLeads = leads.map(l => (l.id === updatedLead.id ? updatedLead : l));
-        try {
-            await api.saveLeads(newLeads);
-            setLeads(newLeads);
-        } catch (error) {
-            console.error("Failed to update lead:", error);
-        }
+        // TODO: Refactor to use Supabase update
+        // await api.saveLeads(newLeads);
+        setLeads(newLeads);
+        console.warn('updateLead needs to be refactored for Supabase');
     };
 
     const addLeadCaptureCampaign = async (campaign: LeadCaptureCampaign) => {
         const newCampaigns = [campaign, ...leadCaptureCampaigns];
-        try {
-            await api.saveLeadCaptureCampaigns(newCampaigns);
-            setLeadCaptureCampaigns(newCampaigns);
-        } catch (error) {
-            console.error("Failed to save new campaign:", error);
-        }
+        // TODO: Refactor to use Supabase insert
+        // await api.saveLeadCaptureCampaigns(newCampaigns);
+        setLeadCaptureCampaigns(newCampaigns);
+        console.warn('addLeadCaptureCampaign needs to be refactored for Supabase');
     };
     
     const addInvoice = async (newInvoiceData: Omit<Invoice, 'id' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => {
@@ -174,94 +152,76 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             payments: [],
         };
         const newInvoices = [newInvoice, ...invoices];
-        try {
-            await api.saveInvoices(newInvoices);
-            setInvoices(newInvoices);
-        } catch (error) {
-            console.error("Failed to save new invoice:", error);
-        }
+        // TODO: Refactor to use Supabase insert
+        // await api.saveInvoices(newInvoices);
+        setInvoices(newInvoices);
+         console.warn('addInvoice needs to be refactored for Supabase');
     };
     
     const updateInvoice = async (updatedInvoice: Invoice) => {
         const newInvoices = invoices.map(inv => inv.id === updatedInvoice.id ? updatedInvoice : inv);
-        try {
-            await api.saveInvoices(newInvoices);
-            setInvoices(newInvoices);
-        } catch (error) {
-            console.error("Failed to update invoice:", error);
-        }
+        // TODO: Refactor to use Supabase update
+        // await api.saveInvoices(newInvoices);
+        setInvoices(newInvoices);
+        console.warn('updateInvoice needs to be refactored for Supabase');
     };
 
     const deleteInvoice = async (invoiceId: string) => {
         const newInvoices = invoices.filter(inv => inv.id !== invoiceId);
-        try {
-            await api.saveInvoices(newInvoices);
-            setInvoices(newInvoices);
-        } catch (error) {
-            console.error("Failed to delete invoice:", error);
-        }
+        // TODO: Refactor to use Supabase delete
+        // await api.saveInvoices(newInvoices);
+        setInvoices(newInvoices);
+        console.warn('deleteInvoice needs to be refactored for Supabase');
     };
 
     const addExpense = async (expenseData: Omit<Expense, 'id'>) => {
         const newExpense: Expense = { id: Date.now(), ...expenseData };
         const newExpenses = [newExpense, ...expenses].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        try {
-            await api.saveExpenses(newExpenses);
-            setExpenses(newExpenses);
-        } catch (error) {
-            console.error("Failed to save new expense:", error);
-        }
+        // TODO: Refactor to use Supabase insert
+        // await api.saveExpenses(newExpenses);
+        setExpenses(newExpenses);
+        console.warn('addExpense needs to be refactored for Supabase');
     };
     
     const updateExpense = async (updatedExpense: Expense) => {
         const newExpenses = expenses.map(e => e.id === updatedExpense.id ? updatedExpense : e).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        try {
-            await api.saveExpenses(newExpenses);
-            setExpenses(newExpenses);
-        } catch (error) {
-            console.error("Failed to update expense:", error);
-        }
+        // TODO: Refactor to use Supabase update
+        // await api.saveExpenses(newExpenses);
+        setExpenses(newExpenses);
+        console.warn('updateExpense needs to be refactored for Supabase');
     };
 
     const deleteExpense = async (expenseId: number) => {
         const newExpenses = expenses.filter(e => e.id !== expenseId);
-        try {
-            await api.saveExpenses(newExpenses);
-            setExpenses(newExpenses);
-        } catch (error) {
-            console.error("Failed to delete expense:", error);
-        }
+        // TODO: Refactor to use Supabase delete
+        // await api.saveExpenses(newExpenses);
+        setExpenses(newExpenses);
+        console.warn('deleteExpense needs to be refactored for Supabase');
     };
 
     const addRevenue = async (revenueData: Omit<Revenue, 'id'>) => {
         const newRevenue: Revenue = { id: Date.now(), ...revenueData };
         const newRevenues = [newRevenue, ...revenues].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        try {
-            await api.saveRevenues(newRevenues);
-            setRevenues(newRevenues);
-        } catch (error) {
-            console.error("Failed to save new revenue:", error);
-        }
+        // TODO: Refactor to use Supabase insert
+        // await api.saveRevenues(newRevenues);
+        setRevenues(newRevenues);
+        console.warn('addRevenue needs to be refactored for Supabase');
     };
 
     const updateRevenue = async (updatedRevenue: Revenue) => {
         const newRevenues = revenues.map(r => r.id === updatedRevenue.id ? updatedRevenue : r).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        try {
-            await api.saveRevenues(newRevenues);
-            setRevenues(newRevenues);
-        } catch (error) {
-            console.error("Failed to update revenue:", error);
-        }
+        // TODO: Refactor to use Supabase update
+        // await api.saveRevenues(newRevenues);
+        setRevenues(newRevenues);
+        console.warn('updateRevenue needs to be refactored for Supabase');
     };
 
     const deleteRevenue = async (revenueId: number) => {
         const newRevenues = revenues.filter(r => r.id !== revenueId);
-        try {
-            await api.saveRevenues(newRevenues);
-            setRevenues(newRevenues);
-        } catch (error) {
-            console.error("Failed to delete revenue:", error);
-        }
+        // TODO: Refactor to use Supabase delete
+        // await api.saveRevenues(newRevenues);
+        setRevenues(newRevenues);
+        console.warn('deleteRevenue needs to be refactored for Supabase');
     };
 
 
@@ -272,54 +232,44 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             avatarUrl: `https://picsum.photos/seed/staff${Date.now()}/100/100`,
         };
         const newStaffList = [newStaff, ...staff];
-        try {
-            await api.saveStaff(newStaffList);
-            setStaff(newStaffList);
-        } catch (error) {
-            console.error("Failed to save new staff:", error);
-        }
+        // TODO: Refactor to use Supabase insert
+        // await api.saveStaff(newStaffList);
+        setStaff(newStaffList);
+        console.warn('addStaff needs to be refactored for Supabase');
     };
 
     const updateStaff = async (updatedStaff: Staff) => {
         const newStaffList = staff.map(s => s.id === updatedStaff.id ? updatedStaff : s);
-        try {
-            await api.saveStaff(newStaffList);
-            setStaff(newStaffList);
-        } catch (error) {
-            console.error("Failed to update staff:", error);
-        }
+        // TODO: Refactor to use Supabase update
+        // await api.saveStaff(newStaffList);
+        setStaff(newStaffList);
+        console.warn('updateStaff needs to be refactored for Supabase');
     };
 
     const addCommunication = async (commData: Omit<Communication, 'id' | 'sentDate'>) => {
         const newComm: Communication = { id: Date.now(), ...commData, sentDate: new Date().toISOString() };
         const newComms = [newComm, ...communications];
-        try {
-            await api.saveCommunications(newComms);
-            setCommunications(newComms);
-        } catch (error) {
-            console.error("Failed to save new communication:", error);
-        }
+        // TODO: Refactor to use Supabase insert
+        // await api.saveCommunications(newComms);
+        setCommunications(newComms);
+        console.warn('addCommunication needs to be refactored for Supabase');
     };
 
     const addAgendaItem = async (itemData: Omit<AgendaItem, 'id' | 'isSent'>) => {
         const newItem: AgendaItem = { id: Date.now(), ...itemData, isSent: false };
         const newItems = [newItem, ...agendaItems].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        try {
-            await api.saveAgendaItems(newItems);
-            setAgendaItems(newItems);
-        } catch (error) {
-            console.error("Failed to save new agenda item:", error);
-        }
+        // TODO: Refactor to use Supabase insert
+        // await api.saveAgendaItems(newItems);
+        setAgendaItems(newItems);
+        console.warn('addAgendaItem needs to be refactored for Supabase');
     };
     
     const updateAgendaItem = async (updatedItem: AgendaItem) => {
         const newItems = agendaItems.map(item => item.id === updatedItem.id ? updatedItem : item);
-        try {
-            await api.saveAgendaItems(newItems);
-            setAgendaItems(newItems);
-        } catch (error) {
-            console.error("Failed to update agenda item:", error);
-        }
+        // TODO: Refactor to use Supabase update
+        // await api.saveAgendaItems(newItems);
+        setAgendaItems(newItems);
+        console.warn('updateAgendaItem needs to be refactored for Supabase');
     };
     
     const addUser = async (userData: Omit<User, 'id' | 'avatarUrl' | 'status'>) => {
@@ -328,32 +278,26 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             avatarUrl: `https://picsum.photos/seed/user${Date.now()}/100/100`,
         };
         const newUsers = [newUser, ...users];
-        try {
-            await api.saveUsers(newUsers);
-            setUsers(newUsers);
-        } catch (error) {
-            console.error("Failed to save new user:", error);
-        }
+        // TODO: Refactor to use Supabase insert
+        // await api.saveUsers(newUsers);
+        setUsers(newUsers);
+        console.warn('addUser needs to be refactored for Supabase');
     };
 
     const updateUser = async (updatedUser: User) => {
         const newUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
-        try {
-            await api.saveUsers(newUsers);
-            setUsers(newUsers);
-        } catch (error) {
-            console.error("Failed to update user:", error);
-        }
+        // TODO: Refactor to use Supabase update
+        // await api.saveUsers(newUsers);
+        setUsers(newUsers);
+        console.warn('updateUser needs to be refactored for Supabase');
     };
 
     const deleteUser = async (userId: number) => {
         const newUsers = users.filter(u => u.id !== userId);
-        try {
-            await api.saveUsers(newUsers);
-            setUsers(newUsers);
-        } catch (error) {
-            console.error("Failed to delete user:", error);
-        }
+        // TODO: Refactor to use Supabase delete
+        // await api.saveUsers(newUsers);
+        setUsers(newUsers);
+        console.warn('deleteUser needs to be refactored for Supabase');
     };
     
     const addPhotoAlbum = async (albumData: Omit<PhotoAlbum, 'id' | 'photos'>) => {
@@ -363,22 +307,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             photos: [],
         };
         const newAlbums = [newAlbum, ...photoAlbums];
-        try {
-            await api.savePhotoAlbums(newAlbums);
-            setPhotoAlbums(newAlbums);
-        } catch (error) {
-            console.error("Failed to save new photo album:", error);
-        }
+        // TODO: Refactor to use Supabase insert
+        // await api.savePhotoAlbums(newAlbums);
+        setPhotoAlbums(newAlbums);
+        console.warn('addPhotoAlbum needs to be refactored for Supabase');
     };
     
     const deletePhotoAlbum = async (albumId: number) => {
         const newAlbums = photoAlbums.filter(album => album.id !== albumId);
-        try {
-            await api.savePhotoAlbums(newAlbums);
-            setPhotoAlbums(newAlbums);
-        } catch (error) {
-            console.error("Failed to delete photo album:", error);
-        }
+        // TODO: Refactor to use Supabase delete
+        // await api.savePhotoAlbums(newAlbums);
+        setPhotoAlbums(newAlbums);
+        console.warn('deletePhotoAlbum needs to be refactored for Supabase');
     };
 
     const addPhotoToAlbum = async (albumId: number, photoData: { url: string; caption: string }) => {
@@ -392,12 +332,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
             return album;
         });
-        try {
-            await api.savePhotoAlbums(newAlbums);
-            setPhotoAlbums(newAlbums);
-        } catch (error) {
-            console.error("Failed to add photo to album:", error);
-        }
+        // TODO: Refactor to use Supabase update
+        // await api.savePhotoAlbums(newAlbums);
+        setPhotoAlbums(newAlbums);
+        console.warn('addPhotoToAlbum needs to be refactored for Supabase');
     };
     
     const deletePhotoFromAlbum = async (albumId: number, photoId: number) => {
@@ -407,12 +345,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
             return album;
         });
-        try {
-            await api.savePhotoAlbums(newAlbums);
-            setPhotoAlbums(newAlbums);
-        } catch (error) {
-            console.error("Failed to delete photo from album:", error);
-        }
+         // TODO: Refactor to use Supabase update
+        // await api.savePhotoAlbums(newAlbums);
+        setPhotoAlbums(newAlbums);
+        console.warn('deletePhotoFromAlbum needs to be refactored for Supabase');
     };
 
     const value: DataContextType = { 

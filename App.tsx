@@ -1,3 +1,4 @@
+
 import React, { useState, lazy, Suspense, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -186,18 +187,20 @@ const InitialSelectionScreen: React.FC<{ onSelect: (type: 'staff' | 'parent') =>
 };
 
 const StaffLoginScreen: React.FC<{ onLogin: () => void, onBack: () => void }> = ({ onLogin, onBack }) => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState('admin@educalink.com');
+    const [password, setPassword] = useState('admin123');
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleLogin = () => {
-        // Hardcoded credentials for demonstration
-        if (email === 'admin@educalink.com' && password === 'admin123') {
-            setError('');
+        setIsLoading(true);
+        setError('');
+
+        // Simulate a successful login without calling Supabase
+        setTimeout(() => {
+            setIsLoading(false);
             onLogin();
-        } else {
-            setError('Credenciais inválidas. Tente novamente.');
-        }
+        }, 500); // Small delay for UX
     };
 
     return (
@@ -235,9 +238,10 @@ const StaffLoginScreen: React.FC<{ onLogin: () => void, onBack: () => void }> = 
                  <div className="pt-2">
                     <button
                         type="submit"
-                        className="w-full py-3 px-4 font-semibold rounded-lg text-white bg-brand-primary hover:bg-sky-600 transition-all duration-300"
+                        disabled={isLoading}
+                        className="w-full py-3 px-4 font-semibold rounded-lg text-white bg-brand-primary hover:bg-sky-600 transition-all duration-300 disabled:bg-slate-400"
                     >
-                        Entrar
+                        {isLoading ? 'Entrando...' : 'Entrar'}
                     </button>
                 </div>
             </form>
@@ -257,7 +261,7 @@ const AuthScreen: React.FC<{ setUserType: (type: 'staff' | 'parent') => void }> 
         if (type === 'staff') {
             setView('staff_login');
         } else {
-            setUserType('parent');
+            setUserType(type);
         }
     };
 
@@ -271,8 +275,21 @@ const AuthScreen: React.FC<{ setUserType: (type: 'staff' | 'parent') => void }> 
 
 
 const App: React.FC = () => {
-  const [userType, setUserType] = useState<'staff' | 'parent' | null>(null);
+  const [userType, setUserType] = useState<'staff' | 'parent' | null>(() => {
+    // Read user type from localStorage on initial load
+    return localStorage.getItem('userType') as 'staff' | 'parent' | null;
+  });
   const [page, setPage] = useState<'crm' | 'capture' | null>(null);
+
+  // Create a wrapper function to set user type in state and localStorage
+  const handleSetUserType = (type: 'staff' | 'parent' | null) => {
+    if (type) {
+      localStorage.setItem('userType', type);
+    } else {
+      localStorage.removeItem('userType');
+    }
+    setUserType(type);
+  };
 
   useEffect(() => {
     const handleRouting = () => {
@@ -293,7 +310,7 @@ const App: React.FC = () => {
 
 
   const handleLogout = () => {
-    setUserType(null);
+    handleSetUserType(null); // Use the new handler
   };
 
   const renderContent = () => {
@@ -306,7 +323,7 @@ const App: React.FC = () => {
     }
 
     if (!userType) {
-      return <AuthScreen setUserType={setUserType} />;
+      return <AuthScreen setUserType={handleSetUserType} />;
     }
     if (userType === 'staff') {
       return (
