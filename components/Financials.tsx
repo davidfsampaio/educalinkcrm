@@ -64,7 +64,7 @@ const Financials: React.FC = () => {
     const [editingRevenue, setEditingRevenue] = useState<Revenue | null>(null);
 
 
-    const handleAddInvoiceSubmit = (newInvoiceData: Omit<Invoice, 'id' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => {
+    const handleAddInvoiceSubmit = (newInvoiceData: Omit<Invoice, 'id' | 'status' | 'payments' | 'student_name' | 'school_id'> & { student_id: number }) => {
         addInvoice(newInvoiceData);
         setAddInvoiceModalOpen(false);
     };
@@ -80,7 +80,7 @@ const Financials: React.FC = () => {
         }
     };
     
-    const handleAddExpenseSubmit = (newExpenseData: Omit<Expense, 'id'>) => {
+    const handleAddExpenseSubmit = (newExpenseData: Omit<Expense, 'id' | 'school_id'>) => {
         addExpense(newExpenseData);
         setAddExpenseModalOpen(false);
     };
@@ -96,7 +96,7 @@ const Financials: React.FC = () => {
         }
     };
     
-    const handleAddRevenueSubmit = (newRevenueData: Omit<Revenue, 'id'>) => {
+    const handleAddRevenueSubmit = (newRevenueData: Omit<Revenue, 'id' | 'school_id'>) => {
         addRevenue(newRevenueData);
         setAddRevenueModalOpen(false);
     };
@@ -176,9 +176,11 @@ const Financials: React.FC = () => {
                             {invoices.map((invoice) => (
                                 <tr key={invoice.id}>
                                     <td className="px-6 py-4 whitespace-nowrap font-mono text-sm">{invoice.id}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{invoice.studentName}</td>
+                                    {/* FIX: Corrected property name from `studentName` to `student_name`. */}
+                                    <td className="px-6 py-4 whitespace-nowrap">{invoice.student_name}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">{invoice.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{new Date(invoice.dueDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
+                                    {/* FIX: Corrected property name from `dueDate` to `due_date`. */}
+                                    <td className="px-6 py-4 whitespace-nowrap">{new Date(invoice.due_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(invoice.status)}`}>
                                             {invoice.status}

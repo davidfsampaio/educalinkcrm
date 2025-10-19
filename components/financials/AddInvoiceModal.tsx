@@ -9,8 +9,8 @@ import { Student, Invoice } from '../../types';
 interface AddInvoiceModalProps {
     isOpen: boolean;
     onClose: () => void;
-    // FIX: Corrected Omit type to use 'schoolId' (camelCase) instead of 'school_id' (snake_case) to correctly match the property in the Invoice type and resolve the TypeScript error.
-    onAddInvoice: (invoiceData: Omit<Invoice, 'id' | 'schoolId' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => void;
+    // FIX: Corrected Omit type to use snake_case properties to correctly match the Invoice type and resolve the TypeScript error.
+    onAddInvoice: (invoiceData: Omit<Invoice, 'id' | 'school_id' | 'status' | 'payments' | 'student_name'> & { student_id: number }) => void;
     students: Student[];
 }
 
@@ -27,9 +27,10 @@ const AddInvoiceModal: React.FC<AddInvoiceModalProps> = ({ isOpen, onClose, onAd
         }
 
         onAddInvoice({
-            studentId,
+            // FIX: Corrected property names to use snake_case.
+            student_id: studentId,
             amount,
-            dueDate,
+            due_date: dueDate,
         });
         
         // Reset form

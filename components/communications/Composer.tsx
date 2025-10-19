@@ -9,8 +9,8 @@ import { Communication } from '../../types';
 const AIAssistantModal = lazy(() => import('./AIAssistantModal'));
 
 interface ComposerProps {
-    // FIX: Corrected Omit type to use 'schoolId' (camelCase) instead of 'school_id' (snake_case) to correctly match the property in the Communication type and resolve the TypeScript error.
-    onSend: (newComm: Omit<Communication, 'id' | 'sentDate' | 'schoolId'>) => void;
+    // FIX: Corrected Omit type to use 'school_id' (snake_case) and 'sent_date' to correctly match the property in the Communication type and resolve the TypeScript error.
+    onSend: (newComm: Omit<Communication, 'id' | 'sent_date' | 'school_id'>) => void;
 }
 
 const SparklesIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -40,7 +40,8 @@ const Composer: React.FC<ComposerProps> = ({ onSend }) => {
             setError('Todos os campos são obrigatórios.');
             return;
         }
-        onSend({ title, content, recipientGroup });
+        // FIX: Corrected property name from `recipientGroup` to `recipient_group`.
+        onSend({ title, content, recipient_group: recipientGroup });
         // Reset form
         setTitle('');
         setContent('');

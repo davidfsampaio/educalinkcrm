@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 // FIX: Corrected import path for types.
@@ -49,7 +50,8 @@ const EditInvoiceModal: React.FC<EditInvoiceModalProps> = ({ isOpen, onClose, in
             ...prev,
             payments: updatedPayments,
             status: newStatus,
-            paidDate: newStatus === PaymentStatus.Paid ? new Date().toISOString().split('T')[0] : prev.paidDate
+            // FIX: Corrected property name from `paidDate` to `paid_date`.
+            paid_date: newStatus === PaymentStatus.Paid ? new Date().toISOString().split('T')[0] : prev.paid_date
         }));
 
         // Reset payment form
@@ -69,7 +71,8 @@ const EditInvoiceModal: React.FC<EditInvoiceModalProps> = ({ isOpen, onClose, in
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div>
                             <p className="font-semibold text-brand-text-light">Aluno</p>
-                            <p className="text-brand-text-dark">{localInvoice.studentName}</p>
+                            {/* FIX: Corrected property name from `studentName` to `student_name`. */}
+                            <p className="text-brand-text-dark">{localInvoice.student_name}</p>
                         </div>
                         <div>
                             <p className="font-semibold text-brand-text-light">Valor Total</p>

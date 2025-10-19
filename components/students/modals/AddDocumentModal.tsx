@@ -6,7 +6,8 @@ import { Document } from '../../../types';
 interface AddDocumentModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAdd: (documentData: Omit<Document, 'id' | 'uploadDate'>) => void;
+    // FIX: Corrected Omit type to use 'upload_date' to match the Document type definition.
+    onAdd: (documentData: Omit<Document, 'id' | 'upload_date'>) => void;
 }
 
 const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onClose, onAdd }) => {

@@ -6,8 +6,8 @@ import { Staff, StaffRole } from '../../types';
 interface AddStaffModalProps {
     isOpen: boolean;
     onClose: () => void;
-    // FIX: Corrected Omit type to use 'schoolId' (camelCase) instead of 'school_id' (snake_case) to correctly match the property in the Staff type and resolve the TypeScript error.
-    onAddStaff: (staff: Omit<Staff, 'id' | 'schoolId' | 'status' | 'hireDate' | 'avatarUrl'>) => void;
+    // FIX: Corrected Omit type to use snake_case properties to correctly match the Staff type and resolve the TypeScript error.
+    onAddStaff: (staff: Omit<Staff, 'id' | 'school_id' | 'status' | 'hire_date' | 'avatar_url'>) => void;
 }
 
 const AddStaffModal: React.FC<AddStaffModalProps> = ({ isOpen, onClose, onAddStaff }) => {

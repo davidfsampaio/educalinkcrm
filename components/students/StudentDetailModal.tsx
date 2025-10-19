@@ -22,11 +22,11 @@ import AddContactModal from './modals/AddContactModal';
 import EditIndividualAgendaItemModal from './modals/EditIndividualAgendaItemModal';
 
 const EditIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
 );
 
 const CameraIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>
 );
 
 
@@ -54,33 +54,33 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ isOpen, onClose
         const newItem: IndividualAgendaItem = {
             id: Date.now(),
             date: new Date().toISOString().split('T')[0],
-            createdAt: new Date().toISOString(),
-            isSent: false,
+            created_at: new Date().toISOString(),
+            is_sent: false,
             ...itemData,
         };
         const updatedStudent: Student = {
             ...student,
-            individualAgenda: [newItem, ...student.individualAgenda].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+            individual_agenda: [newItem, ...student.individual_agenda].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
         };
         onUpdateStudent(updatedStudent);
     };
     
     const handleDeleteIndividualAgendaItem = (itemId: number) => {
         if (window.confirm('Tem certeza de que deseja excluir este registro da agenda?')) {
-            const updatedAgenda = student.individualAgenda.filter(item => item.id !== itemId);
+            const updatedAgenda = student.individual_agenda.filter(item => item.id !== itemId);
             const updatedStudent: Student = {
                 ...student,
-                individualAgenda: updatedAgenda,
+                individual_agenda: updatedAgenda,
             };
             onUpdateStudent(updatedStudent);
         }
     };
 
     const handleUpdateIndividualAgendaItem = (updatedItem: IndividualAgendaItem) => {
-        const updatedAgenda = student.individualAgenda.map(item => item.id === updatedItem.id ? updatedItem : item);
+        const updatedAgenda = student.individual_agenda.map(item => item.id === updatedItem.id ? updatedItem : item);
         const updatedStudent: Student = {
             ...student,
-            individualAgenda: updatedAgenda,
+            individual_agenda: updatedAgenda,
         };
         onUpdateStudent(updatedStudent);
         setEditingAgendaItem(null);
@@ -114,8 +114,8 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ isOpen, onClose
         setAddOccurrenceModalOpen(false);
     };
 
-    const handleAddDocument = (documentData: Omit<Document, 'id' | 'uploadDate'>) => {
-        const newDocument: Document = { id: Date.now(), uploadDate: new Date().toISOString(), ...documentData };
+    const handleAddDocument = (documentData: Omit<Document, 'id' | 'upload_date'>) => {
+        const newDocument: Document = { id: Date.now(), upload_date: new Date().toISOString(), ...documentData };
         const updatedStudent: Student = {
             ...student,
             documents: [newDocument, ...student.documents],
@@ -128,7 +128,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ isOpen, onClose
         const newContact: CommunicationLog = { id: Date.now(), ...contactData };
         const updatedStudent: Student = {
             ...student,
-            communicationLog: [newContact, ...student.communicationLog].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+            communication_log: [newContact, ...student.communication_log].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
         };
         onUpdateStudent(updatedStudent);
         setAddContactModalOpen(false);
@@ -142,7 +142,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ isOpen, onClose
             reader.onloadend = () => {
                 const updatedStudent: Student = {
                     ...student,
-                    avatarUrl: reader.result as string,
+                    avatar_url: reader.result as string,
                 };
                 onUpdateStudent(updatedStudent);
             };
@@ -167,9 +167,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ isOpen, onClose
             case 'grades': return <GradesTab grades={student.grades} onAdd={() => setAddGradeModalOpen(true)} />;
             case 'attendance': return <AttendanceTab attendance={student.attendance} onAdd={() => setAddAttendanceModalOpen(true)} />;
             case 'occurrences': return <OccurrencesTab occurrences={student.occurrences} onAdd={() => setAddOccurrenceModalOpen(true)} />;
-            case 'individualAgenda': return <IndividualAgendaTab agendaItems={student.individualAgenda} onAddItem={handleAddIndividualAgendaItem} onEdit={setEditingAgendaItem} onDelete={handleDeleteIndividualAgendaItem} />;
+            case 'individualAgenda': return <IndividualAgendaTab agendaItems={student.individual_agenda} onAddItem={handleAddIndividualAgendaItem} onEdit={setEditingAgendaItem} onDelete={handleDeleteIndividualAgendaItem} />;
             case 'documents': return <DocumentsTab documents={student.documents} onAdd={() => setAddDocumentModalOpen(true)} />;
-            case 'contactHistory': return <ContactHistoryTab log={student.communicationLog} onAdd={() => setAddContactModalOpen(true)} />;
+            case 'contactHistory': return <ContactHistoryTab log={student.communication_log} onAdd={() => setAddContactModalOpen(true)} />;
             case 'declarations': return <DeclarationsTab student={student} />;
             default: return null;
         }
@@ -183,7 +183,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ isOpen, onClose
                     <div className="w-full md:w-1/4 bg-slate-100 rounded-xl p-6 border border-slate-200">
                         <div className="flex flex-col items-center text-center">
                             <div className="relative group">
-                                <img src={student.avatarUrl} alt={student.name} className="w-24 h-24 rounded-full mb-4 ring-4 ring-brand-primary/20 group-hover:opacity-75 transition-opacity" />
+                                <img src={student.avatar_url} alt={student.name} className="w-24 h-24 rounded-full mb-4 ring-4 ring-brand-primary/20 group-hover:opacity-75 transition-opacity" />
                                 <ProtectedComponent requiredPermission='edit_students'>
                                     <div 
                                         className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity mb-4"
@@ -209,8 +209,8 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ isOpen, onClose
                         </div>
                         <div className="mt-6 border-t pt-4 text-center">
                             <h4 className="font-bold text-brand-text-dark mb-2">Responsável</h4>
-                            <p className="text-brand-text-dark">{student.parentName}</p>
-                            <p className="text-brand-text-dark text-sm">{student.parentContact}</p>
+                            <p className="text-brand-text-dark">{student.parent_name}</p>
+                            <p className="text-brand-text-dark text-sm">{student.parent_contact}</p>
                         </div>
                         <div className="mt-6 border-t pt-4">
                             <ProtectedComponent requiredPermission='edit_students'>

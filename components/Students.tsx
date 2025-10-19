@@ -9,7 +9,7 @@ import ProtectedComponent from './common/ProtectedComponent';
 import { useSettings } from '../contexts/SettingsContext';
 
 const PlusIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
 );
 
 interface StudentsProps {
@@ -70,7 +70,7 @@ const Students: React.FC<StudentsProps> = ({ initialStudent, initialAction }) =>
         setEditingStudent(null);
     };
 
-    const handleAddStudent = (newStudentData: Omit<Student, 'id'|'status'|'enrollmentDate'|'avatarUrl'|'grades'|'attendance'|'occurrences'|'documents'|'individualAgenda'|'communicationLog'|'tuition_plan_id'|'medicalNotes'>) => {
+    const handleAddStudent = (newStudentData: Omit<Student, 'id'|'status'|'enrollment_date'|'avatar_url'|'grades'|'attendance'|'occurrences'|'documents'|'individual_agenda'|'communication_log'|'tuition_plan_id'|'medical_notes'|'school_id'>) => {
         addStudent(newStudentData);
         setAddModalOpen(false);
     };
@@ -132,13 +132,13 @@ const Students: React.FC<StudentsProps> = ({ initialStudent, initialAction }) =>
                                 <tr key={student.id} onClick={() => handleRowClick(student)} className="cursor-pointer hover:bg-slate-50 transition-colors duration-200">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
-                                            <img className="h-10 w-10 rounded-full mr-4" src={student.avatarUrl} alt={student.name} />
+                                            <img className="h-10 w-10 rounded-full mr-4" src={student.avatar_url} alt={student.name} />
                                             <div className="font-medium text-brand-text-dark">{student.name}</div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-brand-text-dark">{student.class}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-brand-text-dark">{student.status}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-brand-text-dark">{student.parentName}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-brand-text-dark">{student.parent_name}</td>
                                 </tr>
                             ))}
                         </tbody>

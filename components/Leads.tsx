@@ -18,10 +18,12 @@ const LinkIcon: React.FC<{className?: string}> = ({ className }) => (
 const LeadCard: React.FC<{ lead: Lead; onClick: () => void }> = ({ lead, onClick }) => (
     <div onClick={onClick} className="bg-white p-4 rounded-lg border border-slate-200/80 shadow-sm cursor-pointer hover:shadow-md transition-shadow duration-200">
         <h4 className="font-bold text-brand-text-dark">{lead.name}</h4>
-        <p className="text-sm text-brand-text-light">{lead.parentName}</p>
+        {/* FIX: Corrected property name from `parentName` to `parent_name`. */}
+        <p className="text-sm text-brand-text-light">{lead.parent_name}</p>
         <p className="text-sm text-brand-text-light">{lead.contact}</p>
         <div className="text-xs text-slate-500 mt-2">
-            Interesse em: {new Date(lead.interestDate).toLocaleDateString('pt-BR')}
+            {/* FIX: Corrected property name from `interestDate` to `interest_date`. */}
+            Interesse em: {new Date(lead.interest_date).toLocaleDateString('pt-BR')}
         </div>
     </div>
 );
@@ -62,7 +64,7 @@ const Leads: React.FC<LeadsProps> = ({ initialAction }) => {
         setSelectedLead(null);
     };
     
-    const handleAddLead = (newLeadData: Omit<Lead, 'id'>) => {
+    const handleAddLead = (newLeadData: Omit<Lead, 'id' | 'school_id'>) => {
         addLead(newLeadData);
         setAddModalOpen(false);
     };

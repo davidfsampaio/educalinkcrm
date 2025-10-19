@@ -31,7 +31,7 @@ const Users: React.FC = () => {
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
 
-    const handleAddUser = (newUserData: Omit<User, 'id' | 'avatarUrl' | 'status'> & { password?: string }) => {
+    const handleAddUser = (newUserData: Omit<User, 'id' | 'avatar_url' | 'status' | 'school_id'> & { password?: string }) => {
         addUser(newUserData);
         setAddModalOpen(false);
     };
@@ -75,12 +75,14 @@ const Users: React.FC = () => {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {users.map((user) => {
-                                const student = user.studentId ? students.find(s => s.id === user.studentId) : null;
+                                // FIX: Corrected property name from `studentId` to `student_id`.
+                                const student = user.student_id ? students.find(s => s.id === user.student_id) : null;
                                 return (
                                 <tr key={user.id}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
-                                            <img className="h-10 w-10 rounded-full mr-4" src={user.avatarUrl} alt={user.name} />
+                                            {/* FIX: Corrected property name from `avatarUrl` to `avatar_url`. */}
+                                            <img className="h-10 w-10 rounded-full mr-4" src={user.avatar_url} alt={user.name} />
                                             <div className="font-medium text-brand-text-dark">{user.name}</div>
                                         </div>
                                     </td>

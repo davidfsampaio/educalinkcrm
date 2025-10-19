@@ -22,7 +22,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onSelect }) => {
             const studentResults = students
                 .filter(s =>
                     s.name.toLowerCase().includes(lowerCaseQuery) ||
-                    s.parentName.toLowerCase().includes(lowerCaseQuery)
+                    s.parent_name.toLowerCase().includes(lowerCaseQuery)
                 )
                 .map(s => ({ ...s, type: 'student' as const }));
 
@@ -73,7 +73,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onSelect }) => {
                         {results.map((item, index) => (
                             <li key={`${item.type}-${item.id}-${index}`} onClick={() => handleSelect(item)} className="px-4 py-3 hover:bg-slate-100 cursor-pointer border-b last:border-b-0">
                                 <p className="font-semibold text-brand-text-dark">{item.name}</p>
-                                {item.type === 'student' && <p className="text-sm text-brand-text-light">Aluno(a) - Turma: {item.class} (Responsável: {item.parentName})</p>}
+                                {item.type === 'student' && <p className="text-sm text-brand-text-light">Aluno(a) - Turma: {item.class} (Responsável: {item.parent_name})</p>}
                                 {item.type === 'staff' && <p className="text-sm text-brand-text-light">Funcionário(a) - Cargo: {item.role}</p>}
                             </li>
                         ))}

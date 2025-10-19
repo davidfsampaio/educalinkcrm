@@ -22,21 +22,21 @@ const DetailsTab: React.FC<DetailsTabProps> = ({ student }) => {
             <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
                 <DetailItem label="Nome Completo" value={student.name} />
                 <DetailItem label="Turma" value={student.class} />
-                <DetailItem label="Data de Matrícula" value={student.enrollmentDate} />
+                <DetailItem label="Data de Matrícula" value={student.enrollment_date} />
                 <DetailItem label="CPF" value={student.cpf} />
                 <DetailItem label="Endereço" value={student.address} />
             </dl>
             <h3 className="text-lg font-bold text-brand-text-dark pt-4 border-t">Informações de Contato</h3>
             <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-                 <DetailItem label="Nome do Responsável" value={student.parentName} />
+                 <DetailItem label="Nome do Responsável" value={student.parent_name} />
                  <DetailItem label="Email do Responsável" value={student.email} />
                  <DetailItem label="Telefone do Responsável" value={student.phone} />
             </dl>
-            {student.medicalNotes && (
+            {student.medical_notes && (
                  <>
                     <h3 className="text-lg font-bold text-brand-text-dark pt-4 border-t">Observações Médicas</h3>
                     <div className="text-sm text-brand-text-dark bg-yellow-50 p-4 rounded-md border border-yellow-200">
-                        {student.medicalNotes}
+                        {student.medical_notes}
                     </div>
                  </>
             )}

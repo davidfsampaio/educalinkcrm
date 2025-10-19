@@ -23,7 +23,8 @@ const ParentPortal: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         return <div className="flex h-screen w-screen items-center justify-center"><p>Aluno não encontrado.</p></div>;
     }
 
-    const studentInvoices = invoices.filter(inv => inv.studentId === student.id);
+    // FIX: Corrected property name from `studentId` to `student_id`.
+    const studentInvoices = invoices.filter(inv => inv.student_id === student.id);
     
     const renderView = () => {
         switch(activeView) {

@@ -10,13 +10,14 @@ const Communications: React.FC = () => {
     const { communications, addCommunication } = useData();
     const [activeTab, setActiveTab] = useState<'composer' | 'history'>('composer');
 
-    const handleSendCommunication = (newComm: Omit<Communication, 'id' | 'sentDate'>) => {
+    const handleSendCommunication = (newComm: Omit<Communication, 'id' | 'sent_date' | 'school_id'>) => {
         addCommunication(newComm);
         setActiveTab('history'); // Switch to history tab after sending
     };
     
     // Sort communications for display
-    const sortedCommunications = [...communications].sort((a, b) => new Date(b.sentDate).getTime() - new Date(a.sentDate).getTime());
+    // FIX: Corrected property name from `sentDate` to `sent_date`.
+    const sortedCommunications = [...communications].sort((a, b) => new Date(b.sent_date).getTime() - new Date(a.sent_date).getTime());
 
     return (
         <div className="space-y-6">

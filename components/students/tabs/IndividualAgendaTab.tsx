@@ -147,7 +147,8 @@ const IndividualAgendaTab: React.FC<IndividualAgendaTabProps> = ({ agendaItems, 
                                             <p className="text-xs text-slate-500">
                                                 {new Date(item.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
                                                 {' - '}
-                                                Criado às {new Date(item.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                {/* FIX: Corrected property name from `createdAt` to `created_at`. */}
+                                                Criado às {new Date(item.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                             </p>
                                         </div>
             

@@ -7,8 +7,8 @@ import { useData } from '../../contexts/DataContext';
 interface AddUserModalProps {
     isOpen: boolean;
     onClose: () => void;
-    // FIX: Corrected Omit type to use 'schoolId' (camelCase) instead of 'school_id' (snake_case) to correctly match the property in the User type and resolve the TypeScript error.
-    onAddUser: (user: Omit<User, 'id' | 'schoolId' | 'avatarUrl' | 'status'> & { password?: string }) => void;
+    // FIX: Corrected Omit type to use snake_case properties to correctly match the User type and resolve the TypeScript error.
+    onAddUser: (user: Omit<User, 'id' | 'school_id' | 'avatar_url' | 'status'> & { password?: string }) => void;
 }
 
 const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onAddUser }) => {
@@ -52,7 +52,8 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onAddUser 
             email,
             role,
             password,
-            studentId: role === 'Pai/Responsável' ? linkedStudentId || undefined : undefined
+            // FIX: Corrected property name from `studentId` to `student_id`.
+            student_id: role === 'Pai/Responsável' ? linkedStudentId || undefined : undefined
         });
 
         handleClose();

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Student, Staff } from '../types';
 import NotificationPanel from './common/NotificationPanel';
@@ -116,7 +117,8 @@ const Header: React.FC<HeaderProps> = ({ currentView, onMenuClick, onSearchSelec
                 </div>
                 <div className="relative" ref={userMenuRef}>
                     <button onClick={() => setUserMenuOpen(prev => !prev)} className="flex items-center space-x-2 p-1 rounded-lg hover:bg-slate-100 transition-colors">
-                        <img className="h-10 w-10 rounded-full" src={currentUser?.avatarUrl || "https://picsum.photos/seed/user/100/100"} alt="User Avatar" />
+                        {/* FIX: Corrected property name from `avatarUrl` to `avatar_url` to match the `User` type definition. */}
+                        <img className="h-10 w-10 rounded-full" src={currentUser?.avatar_url || "https://picsum.photos/seed/user/100/100"} alt="User Avatar" />
                         <div className="hidden sm:block text-left">
                             <p className="font-semibold text-brand-text-dark truncate max-w-28">{currentUser?.name || 'Usuário'}</p>
                             <p className="text-sm text-brand-text-light">{currentUser?.role || 'Cargo'}</p>

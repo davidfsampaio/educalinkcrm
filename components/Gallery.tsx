@@ -41,7 +41,8 @@ const Gallery: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {photoAlbums.map((album) => (
                     <Card key={album.id} className="p-0 overflow-hidden group cursor-pointer relative" onClick={() => setSelectedAlbum(album)}>
-                        <img src={album.coverUrl} alt={album.title} className="w-full h-48 object-cover group-hover:opacity-80 transition-opacity" />
+                        {/* FIX: Corrected property name from `coverUrl` to `cover_url`. */}
+                        <img src={album.cover_url} alt={album.title} className="w-full h-48 object-cover group-hover:opacity-80 transition-opacity" />
                         <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <span className="text-white text-lg font-bold">Ver Álbum</span>
                         </div>

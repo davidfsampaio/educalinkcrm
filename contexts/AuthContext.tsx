@@ -27,7 +27,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     const { user_metadata } = user;
 
                     const isAdmin = user.email === 'admin@educalink.com' || user.email === 'david.fsampaio@gmail.com';
-                    const needsCorrection = isAdmin && (!user_metadata.schoolId || user_metadata.schoolId === 'school-123' || !user_metadata.role);
+                    const needsCorrection = isAdmin && (!user_metadata.school_id || user_metadata.school_id === 'school-123' || !user_metadata.role);
 
                     if (needsCorrection && event !== 'USER_UPDATED') {
                         // If correction is needed and this isn't the event triggered by our fix,
@@ -37,8 +37,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
                         const newMetadata: { [key: string]: any } = { ...user_metadata };
                         if (!user_metadata.role) newMetadata.role = 'Admin';
-                        if (!user_metadata.schoolId || user_metadata.schoolId === 'school-123') {
-                            newMetadata.schoolId = '123e4567-e89b-12d3-a456-426614174000';
+                        if (!user_metadata.school_id || user_metadata.school_id === 'school-123') {
+                            newMetadata.school_id = '123e4567-e89b-12d3-a456-426614174000';
                         }
 
                         const { error: updateUserError } = await supabase.auth.updateUser({ data: newMetadata });
@@ -56,25 +56,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         // Metadata is correct (or this is the USER_UPDATED event with fresh data),
                         // so we can build the user profile.
                         const role: UserRoleName | undefined = user_metadata?.role;
-                        const schoolId: string | undefined = user_metadata?.schoolId;
+                        const schoolId: string | undefined = user_metadata?.school_id;
 
                         if (role && schoolId && schoolId !== 'school-123') {
                             const profile: User = {
                                 id: user.id,
                                 email: user.email!,
                                 name: user_metadata?.name || user.email!,
-                                avatarUrl: user_metadata?.avatarUrl || `https://picsum.photos/seed/user${user.id}/100/100`,
+                                avatar_url: user_metadata?.avatar_url || `https://picsum.photos/seed/user${user.id}/100/100`,
                                 role: role,
                                 status: UserStatus.Active,
-                                studentId: user_metadata?.studentId,
-                                schoolId: schoolId,
+                                student_id: user_metadata?.student_id,
+                                school_id: schoolId,
                             };
                             setCurrentUser(profile);
                             setAuthError(null);
                             setAuthLoading(false); // Final state, stop loading.
                         } else {
                             // This case handles users who are not admin and have missing metadata.
-                            throw new Error(`Os metadados do usuário (role ou schoolId) estão ausentes ou inválidos.`);
+                            throw new Error(`Os metadados do usuário (role ou school_id) estão ausentes ou inválidos.`);
                         }
                     }
                 } else {

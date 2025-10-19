@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { Communication } from '../../types';
 import Card from '../common/Card';
@@ -14,11 +15,13 @@ const ParentCommunications: React.FC<{ communications: Communication[] }> = ({ c
                             <div>
                                 <h3 className="font-bold text-brand-text-dark">{comm.title}</h3>
                                 <p className="text-sm text-brand-text-light">
-                                    Enviado para: <span className="font-medium">{comm.recipientGroup}</span>
+                                    {/* FIX: Corrected property name from `recipientGroup` to `recipient_group`. */}
+                                    Enviado para: <span className="font-medium">{comm.recipient_group}</span>
                                 </p>
                             </div>
                             <span className="text-sm text-brand-text-light whitespace-nowrap">
-                                {new Date(comm.sentDate).toLocaleDateString('pt-BR')}
+                                {/* FIX: Corrected property name from `sentDate` to `sent_date`. */}
+                                {new Date(comm.sent_date).toLocaleDateString('pt-BR')}
                             </span>
                         </div>
                         <p className="mt-2 text-brand-text whitespace-pre-wrap">

@@ -24,7 +24,8 @@ const Library: React.FC = () => {
                                 <td className="px-6 py-4 whitespace-nowrap">{book.title}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">{book.author}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">{book.status}</td>
-                                <td className="px-6 py-4 whitespace-nowrap">{book.borrowedBy?.studentName || '-'}</td>
+                                {/* FIX: Corrected property name from `borrowedBy.studentName` to `borrowed_by.student_name`. */}
+                                <td className="px-6 py-4 whitespace-nowrap">{book.borrowed_by?.student_name || '-'}</td>
                             </tr>
                         ))}
                     </tbody>

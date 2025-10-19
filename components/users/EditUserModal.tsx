@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { User, UserRoleName, UserStatus } from '../../types';
@@ -28,7 +29,8 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user, on
             setEmail(user.email);
             setRole(user.role);
             setStatus(user.status);
-            setLinkedStudentId(user.studentId || '');
+            // FIX: Corrected property name from `studentId` to `student_id`.
+            setLinkedStudentId(user.student_id || '');
         }
     }, [user]);
 
@@ -48,7 +50,8 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user, on
             email,
             role,
             status,
-            studentId: role === 'Pai/Responsável' ? linkedStudentId || undefined : undefined,
+            // FIX: Corrected property name from `studentId` to `student_id`.
+            student_id: role === 'Pai/Responsável' ? linkedStudentId || undefined : undefined,
         };
 
         onUpdateUser(updatedUser);

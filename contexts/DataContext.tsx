@@ -32,7 +32,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const loadData = useCallback(async () => {
         // Only load data if we have a logged-in user with a schoolId
-        if (!currentUser?.schoolId) {
+        if (!currentUser?.school_id) {
             setLoading(false);
             return;
         }
@@ -107,23 +107,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loadData();
     }, [loadData]);
 
-    const addStudent = async (studentData: Pick<Student, 'name' | 'class' | 'parentName' | 'parentContact' | 'cpf' | 'address' | 'email' | 'phone'>) => {
-        if (!currentUser?.schoolId) return;
+    const addStudent = async (studentData: Pick<Student, 'name' | 'class' | 'parent_name' | 'parent_contact' | 'cpf' | 'address' | 'email' | 'phone'>) => {
+        if (!currentUser?.school_id) return;
         try {
-            const newStudentPayload: Omit<StudentColumns, 'schoolId'> & { schoolId: string } = {
+            const newStudentPayload: Omit<StudentColumns, 'school_id'> & { school_id: string } = {
                 ...studentData,
-                schoolId: currentUser.schoolId,
+                school_id: currentUser.school_id,
                 status: StudentStatus.Active,
-                enrollmentDate: new Date().toISOString().split('T')[0],
-                avatarUrl: `https://picsum.photos/seed/student${Date.now()}/100/100`,
-                tuitionPlanId: 1, 
-                medicalNotes: ''
+                enrollment_date: new Date().toISOString().split('T')[0],
+                avatar_url: `https://picsum.photos/seed/student${Date.now()}/100/100`,
+                tuition_plan_id: 1, 
+                medical_notes: ''
             };
             const newStudentFromDb = await api.addStudent(newStudentPayload);
             // Rehydrate the object with empty arrays for local state consistency
             const newStudentForState: Student = {
                 ...newStudentFromDb,
-                grades: [], attendance: [], occurrences: [], documents: [], individualAgenda: [], communicationLog: []
+                grades: [], attendance: [], occurrences: [], documents: [], individual_agenda: [], communication_log: []
             }
             setStudents(prev => [newStudentForState, ...prev]);
         } catch (error) {
@@ -134,12 +134,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updateStudent = async (updatedStudent: Student) => {
         try {
-            const { id, schoolId, grades, attendance, occurrences, documents, individualAgenda, communicationLog, ...studentColumns } = updatedStudent;
+            const { id, school_id, grades, attendance, occurrences, documents, individual_agenda, communication_log, ...studentColumns } = updatedStudent;
             const updatedFromDb = await api.updateStudent(id, studentColumns);
             // Re-attach the relational arrays to the updated object for local state consistency
             const rehydratedStudent: Student = {
                 ...updatedFromDb,
-                grades, attendance, occurrences, documents, individualAgenda, communicationLog
+                grades, attendance, occurrences, documents, individual_agenda, communication_log
             };
             setStudents(prev => prev.map(s => (s.id === id ? rehydratedStudent : s)));
         } catch (error) {
@@ -148,23 +148,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
     
-    const addLead = async (leadData: Omit<Lead, 'id' | 'schoolId'>, campaignId?: string) => {
-        let schoolIdToAdd: string | undefined = currentUser?.schoolId;
+    const addLead = async (leadData: Omit<Lead, 'id' | 'school_id'>, campaignId?: string) => {
+        let schoolIdToAdd: string | undefined = currentUser?.school_id;
 
         // Lógica para formulários públicos de captura de leads, onde não há currentUser.
         if (!schoolIdToAdd && campaignId) {
             try {
-                // Busca o schoolId da campanha. A RLS para a tabela lead_capture_campaigns
-                // deve permitir a leitura pública das colunas 'id' e 'schoolId'.
+                // Busca o school_id da campanha. A RLS para a tabela lead_capture_campaigns
+                // deve permitir a leitura pública das colunas 'id' e 'school_id'.
                 const { data: campaign, error } = await supabase
                     .from('lead_capture_campaigns')
-                    .select('schoolId')
+                    .select('school_id')
                     .eq('id', campaignId)
                     .single();
                 
                 if (error) throw error;
                 if (campaign) {
-                    schoolIdToAdd = campaign.schoolId;
+                    schoolIdToAdd = campaign.school_id;
                 } else {
                      throw new Error('Campanha de captura de lead não encontrada.');
                 }
@@ -182,7 +182,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         try {
             const newLeadPayload: LeadColumns = {
-                schoolId: schoolIdToAdd,
+                school_id: schoolIdToAdd,
                 ...leadData,
             };
             const newLeadFromDb = await api.addLead(newLeadPayload);
@@ -190,15 +190,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const newLeadForState: Lead = {
                 ...newLeadFromDb,
                 tasks: leadData.tasks || [],
-                requiredDocuments: leadData.requiredDocuments || [],
-                communicationLog: leadData.communicationLog || []
+                required_documents: leadData.required_documents || [],
+                communication_log: leadData.communication_log || []
             };
             setLeads(prev => [newLeadForState, ...prev]);
             
             // Atualiza a contagem de leads da campanha (só funcionará para usuários logados, o que é aceitável)
             if (campaignId) {
                 setLeadCaptureCampaigns(prev => prev.map(c => 
-                    c.id === campaignId ? { ...c, leadsCaptured: c.leadsCaptured + 1 } : c
+                    c.id === campaignId ? { ...c, leads_captured: c.leads_captured + 1 } : c
                 ));
             }
         } catch(error) {
@@ -209,11 +209,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const updateLead = async (updatedLead: Lead) => {
         try {
-             const { id, schoolId, tasks, requiredDocuments, communicationLog, ...leadColumns } = updatedLead;
+             const { id, school_id, tasks, required_documents, communication_log, ...leadColumns } = updatedLead;
             const updatedFromDb = await api.updateLead(id, leadColumns);
             const rehydratedLead: Lead = {
                 ...updatedFromDb,
-                tasks, requiredDocuments, communicationLog
+                tasks, required_documents, communication_log
             };
             setLeads(prev => prev.map(l => (l.id === id ? rehydratedLead : l)));
         } catch(error) {
@@ -222,10 +222,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const addInvoice = async (newInvoiceData: Omit<Invoice, 'id' | 'schoolId' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => {
-        if (!currentUser?.schoolId) return;
+    const addInvoice = async (newInvoiceData: Omit<Invoice, 'id' | 'school_id' | 'status' | 'payments' | 'student_name'> & { student_id: number }) => {
+        if (!currentUser?.school_id) return;
         try {
-            const student = students.find(s => s.id === newInvoiceData.studentId);
+            const student = students.find(s => s.id === newInvoiceData.student_id);
             if (!student) throw new Error("Student not found");
 
             const id = `INV-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(Date.now()).slice(-5)}`;
@@ -233,11 +233,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const payload: InvoiceColumns = {
                 id,
                 ...newInvoiceData,
-                studentName: student.name,
-                status: new Date(newInvoiceData.dueDate) < new Date() ? PaymentStatus.Overdue : PaymentStatus.Pending,
+                student_name: student.name,
+                status: new Date(newInvoiceData.due_date) < new Date() ? PaymentStatus.Overdue : PaymentStatus.Pending,
             };
             const newInvoiceFromDb = await api.addInvoice(payload);
-            const newInvoiceForState: Invoice = { ...newInvoiceFromDb, schoolId: currentUser.schoolId, payments: [] };
+            const newInvoiceForState: Invoice = { ...newInvoiceFromDb, school_id: currentUser.school_id, payments: [] };
             setInvoices(prev => [newInvoiceForState, ...prev]);
         } catch(error) {
             console.error("Falha ao adicionar fatura:", error);
@@ -247,9 +247,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updateInvoice = async (updatedInvoice: Invoice) => {
         try {
-            const { id, schoolId, studentId, studentName, payments, ...invoiceColumns } = updatedInvoice;
+            const { id, school_id, student_id, student_name, payments, ...invoiceColumns } = updatedInvoice;
             const updatedFromDb = await api.updateInvoice(id, invoiceColumns);
-            const rehydratedInvoice: Invoice = { ...updatedFromDb, schoolId, studentId, studentName, payments };
+            const rehydratedInvoice: Invoice = { ...updatedFromDb, school_id, student_id, student_name, payments };
             setInvoices(prev => prev.map(inv => (inv.id === id ? rehydratedInvoice : inv)));
         } catch(error) {
             console.error("Falha ao atualizar fatura:", error);
@@ -272,10 +272,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         apiService: { add: (item: any) => Promise<T>, update: (id: any, item: any) => Promise<T>, delete: (id: any) => Promise<void> },
         itemName: string
     ) => ({
-        add: async (itemData: Omit<T, 'id' | 'schoolId'>) => {
-            if (!currentUser?.schoolId) return;
+        add: async (itemData: Omit<T, 'id' | 'school_id'>) => {
+            if (!currentUser?.school_id) return;
             try {
-                const newPayload = { schoolId: currentUser.schoolId, ...itemData };
+                const newPayload = { school_id: currentUser.school_id, ...itemData };
                 const newItem = await apiService.add(newPayload);
                 if (newItem) setState(prev => [newItem, ...prev]);
             } catch (error) { 
@@ -285,8 +285,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         },
         update: async (updatedItem: T) => {
             try {
-                const { id, ...itemData } = updatedItem as T & { schoolId?: string };
-                delete (itemData as Partial<T & { schoolId?: string }>).schoolId;
+                const { id, ...itemData } = updatedItem as T & { school_id?: string };
+                delete (itemData as Partial<T & { school_id?: string }>).school_id;
                 const updated = await apiService.update(id, itemData);
                 if(updated) setState(prev => prev.map(item => (item.id === updated.id ? updated : item)));
             } catch (error) { 
@@ -309,14 +309,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const revenueOps = createCrudOperations(setRevenues, { add: api.addRevenue, update: api.updateRevenue, delete: api.deleteRevenue }, "receita");
     const staffOps = createCrudOperations(setStaff, { add: api.addStaff, update: api.updateStaff, delete: () => Promise.resolve() }, "funcionário");
     
-    const addUser = async (userData: Omit<User, 'id' | 'schoolId' | 'avatarUrl' | 'status'> & { password?: string }) => {
-        if (!currentUser?.schoolId) return;
+    const addUser = async (userData: Omit<User, 'id' | 'school_id' | 'avatar_url' | 'status'> & { password?: string }) => {
+        if (!currentUser?.school_id) return;
         try {
             const payload = {
-                schoolId: currentUser.schoolId, 
+                school_id: currentUser.school_id, 
                 ...userData, 
                 status: UserStatus.Active,
-                avatarUrl: `https://picsum.photos/seed/user${Date.now()}/100/100`
+                avatar_url: `https://picsum.photos/seed/user${Date.now()}/100/100`
             };
             const newUser = await api.addUser(payload);
             setUsers(prev => [newUser, ...prev]);
@@ -328,7 +328,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updateUser = async (updatedUser: User) => {
         try {
-            const { id, schoolId, ...userData } = updatedUser;
+            const { id, school_id, ...userData } = updatedUser;
             const updated = await api.updateUser(id, userData);
             setUsers(prev => prev.map(u => u.id === id ? updated : u));
         } catch(e) { 
@@ -348,10 +348,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     // Non-standard CRUD
-    const addCommunication = async (commData: Omit<Communication, 'id' | 'schoolId' | 'sentDate'>) => {
-        if (!currentUser?.schoolId) return;
+    const addCommunication = async (commData: Omit<Communication, 'id' | 'school_id' | 'sent_date'>) => {
+        if (!currentUser?.school_id) return;
         try {
-            const payload = { schoolId: currentUser.schoolId, ...commData, sentDate: new Date().toISOString() };
+            const payload = { school_id: currentUser.school_id, ...commData, sent_date: new Date().toISOString() };
             const newComm = await api.addCommunication(payload);
             setCommunications(prev => [newComm, ...prev]);
         } catch (error) { 
@@ -360,10 +360,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
     
-    const addAgendaItem = async (itemData: Omit<AgendaItem, 'id' | 'schoolId' | 'isSent'>) => {
-        if (!currentUser?.schoolId) return;
+    const addAgendaItem = async (itemData: Omit<AgendaItem, 'id' | 'school_id' | 'is_sent'>) => {
+        if (!currentUser?.school_id) return;
         try {
-            const payload = { schoolId: currentUser.schoolId, ...itemData, isSent: false };
+            const payload = { school_id: currentUser.school_id, ...itemData, is_sent: false };
             const newItem = await api.addAgendaItem(payload);
             setAgendaItems(prev => [newItem, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         } catch (error) { 
@@ -374,7 +374,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updateAgendaItem = async (updatedItem: AgendaItem) => {
         try {
-            const { id, schoolId, ...itemData } = updatedItem;
+            const { id, school_id, ...itemData } = updatedItem;
             const updated = await api.updateAgendaItem(id, itemData);
             setAgendaItems(prev => prev.map(item => item.id === updated.id ? updated : item));
         } catch (error) { 
@@ -383,17 +383,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const addLeadCaptureCampaign = async (campaignData: Omit<LeadCaptureCampaign, 'id' | 'schoolId' | 'publicUrl' | 'createdAt' | 'leadsCaptured'>) => {
-        if (!currentUser?.schoolId) return;
+    const addLeadCaptureCampaign = async (campaignData: Omit<LeadCaptureCampaign, 'id' | 'school_id' | 'public_url' | 'created_at' | 'leads_captured'>) => {
+        if (!currentUser?.school_id) return;
         try {
             const campaignId = `campaign-${Date.now()}`;
             const payload = {
                 id: campaignId,
-                schoolId: currentUser.schoolId,
+                school_id: currentUser.school_id,
                 ...campaignData,
-                publicUrl: `/#/capture/${campaignId}`,
-                createdAt: new Date().toISOString(),
-                leadsCaptured: 0,
+                public_url: `/#/capture/${campaignId}`,
+                created_at: new Date().toISOString(),
+                leads_captured: 0,
             };
             const newCampaign = await api.addLeadCaptureCampaign(payload);
             setLeadCaptureCampaigns(prev => [newCampaign, ...prev]);
@@ -403,10 +403,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const addPhotoAlbum = async (albumData: Omit<PhotoAlbum, 'id' | 'schoolId' | 'photos'>) => {
-        if (!currentUser?.schoolId) return;
+    const addPhotoAlbum = async (albumData: Omit<PhotoAlbum, 'id' | 'school_id' | 'photos'>) => {
+        if (!currentUser?.school_id) return;
         try {
-            const payload: PhotoAlbumColumns = { schoolId: currentUser.schoolId, ...albumData };
+            const payload: PhotoAlbumColumns = { school_id: currentUser.school_id, ...albumData };
             const newAlbumFromDb = await api.addPhotoAlbum(payload);
             const newAlbumForState: PhotoAlbum = { ...newAlbumFromDb, photos: [] };
             setPhotoAlbums(prev => [newAlbumForState, ...prev]);

@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 // FIX: Corrected import path for types.
 import { Communication } from '../../types';
@@ -43,8 +44,10 @@ const CommunicationDetailModal: React.FC<CommunicationDetailModalProps> = ({ isO
                         </div>
                         <h2 class="comm-title">${communication.title}</h2>
                         <div class="comm-meta">
-                            <p><strong>Para:</strong> ${communication.recipientGroup}</p>
-                            <p><strong>Enviado em:</strong> ${new Date(communication.sentDate).toLocaleDateString('pt-BR')}</p>
+                            {/* FIX: Corrected property name from `recipientGroup` to `recipient_group`. */}
+                            <p><strong>Para:</strong> ${communication.recipient_group}</p>
+                            {/* FIX: Corrected property name from `sentDate` to `sent_date`. */}
+                            <p><strong>Enviado em:</strong> ${new Date(communication.sent_date).toLocaleDateString('pt-BR')}</p>
                         </div>
                         <div class="comm-content">${communication.content.replace(/\n/g, '<br>')}</div>
                     </body>
@@ -77,7 +80,8 @@ const CommunicationDetailModal: React.FC<CommunicationDetailModalProps> = ({ isO
                     <div>
                         <h2 className="text-xl font-bold text-brand-text-dark">{communication.title}</h2>
                         <p className="text-sm text-brand-text-light">
-                            Enviado em {new Date(communication.sentDate).toLocaleDateString('pt-BR')} para <span className="font-semibold">{communication.recipientGroup}</span>
+                            {/* FIX: Corrected property names from `sentDate` and `recipientGroup` to `sent_date` and `recipient_group`. */}
+                            Enviado em {new Date(communication.sent_date).toLocaleDateString('pt-BR')} para <span className="font-semibold">{communication.recipient_group}</span>
                         </p>
                     </div>
                     <div className="mt-4 pt-4 border-t">

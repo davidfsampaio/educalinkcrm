@@ -61,17 +61,22 @@ const LeadCaptureLinksModal: React.FC<LeadCaptureLinksModalProps> = ({ isOpen, o
                                     <tr key={campaign.id}>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="font-medium text-brand-text-dark">{campaign.name}</div>
-                                            <div className="text-xs text-slate-500">Criado em: {new Date(campaign.createdAt).toLocaleDateString()}</div>
+                                            {/* FIX: Corrected property name from `createdAt` to `created_at`. */}
+                                            <div className="text-xs text-slate-500">Criado em: {new Date(campaign.created_at).toLocaleDateString()}</div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center text-lg font-bold text-brand-text-dark">{campaign.leadsCaptured}</td>
+                                        {/* FIX: Corrected property name from `leadsCaptured` to `leads_captured`. */}
+                                        <td className="px-6 py-4 whitespace-nowrap text-center text-lg font-bold text-brand-text-dark">{campaign.leads_captured}</td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
-                                                <input type="text" readOnly value={`${window.location.origin}${window.location.pathname}${campaign.publicUrl}`} className="w-full bg-slate-100 border-slate-300 rounded-l-md text-sm p-2 font-mono" />
+                                                {/* FIX: Corrected property name from `publicUrl` to `public_url`. */}
+                                                <input type="text" readOnly value={`${window.location.origin}${window.location.pathname}${campaign.public_url}`} className="w-full bg-slate-100 border-slate-300 rounded-l-md text-sm p-2 font-mono" />
                                                 <button 
-                                                    onClick={() => handleCopyLink(campaign.publicUrl)}
+                                                    // FIX: Corrected property name from `publicUrl` to `public_url`.
+                                                    onClick={() => handleCopyLink(campaign.public_url)}
                                                     className="bg-slate-200 p-2 rounded-r-md hover:bg-slate-300"
                                                 >
-                                                    <ClipboardIcon className={`w-5 h-5 ${copiedLink === campaign.publicUrl ? 'text-green-600' : 'text-slate-600'}`} />
+                                                    {/* FIX: Corrected property name from `publicUrl` to `public_url`. */}
+                                                    <ClipboardIcon className={`w-5 h-5 ${copiedLink === campaign.public_url ? 'text-green-600' : 'text-slate-600'}`} />
                                                 </button>
                                             </div>
                                         </td>

@@ -34,7 +34,8 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({ isOpen, onClose, lead
 
     const handleTaskToggle = (taskId: number) => {
         const updatedTasks = lead.tasks.map(task =>
-            task.id === taskId ? { ...task, isCompleted: !task.isCompleted } : task
+            // FIX: Corrected property name from `isCompleted` to `is_completed`.
+            task.id === taskId ? { ...task, is_completed: !task.is_completed } : task
         );
         onUpdateLead({ ...lead, tasks: updatedTasks });
     };
@@ -50,10 +51,12 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({ isOpen, onClose, lead
                 <div className="w-full md:w-1/3 space-y-4">
                      <div className="bg-slate-50 rounded-lg p-4 border border-slate-200/80">
                         <h3 className="font-bold text-lg text-brand-text-dark">{lead.name}</h3>
-                        <p className="text-brand-text">Responsável: {lead.parentName}</p>
+                        {/* FIX: Corrected property name from `parentName` to `parent_name`. */}
+                        <p className="text-brand-text">Responsável: {lead.parent_name}</p>
                         <p className="text-brand-text-light">{lead.contact}</p>
                         <p className="text-sm text-slate-500 mt-1">
-                            Interesse em: {new Date(lead.interestDate).toLocaleDateString('pt-BR')}
+                            {/* FIX: Corrected property name from `interestDate` to `interest_date`. */}
+                            Interesse em: {new Date(lead.interest_date).toLocaleDateString('pt-BR')}
                         </p>
                         <div className="mt-2">
                              <select
@@ -95,11 +98,13 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({ isOpen, onClose, lead
                                     <li key={task.id} className="flex items-center">
                                         <input
                                             type="checkbox"
-                                            checked={task.isCompleted}
+                                            // FIX: Corrected property name from `isCompleted` to `is_completed`.
+                                            checked={task.is_completed}
                                             onChange={() => handleTaskToggle(task.id)}
                                             className="h-4 w-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
                                         />
-                                        <label className={`ml-3 text-sm ${task.isCompleted ? 'line-through text-gray-500' : 'text-gray-700'}`}>
+                                        {/* FIX: Corrected property name from `isCompleted` to `is_completed`. */}
+                                        <label className={`ml-3 text-sm ${task.is_completed ? 'line-through text-gray-500' : 'text-gray-700'}`}>
                                             {task.description}
                                         </label>
                                     </li>
@@ -116,7 +121,8 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({ isOpen, onClose, lead
                      <div className="bg-slate-50 rounded-lg p-4 border border-slate-200/80">
                         <h4 className="font-bold text-brand-text-dark mb-2">Documentos Necessários</h4>
                         <ul className="space-y-1">
-                            {lead.requiredDocuments.map(doc => (
+                            {/* FIX: Corrected property name from `requiredDocuments` to `required_documents`. */}
+                            {lead.required_documents.map(doc => (
                                 <li key={doc.name} className="flex items-center justify-between text-sm">
                                     <span className="text-brand-text-dark">{doc.name}</span>
                                     {doc.status === 'Recebido' ? (
@@ -132,9 +138,11 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({ isOpen, onClose, lead
                      </div>
                      <div className="bg-slate-50 rounded-lg p-4 border border-slate-200/80">
                         <h4 className="font-bold text-brand-text-dark mb-2">Histórico de Contato</h4>
-                        {lead.communicationLog.length > 0 ? (
+                        {/* FIX: Corrected property name from `communicationLog` to `communication_log`. */}
+                        {lead.communication_log.length > 0 ? (
                             <ul className="space-y-3">
-                                {lead.communicationLog.map(log => (
+                                {/* FIX: Corrected property name from `communicationLog` to `communication_log`. */}
+                                {lead.communication_log.map(log => (
                                     <li key={log.id} className="text-sm border-l-2 pl-3 border-brand-primary/50">
                                         <p className="font-semibold text-brand-text-dark">{log.type} em {new Date(log.date).toLocaleDateString('pt-BR')}</p>
                                         <p className="text-slate-600">{log.summary}</p>

@@ -22,7 +22,7 @@ const Agenda: React.FC = () => {
     const { agendaItems, addAgendaItem, updateAgendaItem } = useData();
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const handleAddEvent = (eventData: Omit<AgendaItem, 'id' | 'isSent'>) => {
+    const handleAddEvent = (eventData: Omit<AgendaItem, 'id' | 'is_sent' | 'school_id'>) => {
         addAgendaItem(eventData);
         setIsModalOpen(false);
     };
@@ -30,7 +30,8 @@ const Agenda: React.FC = () => {
     const handleSend = (itemId: number) => {
         const itemToSend = agendaItems.find(i => i.id === itemId);
         if (itemToSend) {
-            updateAgendaItem({ ...itemToSend, isSent: true });
+            // FIX: Corrected property name from `isSent` to `is_sent`.
+            updateAgendaItem({ ...itemToSend, is_sent: true });
             alert(`Enviando "${itemToSend.title}"... (Funcionalidade de exemplo)`);
         }
     }
@@ -60,11 +61,13 @@ const Agenda: React.FC = () => {
                                     <h3 className="font-bold text-brand-text-dark">{item.title} ({item.type})</h3>
                                     <span className="text-sm text-brand-text-light">{item.date}</span>
                                 </div>
-                                <p className="text-sm text-brand-text">Para: {item.classTarget}</p>
+                                {/* FIX: Corrected property name from `classTarget` to `class_target`. */}
+                                <p className="text-sm text-brand-text">Para: {item.class_target}</p>
                                 <p className="mt-2 text-brand-text">{item.description}</p>
                             </div>
                             <div className="mt-4 pt-4 border-t border-slate-200/80 flex justify-end items-center">
-                               {item.isSent ? (
+                               {/* FIX: Corrected property name from `isSent` to `is_sent`. */}
+                               {item.is_sent ? (
                                     <div className="flex items-center text-green-600 font-semibold text-sm">
                                         <CheckIcon className="w-5 h-5 mr-2" />
                                         <span>Enviado</span>

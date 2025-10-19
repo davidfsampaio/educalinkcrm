@@ -6,8 +6,8 @@ import { Lead, LeadStatus } from '../../types';
 interface AddLeadModalProps {
     isOpen: boolean;
     onClose: () => void;
-    // FIX: Corrected Omit type to use 'schoolId' (camelCase) instead of 'school_id' (snake_case) to correctly match the property in the Lead type and resolve the TypeScript error.
-    onAddLead: (lead: Omit<Lead, 'id' | 'schoolId'>) => void;
+    // FIX: Corrected Omit type to use 'school_id' (snake_case) to correctly match the property in the Lead type and resolve the TypeScript error.
+    onAddLead: (lead: Omit<Lead, 'id' | 'school_id'>) => void;
 }
 
 const AddLeadModal: React.FC<AddLeadModalProps> = ({ isOpen, onClose, onAddLead }) => {
@@ -24,22 +24,23 @@ const AddLeadModal: React.FC<AddLeadModalProps> = ({ isOpen, onClose, onAddLead 
         }
 
         // FIX: Corrected the type of the newLead object to match what the onAddLead function expects.
-        const newLead: Omit<Lead, 'id' | 'schoolId'> = {
+        const newLead: Omit<Lead, 'id' | 'school_id'> = {
             name,
-            parentName,
+            parent_name: parentName,
             contact,
             notes,
             status: LeadStatus.New,
-            interestDate: new Date().toISOString().split('T')[0],
-            tasks: [{ id: 1, description: 'Realizar primeiro contato', isCompleted: false }],
-            isConverted: false,
-            requiredDocuments: [
+            interest_date: new Date().toISOString().split('T')[0],
+            // FIX: Corrected property name from `isCompleted` to `is_completed`.
+            tasks: [{ id: 1, description: 'Realizar primeiro contato', is_completed: false }],
+            is_converted: false,
+            required_documents: [
                 { name: 'Certidão de Nascimento', status: 'Pendente' },
                 { name: 'RG/CPF do Responsável', status: 'Pendente' },
                 { name: 'Comprovante de Residência', status: 'Pendente' },
                 { name: 'Carteira de Vacinação', status: 'Pendente' },
             ],
-            communicationLog: [],
+            communication_log: [],
         };
 
         onAddLead(newLead);

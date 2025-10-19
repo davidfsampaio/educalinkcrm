@@ -26,18 +26,19 @@ const PublicLeadCapturePage: React.FC = () => {
         setIsSubmitting(true);
         setError('');
 
-        // FIX: Corrected Omit type to use 'schoolId' (camelCase) instead of 'school_id' (snake_case) to correctly match the property in the Lead type and resolve the TypeScript error.
-        const newLead: Omit<Lead, 'id' | 'schoolId'> = {
+        // FIX: Corrected Omit type to use 'school_id' (snake_case) to correctly match the property in the Lead type and resolve the TypeScript error.
+        const newLead: Omit<Lead, 'id' | 'school_id'> = {
             name: `Lead de ${parentName} (Aluno: ${studentName})`,
-            parentName,
+            parent_name: parentName,
             contact: `${phone} / ${email}`,
             status: LeadStatus.New,
-            interestDate: new Date().toISOString().split('T')[0],
+            interest_date: new Date().toISOString().split('T')[0],
             notes: `Lead capturado através do formulário público da campanha ID: ${campaignId}.`,
-            tasks: [{ id: 1, description: 'Realizar primeiro contato', isCompleted: false }],
-            isConverted: false,
-            requiredDocuments: [],
-            communicationLog: [],
+            // FIX: Corrected property name from `isCompleted` to `is_completed`.
+            tasks: [{ id: 1, description: 'Realizar primeiro contato', is_completed: false }],
+            is_converted: false,
+            required_documents: [],
+            communication_log: [],
         };
 
         // Simulate network delay

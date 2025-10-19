@@ -10,8 +10,8 @@ import { useSettings } from '../../contexts/SettingsContext';
 interface AddEventModalProps {
     isOpen: boolean;
     onClose: () => void;
-    // FIX: Corrected Omit type to use 'schoolId' (camelCase) instead of 'school_id' (snake_case) to correctly match the property in the AgendaItem type and resolve the TypeScript error.
-    onAddEvent: (event: Omit<AgendaItem, 'id' | 'isSent' | 'schoolId'>) => void;
+    // FIX: Corrected Omit type to use 'school_id' (snake_case) and 'is_sent' to correctly match the property in the AgendaItem type and resolve the TypeScript error.
+    onAddEvent: (event: Omit<AgendaItem, 'id' | 'is_sent' | 'school_id'>) => void;
 }
 
 const AddEventModal: React.FC<AddEventModalProps> = ({ isOpen, onClose, onAddEvent }) => {
@@ -34,7 +34,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ isOpen, onClose, onAddEve
             description,
             date,
             type,
-            classTarget,
+            // FIX: Corrected property name from `classTarget` to `class_target`.
+            class_target: classTarget,
         });
         
         // Reset form and close

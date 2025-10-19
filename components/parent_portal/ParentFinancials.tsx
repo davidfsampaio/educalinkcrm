@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { Invoice, PaymentStatus } from '../../types';
 import Card from '../common/Card';
@@ -32,7 +33,8 @@ const ParentFinancials: React.FC<{ invoices: Invoice[], studentName: string }> =
                             <tr key={invoice.id}>
                                 <td className="px-6 py-4 whitespace-nowrap font-mono text-sm">{invoice.id}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">{invoice.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                                <td className="px-6 py-4 whitespace-nowrap">{new Date(invoice.dueDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
+                                {/* FIX: Corrected property name from `dueDate` to `due_date`. */}
+                                <td className="px-6 py-4 whitespace-nowrap">{new Date(invoice.due_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(invoice.status)}`}>
                                         {invoice.status}

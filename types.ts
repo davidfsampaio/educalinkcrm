@@ -86,7 +86,7 @@ export interface Expense {
     category: ExpenseCategory;
     amount: number;
     date: string;
-    schoolId: string;
+    school_id: string;
 }
 
 export interface Revenue {
@@ -95,7 +95,7 @@ export interface Revenue {
     category: RevenueCategory;
     amount: number;
     date: string;
-    schoolId: string;
+    school_id: string;
 }
 
 export interface User {
@@ -104,9 +104,9 @@ export interface User {
     email: string;
     role: UserRoleName;
     status: UserStatus;
-    avatarUrl: string;
-    studentId?: number;
-    schoolId: string;
+    avatar_url: string;
+    student_id?: number;
+    school_id: string;
 }
 
 
@@ -133,17 +133,17 @@ export interface Occurrence {
 export interface IndividualAgendaItem {
     id: number;
     date: string;
-    createdAt: string;
+    created_at: string;
     type: IndividualAgendaItemType;
     selections?: string[];
     description: string;
-    isSent: boolean;
+    is_sent: boolean;
 }
 
 export interface Document {
     id: number;
     title: string;
-    uploadDate: string;
+    upload_date: string;
     url: string;
 }
 
@@ -158,29 +158,29 @@ export interface Student {
     id: number;
     name: string;
     class: string;
-    enrollmentDate: string;
+    enrollment_date: string;
     status: StudentStatus;
-    parentName: string;
-    parentContact: string;
-    avatarUrl: string;
+    parent_name: string;
+    parent_contact: string;
+    avatar_url: string;
     cpf: string;
     address: string;
     email: string;
     phone: string;
-    medicalNotes?: string;
-    tuitionPlanId: number;
+    medical_notes?: string;
+    tuition_plan_id: number;
     grades: Grade[];
     attendance: Attendance[];
     occurrences: Occurrence[];
     documents: Document[];
-    individualAgenda: IndividualAgendaItem[];
-    communicationLog: CommunicationLog[];
-    schoolId: string;
+    individual_agenda: IndividualAgendaItem[];
+    communication_log: CommunicationLog[];
+    school_id: string;
 }
 
 // Represents the columns in the 'students' table for inserts/updates
-export type StudentColumns = Omit<Student, 'id' | 'grades' | 'attendance' | 'occurrences' | 'documents' | 'individualAgenda' | 'communicationLog'>;
-export type StudentUpdate = Partial<Omit<StudentColumns, 'schoolId'>>;
+export type StudentColumns = Omit<Student, 'id' | 'grades' | 'attendance' | 'occurrences' | 'documents' | 'individual_agenda' | 'communication_log'>;
+export type StudentUpdate = Partial<Omit<StudentColumns, 'school_id'>>;
 
 
 export interface Payment {
@@ -192,24 +192,24 @@ export interface Payment {
 
 export interface Invoice {
     id: string;
-    studentName: string;
-    studentId: number;
+    student_name: string;
+    student_id: number;
     amount: number;
-    dueDate: string;
-    paidDate?: string;
+    due_date: string;
+    paid_date?: string;
     status: PaymentStatus;
     payments: Payment[];
-    schoolId: string;
+    school_id: string;
 }
 
-export type InvoiceColumns = Omit<Invoice, 'schoolId' | 'payments'>;
-export type InvoiceUpdate = Partial<Omit<InvoiceColumns, 'id' | 'studentId' | 'studentName'>>;
+export type InvoiceColumns = Omit<Invoice, 'school_id' | 'payments'>;
+export type InvoiceUpdate = Partial<Omit<InvoiceColumns, 'id' | 'student_id' | 'student_name'>>;
 
 
 export interface Task {
     id: number;
     description: string;
-    isCompleted: boolean;
+    is_completed: boolean;
 }
 
 export interface RequiredDocument {
@@ -220,20 +220,20 @@ export interface RequiredDocument {
 export interface Lead {
     id: number;
     name: string;
-    parentName: string;
+    parent_name: string;
     contact: string;
     status: LeadStatus;
-    interestDate: string;
+    interest_date: string;
     notes: string;
     tasks: Task[];
-    isConverted: boolean;
-    requiredDocuments: RequiredDocument[];
-    communicationLog: CommunicationLog[];
-    schoolId: string;
+    is_converted: boolean;
+    required_documents: RequiredDocument[];
+    communication_log: CommunicationLog[];
+    school_id: string;
 }
 
-export type LeadColumns = Omit<Lead, 'id' | 'tasks' | 'requiredDocuments' | 'communicationLog'>;
-export type LeadUpdate = Partial<Omit<LeadColumns, 'schoolId'>>;
+export type LeadColumns = Omit<Lead, 'id' | 'tasks' | 'required_documents' | 'communication_log'>;
+export type LeadUpdate = Partial<Omit<LeadColumns, 'school_id'>>;
 
 
 export interface FinancialSummaryPoint {
@@ -248,21 +248,21 @@ export interface Staff {
     role: StaffRole;
     email: string;
     phone: string;
-    hireDate: string;
+    hire_date: string;
     status: StaffStatus;
-    avatarUrl: string;
+    avatar_url: string;
     cpf: string;
     address: string;
-    schoolId: string;
+    school_id: string;
 }
 
 export interface Communication {
     id: number;
     title: string;
     content: string;
-    recipientGroup: string;
-    sentDate: string;
-    schoolId: string;
+    recipient_group: string;
+    sent_date: string;
+    school_id: string;
 }
 
 export interface AgendaItem {
@@ -271,9 +271,9 @@ export interface AgendaItem {
     title: string;
     description: string;
     type: AgendaItemType;
-    classTarget: string;
-    isSent: boolean;
-    schoolId: string;
+    class_target: string;
+    is_sent: boolean;
+    school_id: string;
 }
 
 export interface LibraryBook {
@@ -282,12 +282,12 @@ export interface LibraryBook {
     author: string;
     isbn: string;
     status: 'Disponível' | 'Emprestado' | 'Em Manutenção';
-    borrowedBy?: {
-        studentId: number;
-        studentName: string;
+    borrowed_by?: {
+        student_id: number;
+        student_name: string;
     };
-    dueDate?: string;
-    schoolId: string;
+    due_date?: string;
+    school_id: string;
 }
 
 export interface Photo {
@@ -300,9 +300,9 @@ export interface PhotoAlbum {
     id: number;
     title: string;
     date: string;
-    coverUrl: string;
+    cover_url: string;
     photos: Photo[];
-    schoolId: string;
+    school_id: string;
 }
 
 export type PhotoAlbumColumns = Omit<PhotoAlbum, 'id' | 'photos'>;
@@ -312,16 +312,16 @@ export interface TuitionPlan {
     id: number;
     name: string;
     amount: number;
-    schoolId: string;
+    school_id: string;
 }
 
 export interface LeadCaptureCampaign {
     id: string;
     name: string;
-    publicUrl: string;
-    createdAt: string;
-    leadsCaptured: number;
-    schoolId: string;
+    public_url: string;
+    created_at: string;
+    leads_captured: number;
+    school_id: string;
 }
 
 export interface DataContextType {
@@ -339,29 +339,29 @@ export interface DataContextType {
     revenues: Revenue[];
     leadCaptureCampaigns: LeadCaptureCampaign[];
     loading: boolean;
-    addStudent: (studentData: Pick<Student, 'name' | 'class' | 'parentName' | 'parentContact' | 'cpf' | 'address' | 'email' | 'phone'>) => void;
+    addStudent: (studentData: Pick<Student, 'name' | 'class' | 'parent_name' | 'parent_contact' | 'cpf' | 'address' | 'email' | 'phone'>) => void;
     updateStudent: (updatedStudent: Student) => void;
-    addLead: (leadData: Omit<Lead, 'id' | 'schoolId'>, campaignId?: string) => void;
+    addLead: (leadData: Omit<Lead, 'id' | 'school_id'>, campaignId?: string) => void;
     updateLead: (updatedLead: Lead) => void;
-    addInvoice: (invoiceData: Omit<Invoice, 'id' | 'schoolId' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => void;
+    addInvoice: (invoiceData: Omit<Invoice, 'id' | 'school_id' | 'status' | 'payments' | 'student_name'> & { student_id: number }) => void;
     updateInvoice: (updatedInvoice: Invoice) => void;
     deleteInvoice: (invoiceId: string) => void;
-    addExpense: (expenseData: Omit<Expense, 'id' | 'schoolId'>) => void;
+    addExpense: (expenseData: Omit<Expense, 'id' | 'school_id'>) => void;
     updateExpense: (updatedExpense: Expense) => void;
     deleteExpense: (expenseId: number) => void;
-    addRevenue: (revenueData: Omit<Revenue, 'id' | 'schoolId'>) => void;
+    addRevenue: (revenueData: Omit<Revenue, 'id' | 'school_id'>) => void;
     updateRevenue: (updatedRevenue: Revenue) => void;
     deleteRevenue: (revenueId: number) => void;
-    addStaff: (staffData: Omit<Staff, 'id' | 'schoolId' | 'status' | 'hireDate' | 'avatarUrl'>) => void;
+    addStaff: (staffData: Omit<Staff, 'id' | 'school_id' | 'status' | 'hire_date' | 'avatar_url'>) => void;
     updateStaff: (updatedStaff: Staff) => void;
-    addCommunication: (commData: Omit<Communication, 'id' | 'schoolId' | 'sentDate'>) => void;
-    addAgendaItem: (itemData: Omit<AgendaItem, 'id' | 'schoolId' | 'isSent'>) => void;
+    addCommunication: (commData: Omit<Communication, 'id' | 'school_id' | 'sent_date'>) => void;
+    addAgendaItem: (itemData: Omit<AgendaItem, 'id' | 'school_id' | 'is_sent'>) => void;
     updateAgendaItem: (updatedItem: AgendaItem) => void;
-    addUser: (userData: Omit<User, 'id' | 'schoolId' | 'avatarUrl' | 'status'> & { password?: string }) => void;
+    addUser: (userData: Omit<User, 'id' | 'school_id' | 'avatar_url' | 'status'> & { password?: string }) => void;
     updateUser: (updatedUser: User) => void;
     deleteUser: (userId: string) => void;
-    addLeadCaptureCampaign: (campaign: Omit<LeadCaptureCampaign, 'id' | 'schoolId' | 'publicUrl' | 'createdAt' | 'leadsCaptured'>) => void;
-    addPhotoAlbum: (albumData: Omit<PhotoAlbum, 'id' | 'schoolId' | 'photos'>) => void;
+    addLeadCaptureCampaign: (campaign: Omit<LeadCaptureCampaign, 'id' | 'school_id' | 'public_url' | 'created_at' | 'leads_captured'>) => void;
+    addPhotoAlbum: (albumData: Omit<PhotoAlbum, 'id' | 'school_id' | 'photos'>) => void;
     deletePhotoAlbum: (albumId: number) => void;
     addPhotoToAlbum: (albumId: number, photoData: { url: string; caption: string }) => void;
     deletePhotoFromAlbum: (albumId: number, photoId: number) => void;
@@ -430,7 +430,7 @@ export interface Settings {
     };
     classes: string[];
     staffRoles: StaffRole[];
-    tuitionPlans: Omit<TuitionPlan, 'schoolId'>[];
+    tuitionPlans: Omit<TuitionPlan, 'school_id'>[];
     declarationTemplates: Record<DeclarationType, string>;
     roles: Role[];
 }
