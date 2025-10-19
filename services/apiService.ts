@@ -5,39 +5,39 @@ import {
 } from '../types';
 import { supabase } from './supabaseClient';
 
-// --- Helper para chamadas diretas ao Supabase (INSERT, UPDATE) ---
-const handleSupabaseWrite = async (queryPromise: Promise<{ data: any, error: any }>) => {
-    const { data, error } = await queryPromise;
+// --- Helper para chamadas RPC de escrita (INSERT, UPDATE, DELETE) ---
+// Esta é a abordagem recomendada para contornar problemas de RLS recursiva.
+const handleRpcWrite = async (rpcName: string, params: object) => {
+    const { data, error } = await supabase.rpc(rpcName, params);
     if (error) {
-        console.error("Supabase error:", error);
+        console.error(`Error in RPC '${rpcName}':`, error);
         throw new Error(error.message);
     }
-    // .select().single() deve retornar um objeto. Se for nulo, a operação falhou (por exemplo, bloqueada pela RLS).
-    // Isso transforma falhas silenciosas em erros explícitos.
-    if (data === null) {
-        throw new Error("A operação falhou. A política de segurança (RLS) pode ter impedido a escrita dos dados.");
+    // As RPCs devem retornar os dados inseridos/atualizados. Se for nulo, algo deu errado.
+    if (data === null || (Array.isArray(data) && data.length === 0)) {
+         throw new Error(`A operação '${rpcName}' falhou no servidor e não retornou dados. Verifique a função no backend.`);
     }
-    return data;
+    // RPCs que retornam um único item geralmente o retornam dentro de um array.
+    return Array.isArray(data) ? data[0] : data;
 };
 
-// --- Helper para chamadas DELETE ---
-const handleSupabaseDelete = async (queryPromise: Promise<{ error: any }>) => {
-    const { error } = await queryPromise;
-    if (error) {
-        console.error("Supabase delete error:", error);
+// --- Helper para chamadas DELETE RPC (que podem não retornar dados) ---
+const handleRpcDelete = async (rpcName: string, params: object) => {
+    const { error } = await supabase.rpc(rpcName, params);
+     if (error) {
+        console.error(`Error in RPC '${rpcName}':`, error);
         throw new Error(error.message);
     }
 };
 
-
-// --- READ operations (mantendo RPCs para leitura, pois parecem funcionar) ---
+// --- READ operations (mantendo RPCs para leitura) ---
 const handleRpcRead = async (rpcCall: Promise<{ data: any, error: any }>, rpcName: string) => {
     const { data, error } = await rpcCall;
     if (error) {
         console.error(`Error in RPC '${rpcName}':`, error);
         throw new Error(error.message);
     }
-    return data || []; // Garante que sempre retorne um array
+    return data || [];
 };
 
 export const getStudents = async (): Promise<Student[]> => handleRpcRead(supabase.rpc('get_students'), 'get_students');
@@ -68,95 +68,95 @@ export const getAuthenticatedUserProfile = async (): Promise<Staff | string | nu
     }
 };
 
-// --- WRITE operations (usando métodos padrão com verificação de retorno) ---
+// --- WRITE operations (usando RPCs) ---
+// NOTA: Você precisará criar essas funções no seu backend Supabase!
 
 // Students
 export const addStudent = async (studentData: StudentColumns): Promise<Student> => 
-    handleSupabaseWrite(supabase.from('students').insert(studentData).select().single());
+    handleRpcWrite('add_student', { p_data: studentData });
 
 export const updateStudent = async (studentId: number, studentData: StudentUpdate): Promise<Student> => 
-    handleSupabaseWrite(supabase.from('students').update(studentData).eq('id', studentId).select().single());
+    handleRpcWrite('update_student', { p_id: studentId, p_data: studentData });
 
 // Invoices
 export const addInvoice = async (invoiceData: InvoiceColumns): Promise<Invoice> =>
-    handleSupabaseWrite(supabase.from('invoices').insert(invoiceData).select().single());
+    handleRpcWrite('add_invoice', { p_data: invoiceData });
 
 export const updateInvoice = async (invoiceId: string, invoiceData: InvoiceUpdate): Promise<Invoice> =>
-    handleSupabaseWrite(supabase.from('invoices').update(invoiceData).eq('id', invoiceId).select().single());
+    handleRpcWrite('update_invoice', { p_id: invoiceId, p_data: invoiceData });
 
 export const deleteInvoice = async (invoiceId: string): Promise<void> =>
-    handleSupabaseDelete(supabase.from('invoices').delete().eq('id', invoiceId));
+    handleRpcDelete('delete_invoice', { p_id: invoiceId });
 
 // Leads
 export const addLead = async (leadData: LeadColumns): Promise<Lead> =>
-    handleSupabaseWrite(supabase.from('leads').insert(leadData).select().single());
+    handleRpcWrite('add_lead', { p_data: leadData });
 
 export const updateLead = async (leadId: number, leadData: LeadUpdate): Promise<Lead> =>
-    handleSupabaseWrite(supabase.from('leads').update(leadData).eq('id', leadId).select().single());
+    handleRpcWrite('update_lead', { p_id: leadId, p_data: leadData });
 
 // Staff
 export const addStaff = async (staffData: Omit<Staff, 'id'>): Promise<Staff> =>
-    handleSupabaseWrite(supabase.from('staff').insert(staffData).select().single());
+    handleRpcWrite('add_staff', { p_data: staffData });
 
 export const updateStaff = async (staffId: number, staffData: Partial<Omit<Staff, 'id' | 'school_id'>>): Promise<Staff> =>
-    handleSupabaseWrite(supabase.from('staff').update(staffData).eq('id', staffId).select().single());
+    handleRpcWrite('update_staff', { p_id: staffId, p_data: staffData });
 
 // Expenses
 export const addExpense = async (expenseData: Omit<Expense, 'id'>): Promise<Expense> =>
-    handleSupabaseWrite(supabase.from('expenses').insert(expenseData).select().single());
+    handleRpcWrite('add_expense', { p_data: expenseData });
 
 export const updateExpense = async (id: number, expenseData: Partial<Omit<Expense, 'id' | 'school_id'>>): Promise<Expense> =>
-    handleSupabaseWrite(supabase.from('expenses').update(expenseData).eq('id', id).select().single());
+    handleRpcWrite('update_expense', { p_id: id, p_data: expenseData });
 
 export const deleteExpense = async (id: number): Promise<void> =>
-    handleSupabaseDelete(supabase.from('expenses').delete().eq('id', id));
+    handleRpcDelete('delete_expense', { p_id: id });
 
 // Revenues
 export const addRevenue = async (revenueData: Omit<Revenue, 'id'>): Promise<Revenue> =>
-    handleSupabaseWrite(supabase.from('revenues').insert(revenueData).select().single());
+    handleRpcWrite('add_revenue', { p_data: revenueData });
 
 export const updateRevenue = async (id: number, revenueData: Partial<Omit<Revenue, 'id' | 'school_id'>>): Promise<Revenue> =>
-    handleSupabaseWrite(supabase.from('revenues').update(revenueData).eq('id', id).select().single());
+    handleRpcWrite('update_revenue', { p_id: id, p_data: revenueData });
 
 export const deleteRevenue = async (id: number): Promise<void> =>
-    handleSupabaseDelete(supabase.from('revenues').delete().eq('id', id));
+    handleRpcDelete('delete_revenue', { p_id: id });
 
 // Communications
 export const addCommunication = async (commData: Omit<Communication, 'id'>): Promise<Communication> =>
-    handleSupabaseWrite(supabase.from('communications').insert(commData).select().single());
+    handleRpcWrite('add_communication', { p_data: commData });
 
 // Agenda
 export const addAgendaItem = async (itemData: Omit<AgendaItem, 'id'>): Promise<AgendaItem> =>
-    handleSupabaseWrite(supabase.from('agenda').insert(itemData).select().single());
+    handleRpcWrite('add_agenda_item', { p_data: itemData });
 
 export const updateAgendaItem = async (id: number, itemData: Partial<Omit<AgendaItem, 'id' | 'school_id'>>): Promise<AgendaItem> =>
-    handleSupabaseWrite(supabase.from('agenda').update(itemData).eq('id', id).select().single());
+    handleRpcWrite('update_agenda_item', { p_id: id, p_data: itemData });
 
 // Users
 export const addUser = async (userData: Omit<User, 'id'>): Promise<User> =>
-     handleSupabaseWrite(supabase.from('users').insert(userData).select().single());
+     handleRpcWrite('add_user', { p_data: userData });
 
 export const updateUser = async (id: string, userData: Partial<Omit<User, 'id' | 'school_id'>>): Promise<User> =>
-    handleSupabaseWrite(supabase.from('users').update(userData).eq('id', id).select().single());
+    handleRpcWrite('update_user', { p_id: id, p_data: userData });
 
 export const deleteUser = async (id: string): Promise<void> =>
-    handleSupabaseDelete(supabase.from('users').delete().eq('id', id));
+    handleRpcDelete('delete_user', { p_id: id });
 
 // Campaigns
 export const addLeadCaptureCampaign = async (campaignData: LeadCaptureCampaign): Promise<LeadCaptureCampaign> =>
-    handleSupabaseWrite(supabase.from('lead_capture_campaigns').insert(campaignData).select().single());
+    handleRpcWrite('add_lead_capture_campaign', { p_data: campaignData });
 
 // Photo Albums
 export const addPhotoAlbum = async (albumData: PhotoAlbumColumns): Promise<PhotoAlbum> =>
-    handleSupabaseWrite(supabase.from('photo_albums').insert(albumData).select().single());
+    handleRpcWrite('add_photo_album', { p_data: albumData });
 
 export const deletePhotoAlbum = async (id: number): Promise<void> =>
-    handleSupabaseDelete(supabase.from('photo_albums').delete().eq('id', id));
+    handleRpcDelete('delete_photo_album', { p_id: id });
 
-// Esta função atualiza o campo de fotos, que é um JSON. É um caso especial.
 export const updateAlbumPhotos = async (albumId: number, photos: Photo[]): Promise<PhotoAlbum> =>
-    handleSupabaseWrite(supabase.from('photo_albums').update({ photos }).eq('id', albumId).select().single());
+    handleRpcWrite('update_album_photos', { p_id: albumId, p_photos: photos });
 
-// Library (Exemplo, se necessário)
+// Library
 export const addLibraryBook = async (bookData: Omit<LibraryBook, 'id'>): Promise<LibraryBook> =>
-    handleSupabaseWrite(supabase.from('library_books').insert(bookData).select().single());
+    handleRpcWrite('add_library_book', { p_data: bookData });
