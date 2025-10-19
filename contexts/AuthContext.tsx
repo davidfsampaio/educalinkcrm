@@ -1,9 +1,7 @@
 import React, { createContext, useContext, ReactNode, useState, useMemo, useEffect } from 'react';
-import { User, Permission, UserRoleName, UserStatus, StaffStatus } from '../types';
+import { User, Permission, UserRoleName, UserStatus } from '../types';
 import { useSettings } from './SettingsContext';
 import { supabase } from '../services/supabaseClient';
-import * as api from '../services/apiService';
-
 
 interface AuthContextType {
     currentUser: User | null;
@@ -23,73 +21,52 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         setAuthLoading(true);
 
-        const staffRoleToUserRole = (role: string): UserRoleName => {
-            if (role === 'Diretor(a)' || role === 'Admin') return 'Admin';
-            if (role === 'Secretário(a)') return 'Secretário(a)';
-            if (role === 'Coordenador(a)') return 'Coordenador(a)';
-            return 'Coordenador(a)'; 
-        };
-
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
             try {
                 if (session?.user) {
                     const { user } = session;
-                    
-                    const profileResult = await api.getAuthenticatedUserProfile();
+                    const { user_metadata, app_metadata } = user;
 
-                    if (profileResult && typeof profileResult === 'object') {
-                        // Case 1: RPC returned a full staff profile object (ideal case).
-                        const staffProfile = profileResult;
-                        setAuthError(null);
-                        const profile: User = {
-                            id: user.id,
-                            email: user.email!,
-                            name: staffProfile.name,
-                            avatarUrl: staffProfile.avatarUrl || `https://picsum.photos/seed/user${user.id}/100/100`,
-                            role: staffRoleToUserRole(staffProfile.role),
-                            status: staffProfile.status === StaffStatus.Active ? UserStatus.Active : UserStatus.Inactive,
-                            studentId: undefined,
-                            school_id: staffProfile.school_id,
-                        };
-                        setCurrentUser(profile);
-                    } else if (profileResult && typeof profileResult === 'string') {
-                        // Case 2: RPC returned just a role string. Fallback to user/app metadata.
-                        const roleName = profileResult;
-                        const { user_metadata, app_metadata } = user;
-                        let schoolId = user_metadata?.school_id || app_metadata?.school_id;
+                    // Build profile exclusively from metadata, removing the problematic RPC call.
+                    // This is the standard approach and avoids RLS recursion issues.
+                    const role: UserRoleName | undefined = user_metadata?.role || app_metadata?.role;
+                    let schoolId: string | undefined = user_metadata?.school_id || app_metadata?.school_id;
 
-                        // Fallback for Admin role if school_id is missing from metadata
-                        if (!schoolId && staffRoleToUserRole(roleName) === 'Admin') {
-                            console.warn("school_id not found in user metadata for Admin. Applying a fallback school_id: 'school-123'. This should be configured correctly in Supabase Auth user metadata for a permanent solution.");
-                            schoolId = 'school-123';
-                        }
-                        
-                        if (!schoolId) {
-                            const errorMsg = `Erro de autenticação: 'school_id' ausente nos metadados do usuário. Este é um campo obrigatório para carregar o perfil.`;
-                            console.error(errorMsg, "Causa provável: O usuário foi criado sem os metadados necessários ('school_id') em 'user_metadata' ou 'app_metadata' no Supabase Auth.");
-                            setAuthError(errorMsg);
-                            await supabase.auth.signOut();
-                        } else {
-                            setAuthError(null);
-                            const profile: User = {
-                                id: user.id,
-                                email: user.email!,
-                                name: user_metadata.full_name || user_metadata.name || user.email,
-                                avatarUrl: user_metadata.avatar_url || `https://picsum.photos/seed/user${user.id}/100/100`,
-                                role: staffRoleToUserRole(roleName),
-                                status: UserStatus.Active,
-                                studentId: undefined,
-                                school_id: schoolId,
-                            };
-                            setCurrentUser(profile);
-                        }
-                    } else {
-                        // Case 3: RPC failed or returned nothing.
-                        const errorMsg = `Erro de autenticação: Não foi possível carregar o perfil do funcionário. O acesso não é permitido.`;
-                        console.error(errorMsg, "Causa provável: A função RPC 'get_my_role' falhou ou o usuário não tem um perfil de funcionário correspondente.");
+                    if (!role) {
+                        const errorMsg = "Erro de autenticação: O 'cargo' (role) do usuário não foi encontrado nos metadados. Acesso não permitido.";
+                        console.error(errorMsg, "Ação necessária: Configure o campo 'role' nos metadados do usuário no Supabase Auth.");
                         setAuthError(errorMsg);
                         await supabase.auth.signOut();
+                        return; // Stop processing
                     }
+
+                    // Maintain the fallback for the Admin user if school_id is missing, but log a clear warning.
+                    if (!schoolId && role === 'Admin') {
+                        console.warn("school_id não encontrado para o Admin. Aplicando fallback 'school-123'. Para uma solução permanente, configure 'school_id' nos metadados do usuário no Supabase Auth.");
+                        schoolId = 'school-123';
+                    }
+
+                    if (!schoolId) {
+                        const errorMsg = "Erro de autenticação: O 'ID da escola' (school_id) não foi encontrado nos metadados. Acesso não permitido.";
+                        console.error(errorMsg, "Ação necessária: Configure o campo 'school_id' nos metadados do usuário no Supabase Auth.");
+                        setAuthError(errorMsg);
+                        await supabase.auth.signOut();
+                        return; // Stop processing
+                    }
+                    
+                    setAuthError(null);
+                    const profile: User = {
+                        id: user.id,
+                        email: user.email!,
+                        name: user_metadata?.full_name || user_metadata?.name || user.email!,
+                        avatarUrl: user_metadata?.avatar_url || `https://picsum.photos/seed/user${user.id}/100/100`,
+                        role: role,
+                        status: UserStatus.Active, // Assume active; can be managed in a separate 'profiles' table if needed
+                        studentId: user_metadata?.student_id, // For parent roles
+                        school_id: schoolId,
+                    };
+                    setCurrentUser(profile);
+
                 } else {
                     setCurrentUser(null);
                 }
@@ -98,6 +75,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 setAuthError("Ocorreu um erro inesperado durante a autenticação.");
                 setCurrentUser(null);
             } finally {
+                // This will now always be called, fixing the stuck loading screen.
                 setAuthLoading(false);
             }
         });
