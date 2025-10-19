@@ -187,7 +187,7 @@ const InitialSelectionScreen: React.FC<{ onSelect: (type: 'staff' | 'parent') =>
   );
 };
 
-const StaffLoginScreen: React.FC<{ onLogin: () => void, onBack: () => void }> = ({ onLogin, onBack }) => {
+const StaffLoginScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [email, setEmail] = useState('admin@educalink.com');
     const [password, setPassword] = useState('admin123');
     const [error, setError] = useState('');
@@ -197,18 +197,17 @@ const StaffLoginScreen: React.FC<{ onLogin: () => void, onBack: () => void }> = 
         setIsLoading(true);
         setError('');
 
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { error: signInError } = await supabase.auth.signInWithPassword({
             email: email,
             password: password,
         });
 
         setIsLoading(false);
 
-        if (error) {
-            setError(error.message);
-        } else if (data.user) {
-            onLogin();
+        if (signInError) {
+            setError(signInError.message);
         }
+        // No onLogin() call needed. AuthProvider detects the sign-in.
     };
 
     return (
@@ -262,119 +261,89 @@ const StaffLoginScreen: React.FC<{ onLogin: () => void, onBack: () => void }> = 
     );
 };
 
-const AuthScreen: React.FC<{ setUserType: (type: 'staff' | 'parent') => void }> = ({ setUserType }) => {
+const AuthScreen: React.FC = () => {
     const [view, setView] = useState<'initial' | 'staff_login'>('initial');
 
     const handleSelect = (type: 'staff' | 'parent') => {
         if (type === 'staff') {
             setView('staff_login');
         } else {
-            setUserType(type);
+            alert("Acesso de Pai/Responsável ainda não implementado.");
         }
     };
 
     return (
         <div className="flex items-center justify-center h-screen bg-slate-100 p-4">
             {view === 'initial' && <InitialSelectionScreen onSelect={handleSelect} />}
-            {view === 'staff_login' && <StaffLoginScreen onLogin={() => setUserType('staff')} onBack={() => setView('initial')} />}
+            {view === 'staff_login' && <StaffLoginScreen onBack={() => setView('initial')} />}
         </div>
     );
 };
 
 
-const App: React.FC = () => {
-  const [userType, setUserType] = useState<'staff' | 'parent' | null>(null);
-  const [page, setPage] = useState<'crm' | 'capture' | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
+const AppRouter: React.FC = () => {
+    const { currentUser } = useAuth();
+    const [page, setPage] = useState<'crm' | 'capture' | null>(null);
 
-  const handleSetUserType = (type: 'staff' | 'parent' | null) => {
-    setUserType(type);
-  };
+    useEffect(() => {
+        const handleRouting = () => {
+            if (window.location.hash.startsWith('#/capture/')) {
+                setPage('capture');
+            } else {
+                setPage('crm');
+            }
+        };
 
-  useEffect(() => {
-    const checkSession = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-            // Logic to determine if user is staff or parent could go here
-            // For now, assume any session is a staff session
-            setUserType('staff');
-        }
-        setAuthChecked(true);
+        handleRouting();
+        window.addEventListener('hashchange', handleRouting);
+        return () => window.removeEventListener('hashchange', handleRouting);
+    }, []);
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
     };
 
-    checkSession();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_IN') {
-             setUserType('staff');
-        }
-        if (event === 'SIGNED_OUT') {
-            setUserType(null);
-        }
-    });
-
-    return () => {
-        authListener.subscription.unsubscribe();
-    };
-  }, []);
-
-
-  useEffect(() => {
-    const handleRouting = () => {
-      if (window.location.hash.startsWith('#/capture/')) {
-        setPage('capture');
-      } else {
-        setPage('crm');
-      }
-    };
-
-    handleRouting(); // Initial check
-    window.addEventListener('hashchange', handleRouting);
-
-    return () => {
-      window.removeEventListener('hashchange', handleRouting);
-    };
-  }, []);
-
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    handleSetUserType(null);
-  };
-
-  const renderContent = () => {
-    if (page === null || !authChecked) {
-      return <div className="flex h-screen w-screen items-center justify-center"><p>Carregando...</p></div>;
+    if (page === null) {
+        return <div className="flex h-screen w-screen items-center justify-center"><p>Carregando...</p></div>;
     }
 
     if (page === 'capture') {
-        return <PublicLeadCapturePage />;
+        return (
+            <DataProvider>
+                <PublicLeadCapturePage />
+            </DataProvider>
+        );
+    }
+    
+    if (!currentUser) {
+        return <AuthScreen />;
     }
 
-    if (!userType) {
-      return <AuthScreen setUserType={handleSetUserType} />;
+    if (currentUser.role === 'Pai/Responsável') {
+        return (
+            <DataProvider>
+                <ParentPortal onLogout={handleLogout} />
+            </DataProvider>
+        );
     }
-    if (userType === 'staff') {
-      return (
-        <AuthProvider>
-          <MainApp onLogout={handleLogout} />
-        </AuthProvider>
-      );
-    }
-    if (userType === 'parent') {
-      return <ParentPortal onLogout={handleLogout} />;
-    }
-    return null;
-  };
 
+    return (
+        <DataProvider>
+            <MainApp onLogout={handleLogout} />
+        </DataProvider>
+    );
+};
+
+
+const App: React.FC = () => {
   return (
     <PWAProvider>
       <SettingsProvider>
-        <DataProvider>
-          <Suspense fallback={<div className="flex h-screen w-screen items-center justify-center"><p>Carregando Módulo...</p></div>}>
-            {renderContent()}
-          </Suspense>
-        </DataProvider>
+        <AuthProvider>
+            <Suspense fallback={<div className="flex h-screen w-screen items-center justify-center"><p>Carregando Módulo...</p></div>}>
+              <AppRouter />
+            </Suspense>
+        </AuthProvider>
       </SettingsProvider>
     </PWAProvider>
   );

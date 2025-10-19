@@ -1,9 +1,10 @@
+
+
 import React, { createContext, useContext, ReactNode, useState, useMemo, useEffect } from 'react';
 import { User, Permission } from '../types';
-import { useData } from './DataContext';
 import { useSettings } from './SettingsContext';
 import { supabase } from '../services/supabaseClient';
-import type { Session } from '@supabase/supabase-js';
+import * as api from '../services/apiService';
 
 
 interface AuthContextType {
@@ -14,36 +15,26 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { users, loading: isUsersLoading } = useData();
     const { settings } = useSettings();
-    const [session, setSession] = useState<Session | null>(null);
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [authLoading, setAuthLoading] = useState(true);
 
     useEffect(() => {
-        const fetchSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setSession(session);
+        setAuthLoading(true);
+        const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (session?.user?.email) {
+                const profile = await api.getUserProfileByEmail(session.user.email);
+                setCurrentUser(profile);
+            } else {
+                setCurrentUser(null);
+            }
             setAuthLoading(false);
-        };
-
-        fetchSession();
-
-        const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
         });
 
         return () => {
             authListener.subscription.unsubscribe();
         };
     }, []);
-
-    const currentUser = useMemo(() => {
-        if (authLoading || isUsersLoading || !session || !users) {
-            return null;
-        }
-        // Match Supabase auth user with our public users table profile
-        return users.find(u => u.email === session.user.email) || null;
-    }, [session, users, isUsersLoading, authLoading]);
     
     const userPermissions = useMemo((): Set<Permission> => {
         if (!currentUser || !settings.roles) {
@@ -59,7 +50,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const value = { currentUser, hasPermission };
 
-    if (authLoading || isUsersLoading) {
+    if (authLoading) {
         return (
             <div className="flex h-screen w-screen items-center justify-center">
                 <p>Carregando sistema...</p>

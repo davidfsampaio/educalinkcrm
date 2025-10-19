@@ -1,7 +1,7 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum, FinancialSummaryPoint, User, Expense, Revenue, LeadCaptureCampaign, LeadStatus, StudentStatus, PaymentStatus, StaffStatus, UserStatus, Photo, DataContextType, RevenueCategory } from '../types';
 import * as api from '../services/apiService';
+import { useAuth } from './AuthContext'; // We'll need this to get the school_id
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
@@ -9,6 +9,7 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 const generateNumericId = () => Date.now() + Math.floor(Math.random() * 1000);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const { currentUser } = useAuth(); // Get the currently logged-in user
     const [students, setStudents] = useState<Student[]>([]);
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [leads, setLeads] = useState<Lead[]>([]);
@@ -24,27 +25,27 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [leadCaptureCampaigns, setLeadCaptureCampaigns] = useState<LeadCaptureCampaign[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const loadData = useCallback(async (isSeedingRetry = false) => {
+    const loadData = useCallback(async () => {
+        // Only load data if we have a logged-in user with a school_id
+        if (!currentUser?.school_id) {
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
-            const studentsCheck = await api.getStudents();
-            if (studentsCheck.length === 0 && !isSeedingRetry) {
-                await api.seedDatabase();
-                // Recursively call to reload data after seeding
-                loadData(true);
-                return;
-            }
-
+            // With RLS, these calls will automatically be scoped to the user's school
             const [
-                invoicesData, leadsData, staffData, usersData,
+                studentsData, invoicesData, leadsData, staffData, usersData,
                 communicationsData, agendaData, libraryData, albumData,
                 expensesData, revenuesData, campaignsData,
             ] = await Promise.all([
-                api.getInvoices(), api.getLeads(), api.getStaff(), api.getUsers(),
+                api.getStudents(), api.getInvoices(), api.getLeads(), api.getStaff(), api.getUsers(),
                 api.getCommunications(), api.getAgendaItems(), api.getLibraryBooks(), api.getPhotoAlbums(),
                 api.getExpenses(), api.getRevenues(), api.getLeadCaptureCampaigns(),
             ]);
-            setStudents(studentsCheck);
+            
+            setStudents(studentsData);
             setInvoices(invoicesData);
             setLeads(leadsData);
             setStaff(staffData);
@@ -95,16 +96,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [currentUser]); // Re-run loadData when the user changes
 
     useEffect(() => {
         loadData();
     }, [loadData]);
 
-    const addStudent = async (studentData: Omit<Student, 'id' | 'status' | 'enrollmentDate' | 'avatarUrl' | 'grades' | 'attendance' | 'occurrences' | 'documents' | 'individualAgenda' | 'communicationLog' | 'tuitionPlanId' | 'medicalNotes'>) => {
+    const addStudent = async (studentData: Omit<Student, 'id' | 'school_id' | 'status' | 'enrollmentDate' | 'avatarUrl' | 'grades' | 'attendance' | 'occurrences' | 'documents' | 'individualAgenda' | 'communicationLog' | 'tuitionPlanId' | 'medicalNotes'>) => {
+        if (!currentUser?.school_id) return;
         try {
             const newStudentPayload: Student = {
                 id: generateNumericId(),
+                school_id: currentUser.school_id,
                 ...studentData,
                 status: StudentStatus.Active,
                 enrollmentDate: new Date().toISOString().split('T')[0],
@@ -123,7 +126,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updateStudent = async (updatedStudent: Student) => {
         try {
-            const { id, ...studentData } = updatedStudent;
+            const { id, school_id, ...studentData } = updatedStudent;
             const updated = await api.updateStudent(id, studentData);
             if (updated) {
                 setStudents(prev => prev.map(s => (s.id === updated.id ? updated : s)));
@@ -133,16 +136,19 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
     
-    const addLead = async (leadData: Omit<Lead, 'id'>, campaignId?: string) => {
+    const addLead = async (leadData: Omit<Lead, 'id' | 'school_id'>, campaignId?: string) => {
+        if (!currentUser?.school_id) return;
         try {
             const newLeadPayload: Lead = {
                 id: generateNumericId(),
+                school_id: currentUser.school_id,
                 ...leadData,
             };
             const newLead = await api.addLead(newLeadPayload);
             if (newLead) {
                 setLeads(prev => [newLead, ...prev]);
                 if (campaignId) {
+                    // This update also needs to be scoped by RLS, which is fine
                     setLeadCaptureCampaigns(prev => prev.map(c => 
                         c.id === campaignId ? { ...c, leadsCaptured: c.leadsCaptured + 1 } : c
                     ));
@@ -155,7 +161,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const updateLead = async (updatedLead: Lead) => {
         try {
-             const { id, ...leadData } = updatedLead;
+             const { id, school_id, ...leadData } = updatedLead;
             const updated = await api.updateLead(id, leadData);
             if (updated) {
                 setLeads(prev => prev.map(l => (l.id === updated.id ? updated : l)));
@@ -165,7 +171,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const addInvoice = async (newInvoiceData: Omit<Invoice, 'id' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => {
+    const addInvoice = async (newInvoiceData: Omit<Invoice, 'id' | 'school_id' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => {
+        if (!currentUser?.school_id) return;
         try {
             const student = students.find(s => s.id === newInvoiceData.studentId);
             if (!student) throw new Error("Student not found");
@@ -173,6 +180,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const id = `INV-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(Date.now()).slice(-5)}`;
             const payload: Invoice = {
                 id,
+                school_id: currentUser.school_id,
                 ...newInvoiceData,
                 studentName: student.name,
                 status: new Date(newInvoiceData.dueDate) < new Date() ? PaymentStatus.Overdue : PaymentStatus.Pending,
@@ -189,7 +197,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updateInvoice = async (updatedInvoice: Invoice) => {
         try {
-            const { id, ...invoiceData } = updatedInvoice;
+            const { id, school_id, ...invoiceData } = updatedInvoice;
             const updated = await api.updateInvoice(id, invoiceData);
             if(updated) {
                 setInvoices(prev => prev.map(inv => (inv.id === updated.id ? updated : inv)));
@@ -208,20 +216,21 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const createCrudOperations = <T extends { id: number | string }>(
+    const createCrudOperations = <T extends { id: number | string, school_id: string }>(
         setState: React.Dispatch<React.SetStateAction<T[]>>,
         apiService: { add: (item: any) => Promise<T>, update: (id: any, item: any) => Promise<T>, delete: (id: any) => Promise<void> }
     ) => ({
-        add: async (itemData: Omit<T, 'id'>) => {
+        add: async (itemData: Omit<T, 'id' | 'school_id'>) => {
+            if (!currentUser?.school_id) return;
             try {
-                const newPayload = { id: generateNumericId(), ...itemData } as T;
+                const newPayload = { id: generateNumericId(), school_id: currentUser.school_id, ...itemData } as T;
                 const newItem = await apiService.add(newPayload);
                 if (newItem) setState(prev => [newItem, ...prev]);
             } catch (error) { console.error(`Failed to add item:`, error); }
         },
         update: async (updatedItem: T) => {
             try {
-                const { id, ...itemData } = updatedItem;
+                const { id, school_id, ...itemData } = updatedItem;
                 const updated = await apiService.update(id, itemData);
                 if(updated) setState(prev => prev.map(item => (item.id === updated.id ? updated : item)));
             } catch (error) { console.error(`Failed to update item:`, error); }
@@ -233,24 +242,60 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             } catch (error) { console.error(`Failed to delete item:`, error); }
         }
     });
-
+    
     const expenseOps = createCrudOperations(setExpenses, { add: api.addExpense, update: api.updateExpense, delete: api.deleteExpense });
     const revenueOps = createCrudOperations(setRevenues, { add: api.addRevenue, update: api.updateRevenue, delete: api.deleteRevenue });
     const staffOps = createCrudOperations(setStaff, { add: api.addStaff, update: api.updateStaff, delete: () => Promise.resolve() });
-    const userOps = createCrudOperations(setUsers, { add: api.addUser, update: api.updateUser, delete: api.deleteUser });
     
-    // Non-standard CRUD
-    const addCommunication = async (commData: Omit<Communication, 'id' | 'sentDate'>) => {
+    const addUser = async (userData: Omit<User, 'id' | 'school_id' | 'avatarUrl' | 'status'>) => {
+        if (!currentUser?.school_id) return;
         try {
-            const payload: Communication = { id: generateNumericId(), ...commData, sentDate: new Date().toISOString() };
+            // In a real app, user creation would be a complex flow involving auth.
+            // For now, we just associate with the current user's school.
+            const payload: User = {
+                // FIX: User ID should be a number. Changed from empty string to a generated numeric ID.
+                id: generateNumericId(), // Will be set by Supabase trigger from auth
+                school_id: currentUser.school_id, 
+                ...userData, 
+                status: UserStatus.Active,
+                avatarUrl: `https://picsum.photos/seed/user${Date.now()}/100/100`
+            };
+            // The API call for addUser would need to be a server-side function call
+            // await api.addUser(payload); 
+            console.log("Simulating add user:", payload);
+        } catch (error) { console.error("Failed to add user:", error); }
+    };
+
+    const updateUser = async (updatedUser: User) => {
+        try {
+            const { id, school_id, ...userData } = updatedUser;
+            const updated = await api.updateUser(id, userData);
+            if (updated) setUsers(prev => prev.map(u => u.id === id ? updated : u));
+        } catch(e) { console.error("Failed to update user", e); }
+    };
+
+    // FIX: Changed userId from string to number to match the User type and API service definition.
+    const deleteUser = async (userId: number) => {
+        try {
+            await api.deleteUser(userId);
+            setUsers(prev => prev.filter(u => u.id !== userId));
+        } catch(e) { console.error("Failed to delete user", e); }
+    }
+
+    // Non-standard CRUD
+    const addCommunication = async (commData: Omit<Communication, 'id' | 'school_id' | 'sentDate'>) => {
+        if (!currentUser?.school_id) return;
+        try {
+            const payload: Communication = { id: generateNumericId(), school_id: currentUser.school_id, ...commData, sentDate: new Date().toISOString() };
             const newComm = await api.addCommunication(payload);
             if(newComm) setCommunications(prev => [newComm, ...prev]);
         } catch (error) { console.error("Failed to add communication:", error); }
     };
     
-    const addAgendaItem = async (itemData: Omit<AgendaItem, 'id' | 'isSent'>) => {
+    const addAgendaItem = async (itemData: Omit<AgendaItem, 'id' | 'school_id' | 'isSent'>) => {
+        if (!currentUser?.school_id) return;
         try {
-            const payload: AgendaItem = { id: generateNumericId(), ...itemData, isSent: false };
+            const payload: AgendaItem = { id: generateNumericId(), school_id: currentUser.school_id, ...itemData, isSent: false };
             const newItem = await api.addAgendaItem(payload);
             if(newItem) setAgendaItems(prev => [newItem, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         } catch (error) { console.error("Failed to add agenda item:", error); }
@@ -258,22 +303,33 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updateAgendaItem = async (updatedItem: AgendaItem) => {
         try {
-            const { id, ...itemData } = updatedItem;
+            const { id, school_id, ...itemData } = updatedItem;
             const updated = await api.updateAgendaItem(id, itemData);
             if(updated) setAgendaItems(prev => prev.map(item => item.id === updated.id ? updated : item));
         } catch (error) { console.error("Failed to update agenda item:", error); }
     };
 
-    const addLeadCaptureCampaign = async (campaign: LeadCaptureCampaign) => {
+    const addLeadCaptureCampaign = async (campaignData: Omit<LeadCaptureCampaign, 'id' | 'school_id' | 'publicUrl' | 'createdAt' | 'leadsCaptured'>) => {
+        if (!currentUser?.school_id) return;
         try {
-            const newCampaign = await api.addLeadCaptureCampaign(campaign);
+            const campaignId = `campaign-${Date.now()}`;
+            const payload: LeadCaptureCampaign = {
+                id: campaignId,
+                school_id: currentUser.school_id,
+                ...campaignData,
+                publicUrl: `/#/capture/${campaignId}`,
+                createdAt: new Date().toISOString(),
+                leadsCaptured: 0,
+            };
+            const newCampaign = await api.addLeadCaptureCampaign(payload);
             if(newCampaign) setLeadCaptureCampaigns(prev => [newCampaign, ...prev]);
         } catch (error) { console.error("Failed to add campaign:", error); }
     };
 
-    const addPhotoAlbum = async (albumData: Omit<PhotoAlbum, 'id' | 'photos'>) => {
+    const addPhotoAlbum = async (albumData: Omit<PhotoAlbum, 'id' | 'school_id' | 'photos'>) => {
+        if (!currentUser?.school_id) return;
         try {
-            const payload: PhotoAlbum = { id: generateNumericId(), ...albumData, photos: [] };
+            const payload: PhotoAlbum = { id: generateNumericId(), school_id: currentUser.school_id, ...albumData, photos: [] };
             const newAlbum = await api.addPhotoAlbum(payload);
             if(newAlbum) setPhotoAlbums(prev => [newAlbum, ...prev]);
         } catch (error) { console.error("Failed to add album:", error); }
@@ -317,7 +373,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addRevenue: revenueOps.add, updateRevenue: revenueOps.update, deleteRevenue: revenueOps.delete,
         addStaff: staffOps.add, updateStaff: staffOps.update,
         addCommunication, addAgendaItem, updateAgendaItem,
-        addUser: userOps.add, updateUser: userOps.update, deleteUser: userOps.delete,
+        addUser, updateUser, deleteUser,
         addLeadCaptureCampaign, addPhotoAlbum, deletePhotoAlbum, addPhotoToAlbum, deletePhotoFromAlbum
     };
 

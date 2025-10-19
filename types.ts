@@ -74,12 +74,19 @@ export enum RevenueCategory {
     Other = 'Outros',
 }
 
+export interface School {
+    id: string; // uuid
+    name: string;
+    // Potentially add subscription info, etc.
+}
+
 export interface Expense {
     id: number;
     description: string;
     category: ExpenseCategory;
     amount: number;
     date: string;
+    school_id: string;
 }
 
 export interface Revenue {
@@ -88,16 +95,18 @@ export interface Revenue {
     category: RevenueCategory;
     amount: number;
     date: string;
+    school_id: string;
 }
 
 export interface User {
-    id: number;
+    id: number; // Changed from string to number to match DB bigint
     name: string;
     email: string;
     role: UserRoleName;
     status: UserStatus;
     avatarUrl: string;
     studentId?: number;
+    school_id: string;
 }
 
 
@@ -166,6 +175,7 @@ export interface Student {
     documents: Document[];
     individualAgenda: IndividualAgendaItem[];
     communicationLog: CommunicationLog[];
+    school_id: string;
 }
 
 export interface Payment {
@@ -184,6 +194,7 @@ export interface Invoice {
     paidDate?: string;
     status: PaymentStatus;
     payments: Payment[];
+    school_id: string;
 }
 
 export interface Task {
@@ -209,6 +220,7 @@ export interface Lead {
     isConverted: boolean;
     requiredDocuments: RequiredDocument[];
     communicationLog: CommunicationLog[];
+    school_id: string;
 }
 
 export interface FinancialSummaryPoint {
@@ -228,6 +240,7 @@ export interface Staff {
     avatarUrl: string;
     cpf: string;
     address: string;
+    school_id: string;
 }
 
 export interface Communication {
@@ -236,6 +249,7 @@ export interface Communication {
     content: string;
     recipientGroup: string;
     sentDate: string;
+    school_id: string;
 }
 
 export interface AgendaItem {
@@ -246,6 +260,7 @@ export interface AgendaItem {
     type: AgendaItemType;
     classTarget: string;
     isSent: boolean;
+    school_id: string;
 }
 
 export interface LibraryBook {
@@ -259,6 +274,7 @@ export interface LibraryBook {
         studentName: string;
     };
     dueDate?: string;
+    school_id: string;
 }
 
 export interface Photo {
@@ -273,6 +289,7 @@ export interface PhotoAlbum {
     date: string;
     coverUrl: string;
     photos: Photo[];
+    school_id: string;
 }
 
 
@@ -280,6 +297,7 @@ export interface TuitionPlan {
     id: number;
     name: string;
     amount: number;
+    school_id: string;
 }
 
 export interface LeadCaptureCampaign {
@@ -288,6 +306,7 @@ export interface LeadCaptureCampaign {
     publicUrl: string;
     createdAt: string;
     leadsCaptured: number;
+    school_id: string;
 }
 
 export interface DataContextType {
@@ -305,29 +324,29 @@ export interface DataContextType {
     revenues: Revenue[];
     leadCaptureCampaigns: LeadCaptureCampaign[];
     loading: boolean;
-    addStudent: (studentData: Omit<Student, 'id' | 'status' | 'enrollmentDate' | 'avatarUrl' | 'grades' | 'attendance' | 'occurrences' | 'documents' | 'individualAgenda' | 'communicationLog' | 'tuitionPlanId' | 'medicalNotes'>) => void;
+    addStudent: (studentData: Omit<Student, 'id' | 'school_id' | 'status' | 'enrollmentDate' | 'avatarUrl' | 'grades' | 'attendance' | 'occurrences' | 'documents' | 'individualAgenda' | 'communicationLog' | 'tuitionPlanId' | 'medicalNotes'>) => void;
     updateStudent: (updatedStudent: Student) => void;
-    addLead: (leadData: Omit<Lead, 'id'>, campaignId?: string) => void;
+    addLead: (leadData: Omit<Lead, 'id' | 'school_id'>, campaignId?: string) => void;
     updateLead: (updatedLead: Lead) => void;
-    addInvoice: (invoiceData: Omit<Invoice, 'id' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => void;
+    addInvoice: (invoiceData: Omit<Invoice, 'id' | 'school_id' | 'status' | 'payments' | 'studentName'> & { studentId: number }) => void;
     updateInvoice: (updatedInvoice: Invoice) => void;
     deleteInvoice: (invoiceId: string) => void;
-    addExpense: (expenseData: Omit<Expense, 'id'>) => void;
+    addExpense: (expenseData: Omit<Expense, 'id' | 'school_id'>) => void;
     updateExpense: (updatedExpense: Expense) => void;
     deleteExpense: (expenseId: number) => void;
-    addRevenue: (revenueData: Omit<Revenue, 'id'>) => void;
+    addRevenue: (revenueData: Omit<Revenue, 'id' | 'school_id'>) => void;
     updateRevenue: (updatedRevenue: Revenue) => void;
     deleteRevenue: (revenueId: number) => void;
-    addStaff: (staffData: Omit<Staff, 'id' | 'status' | 'hireDate' | 'avatarUrl'>) => void;
+    addStaff: (staffData: Omit<Staff, 'id' | 'school_id' | 'status' | 'hireDate' | 'avatarUrl'>) => void;
     updateStaff: (updatedStaff: Staff) => void;
-    addCommunication: (commData: Omit<Communication, 'id' | 'sentDate'>) => void;
-    addAgendaItem: (itemData: Omit<AgendaItem, 'id' | 'isSent'>) => void;
+    addCommunication: (commData: Omit<Communication, 'id' | 'school_id' | 'sentDate'>) => void;
+    addAgendaItem: (itemData: Omit<AgendaItem, 'id' | 'school_id' | 'isSent'>) => void;
     updateAgendaItem: (updatedItem: AgendaItem) => void;
-    addUser: (userData: Omit<User, 'id' | 'avatarUrl' | 'status'>) => void;
+    addUser: (userData: Omit<User, 'id' | 'school_id' | 'avatarUrl' | 'status'>) => void;
     updateUser: (updatedUser: User) => void;
     deleteUser: (userId: number) => void;
-    addLeadCaptureCampaign: (campaign: LeadCaptureCampaign) => void;
-    addPhotoAlbum: (albumData: Omit<PhotoAlbum, 'id' | 'photos'>) => void;
+    addLeadCaptureCampaign: (campaign: Omit<LeadCaptureCampaign, 'id' | 'school_id' | 'publicUrl' | 'createdAt' | 'leadsCaptured'>) => void;
+    addPhotoAlbum: (albumData: Omit<PhotoAlbum, 'id' | 'school_id' | 'photos'>) => void;
     deletePhotoAlbum: (albumId: number) => void;
     addPhotoToAlbum: (albumId: number, photoData: { url: string; caption: string }) => void;
     deletePhotoFromAlbum: (albumId: number, photoId: number) => void;
@@ -396,7 +415,7 @@ export interface Settings {
     };
     classes: string[];
     staffRoles: StaffRole[];
-    tuitionPlans: TuitionPlan[];
+    tuitionPlans: Omit<TuitionPlan, 'school_id'>[];
     declarationTemplates: Record<DeclarationType, string>;
     roles: Role[];
 }

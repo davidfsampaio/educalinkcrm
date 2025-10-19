@@ -1,12 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+
+
 import {
     Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum,
-    FinancialSummaryPoint, User, Expense, Revenue, LeadCaptureCampaign, Photo
+    User, Expense, Revenue, LeadCaptureCampaign, Photo
 } from '../types';
-import {
-    mockStudents, mockInvoices, mockLeads, mockStaff, mockUsers, mockCommunications,
-    mockAgendaItems, mockLibraryBooks, mockPhotoAlbums, mockExpenses, mockRevenues, mockLeadCaptureCampaigns
-} from '../data/mockData';
 import { supabase } from './supabaseClient';
 
 // Helper for error handling
@@ -17,57 +14,10 @@ const handleSupabaseError = (error: any, context: string) => {
     }
 };
 
-// --- DATABASE SEEDING ---
-export const seedDatabase = async () => {
-    console.log("Seeding database with initial mock data...");
-    try {
-        // Insert data with no dependencies first
-        const { error: staffError } = await supabase.from('staff').insert(mockStaff);
-        handleSupabaseError(staffError, 'seed staff');
-
-        const { error: studentsError } = await supabase.from('students').insert(mockStudents);
-        handleSupabaseError(studentsError, 'seed students');
-        
-        // Insert data with dependencies
-        const { error: usersError } = await supabase.from('users').insert(mockUsers);
-        handleSupabaseError(usersError, 'seed users');
-        
-        const { error: invoicesError } = await supabase.from('invoices').insert(mockInvoices);
-        handleSupabaseError(invoicesError, 'seed invoices');
-
-        // Insert remaining data
-        const { error: leadsError } = await supabase.from('leads').insert(mockLeads);
-        handleSupabaseError(leadsError, 'seed leads');
-
-        const { error: commsError } = await supabase.from('communications').insert(mockCommunications);
-        handleSupabaseError(commsError, 'seed communications');
-
-        const { error: agendaError } = await supabase.from('agenda_items').insert(mockAgendaItems);
-        handleSupabaseError(agendaError, 'seed agenda_items');
-        
-        const { error: libraryError } = await supabase.from('library_books').insert(mockLibraryBooks);
-        handleSupabaseError(libraryError, 'seed library_books');
-
-        const { error: albumsError } = await supabase.from('photo_albums').insert(mockPhotoAlbums);
-        handleSupabaseError(albumsError, 'seed photo_albums');
-
-        const { error: expensesError } = await supabase.from('expenses').insert(mockExpenses);
-        handleSupabaseError(expensesError, 'seed expenses');
-        
-        const { error: revenuesError } = await supabase.from('revenues').insert(mockRevenues);
-        handleSupabaseError(revenuesError, 'seed revenues');
-
-        const { error: campaignsError } = await supabase.from('lead_capture_campaigns').insert(mockLeadCaptureCampaigns);
-        handleSupabaseError(campaignsError, 'seed lead_capture_campaigns');
-
-        console.log("Database seeding completed successfully.");
-    } catch (error) {
-        console.error("A critical error occurred during database seeding:", error);
-    }
-};
-
-
 // --- READ operations ---
+// Note: With Row Level Security (RLS) enabled, these simple 'select *' queries
+// are automatically and securely filtered by Supabase on the backend.
+// We don't need to add 'where("school_id", ...)' clauses here.
 
 export const getStudents = async (): Promise<Student[]> => {
     const { data, error } = await supabase.from('students').select('*').order('name');
@@ -97,6 +47,15 @@ export const getUsers = async (): Promise<User[]> => {
     const { data, error } = await supabase.from('users').select('*');
     handleSupabaseError(error, 'getUsers');
     return data || [];
+};
+
+export const getUserProfileByEmail = async (email: string): Promise<User | null> => {
+    const { data, error } = await supabase.from('users').select('*').eq('email', email).single();
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+        console.error('Error fetching user profile by email:', error);
+        return null;
+    }
+    return data;
 };
 
 export const getCommunications = async (): Promise<Communication[]> => {
@@ -150,7 +109,7 @@ export const addStudent = async (studentData: Student) => {
     handleSupabaseError(error, 'addStudent');
     return data;
 };
-export const updateStudent = async (studentId: number, studentData: Partial<Student>) => {
+export const updateStudent = async (studentId: number, studentData: Partial<Omit<Student, 'id' | 'school_id'>>) => {
     const { data, error } = await supabase.from('students').update(studentData).eq('id', studentId).select().single();
     handleSupabaseError(error, 'updateStudent');
     return data;
@@ -162,7 +121,7 @@ export const addInvoice = async (invoiceData: Invoice) => {
     handleSupabaseError(error, 'addInvoice');
     return data;
 }
-export const updateInvoice = async (invoiceId: string, invoiceData: Partial<Invoice>) => {
+export const updateInvoice = async (invoiceId: string, invoiceData: Partial<Omit<Invoice, 'id' | 'school_id'>>) => {
     const { data, error } = await supabase.from('invoices').update(invoiceData).eq('id', invoiceId).select().single();
     handleSupabaseError(error, 'updateInvoice');
     return data;
@@ -178,7 +137,7 @@ export const addLead = async (leadData: Lead) => {
     handleSupabaseError(error, 'addLead');
     return data;
 }
-export const updateLead = async (leadId: number, leadData: Partial<Lead>) => {
+export const updateLead = async (leadId: number, leadData: Partial<Omit<Lead, 'id' | 'school_id'>>) => {
     const { data, error } = await supabase.from('leads').update(leadData).eq('id', leadId).select().single();
     handleSupabaseError(error, 'updateLead');
     return data;
@@ -190,7 +149,7 @@ export const addStaff = async (staffData: Staff) => {
     handleSupabaseError(error, 'addStaff');
     return data;
 }
-export const updateStaff = async (staffId: number, staffData: Partial<Staff>) => {
+export const updateStaff = async (staffId: number, staffData: Partial<Omit<Staff, 'id' | 'school_id'>>) => {
     const { data, error } = await supabase.from('staff').update(staffData).eq('id', staffId).select().single();
     handleSupabaseError(error, 'updateStaff');
     return data;
@@ -202,7 +161,7 @@ export const addExpense = async (expenseData: Expense) => {
     handleSupabaseError(error, 'addExpense');
     return data;
 };
-export const updateExpense = async (id: number, expenseData: Partial<Expense>) => {
+export const updateExpense = async (id: number, expenseData: Partial<Omit<Expense, 'id' | 'school_id'>>) => {
     const { data, error } = await supabase.from('expenses').update(expenseData).eq('id', id).select().single();
     handleSupabaseError(error, 'updateExpense');
     return data;
@@ -218,7 +177,7 @@ export const addRevenue = async (revenueData: Revenue) => {
     handleSupabaseError(error, 'addRevenue');
     return data;
 };
-export const updateRevenue = async (id: number, revenueData: Partial<Revenue>) => {
+export const updateRevenue = async (id: number, revenueData: Partial<Omit<Revenue, 'id' | 'school_id'>>) => {
     const { data, error } = await supabase.from('revenues').update(revenueData).eq('id', id).select().single();
     handleSupabaseError(error, 'updateRevenue');
     return data;
@@ -241,7 +200,7 @@ export const addAgendaItem = async (itemData: AgendaItem) => {
     handleSupabaseError(error, 'addAgendaItem');
     return data;
 };
-export const updateAgendaItem = async (id: number, itemData: Partial<AgendaItem>) => {
+export const updateAgendaItem = async (id: number, itemData: Partial<Omit<AgendaItem, 'id' | 'school_id'>>) => {
     const { data, error } = await supabase.from('agenda_items').update(itemData).eq('id', id).select().single();
     handleSupabaseError(error, 'updateAgendaItem');
     return data;
@@ -249,16 +208,20 @@ export const updateAgendaItem = async (id: number, itemData: Partial<AgendaItem>
 
 // Users
 export const addUser = async (userData: User) => {
+    // This would be handled by a server-side function in a real multi-tenant app
+    // to securely associate the new auth user with a profile.
+    // For now, we insert directly.
     const { data, error } = await supabase.from('users').insert(userData).select().single();
     handleSupabaseError(error, 'addUser');
     return data;
 };
-export const updateUser = async (id: number, userData: Partial<User>) => {
+export const updateUser = async (id: number, userData: Partial<Omit<User, 'id' | 'school_id'>>) => {
     const { data, error } = await supabase.from('users').update(userData).eq('id', id).select().single();
     handleSupabaseError(error, 'updateUser');
     return data;
 };
 export const deleteUser = async (id: number) => {
+    // This should also be a secure server-side function
     const { error } = await supabase.from('users').delete().eq('id', id);
     handleSupabaseError(error, 'deleteUser');
 };

@@ -19,16 +19,9 @@ const LeadCaptureLinksModal: React.FC<LeadCaptureLinksModalProps> = ({ isOpen, o
     const [isCreateModalOpen, setCreateModalOpen] = useState(false);
     const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
+    // FIX: Refactored function to align with DataContext, which handles object creation.
     const handleCreateCampaign = (campaignName: string) => {
-        const campaignId = `campaign-${Date.now()}`;
-        const newCampaign: LeadCaptureCampaign = {
-            id: campaignId,
-            name: campaignName,
-            publicUrl: `/#/capture/${campaignId}`,
-            createdAt: new Date().toISOString(),
-            leadsCaptured: 0,
-        };
-        addLeadCaptureCampaign(newCampaign);
+        addLeadCaptureCampaign({ name: campaignName });
         setCreateModalOpen(false);
     };
 

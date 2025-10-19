@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Modal from '../../common/Modal';
 import { IndividualAgendaItem, IndividualAgendaItemType } from '../../../types';

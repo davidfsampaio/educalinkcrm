@@ -26,7 +26,8 @@ const PublicLeadCapturePage: React.FC = () => {
         setIsSubmitting(true);
         setError('');
 
-        const newLead: Omit<Lead, 'id'> = {
+        // FIX: Corrected type to Omit<Lead, 'id' | 'school_id'> to align with addLead function signature.
+        const newLead: Omit<Lead, 'id' | 'school_id'> = {
             name: `Lead de ${parentName} (Aluno: ${studentName})`,
             parentName,
             contact: `${phone} / ${email}`,

@@ -32,7 +32,8 @@ const AddAlbumModal: React.FC<AddAlbumModalProps> = ({ isOpen, onClose }) => {
             return;
         }
         
-        const newAlbumData: Omit<PhotoAlbum, 'id' | 'photos'> = { title, date, coverUrl };
+        // FIX: Corrected type to align with DataContext function signature.
+        const newAlbumData: Omit<PhotoAlbum, 'id' | 'school_id' | 'photos'> = { title, date, coverUrl };
         addPhotoAlbum(newAlbumData);
 
         // Reset and close

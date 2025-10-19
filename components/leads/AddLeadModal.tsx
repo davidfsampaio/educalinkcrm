@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Modal from '../common/Modal';
 // FIX: Corrected import path for types.
@@ -7,7 +6,8 @@ import { Lead, LeadStatus } from '../../types';
 interface AddLeadModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAddLead: (lead: Omit<Lead, 'id'>) => void;
+    // FIX: Aligned prop type with DataContext, which handles adding id and school_id.
+    onAddLead: (lead: Omit<Lead, 'id' | 'school_id'>) => void;
 }
 
 const AddLeadModal: React.FC<AddLeadModalProps> = ({ isOpen, onClose, onAddLead }) => {
@@ -23,7 +23,8 @@ const AddLeadModal: React.FC<AddLeadModalProps> = ({ isOpen, onClose, onAddLead 
             return;
         }
 
-        const newLead: Omit<Lead, 'id'> = {
+        // FIX: Corrected the type of the newLead object to match what the onAddLead function expects.
+        const newLead: Omit<Lead, 'id' | 'school_id'> = {
             name,
             parentName,
             contact,
