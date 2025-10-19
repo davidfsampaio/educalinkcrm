@@ -117,7 +117,18 @@ export const getLeadCaptureCampaigns = async (): Promise<LeadCaptureCampaign[]> 
 };
 
 
-// --- WRITE operations (using RPC to bypass RLS) ---
+// --- WRITE operations (ALL refactored to use RPC to bypass RLS) ---
+
+const rpcUpdate = async <T>(rpcName: string, id: number | string, dataToUpdate: Partial<T>) => {
+    const { data, error } = await supabase.rpc(rpcName, { p_id: id, p_data: dataToUpdate });
+    handleSupabaseError(error, `${rpcName} (RPC)`);
+    return Array.isArray(data) ? data[0] : data;
+}
+
+const rpcDelete = async (rpcName: string, id: number | string) => {
+    const { error } = await supabase.rpc(rpcName, { p_id: id });
+    handleSupabaseError(error, `${rpcName} (RPC)`);
+}
 
 // Students
 export const addStudent = async (studentData: Omit<Student, 'id'>) => {
@@ -126,9 +137,7 @@ export const addStudent = async (studentData: Omit<Student, 'id'>) => {
     return Array.isArray(data) ? data[0] : data;
 };
 export const updateStudent = async (studentId: number, studentData: Partial<Omit<Student, 'id' | 'school_id'>>) => {
-    const { data, error } = await supabase.from('students').update(studentData).eq('id', studentId).select().single();
-    handleSupabaseError(error, 'updateStudent');
-    return data;
+    return rpcUpdate<Student>('update_student', studentId, studentData);
 };
 
 // Invoices
@@ -138,13 +147,10 @@ export const addInvoice = async (invoiceData: Omit<Invoice, 'school_id'>) => {
     return Array.isArray(data) ? data[0] : data;
 }
 export const updateInvoice = async (invoiceId: string, invoiceData: Partial<Omit<Invoice, 'id' | 'school_id'>>) => {
-    const { data, error } = await supabase.from('invoices').update(invoiceData).eq('id', invoiceId).select().single();
-    handleSupabaseError(error, 'updateInvoice');
-    return data;
+    return rpcUpdate<Invoice>('update_invoice', invoiceId, invoiceData);
 }
 export const deleteInvoice = async (invoiceId: string) => {
-    const { error } = await supabase.from('invoices').delete().eq('id', invoiceId);
-    handleSupabaseError(error, 'deleteInvoice');
+    return rpcDelete('delete_invoice', invoiceId);
 }
 
 // Leads
@@ -154,9 +160,7 @@ export const addLead = async (leadData: Omit<Lead, 'id'>) => {
     return Array.isArray(data) ? data[0] : data;
 }
 export const updateLead = async (leadId: number, leadData: Partial<Omit<Lead, 'id' | 'school_id'>>) => {
-    const { data, error } = await supabase.from('leads').update(leadData).eq('id', leadId).select().single();
-    handleSupabaseError(error, 'updateLead');
-    return data;
+    return rpcUpdate<Lead>('update_lead', leadId, leadData);
 }
 
 // Staff
@@ -166,9 +170,7 @@ export const addStaff = async (staffData: Omit<Staff, 'id'>) => {
     return Array.isArray(data) ? data[0] : data;
 }
 export const updateStaff = async (staffId: number, staffData: Partial<Omit<Staff, 'id' | 'school_id'>>) => {
-    const { data, error } = await supabase.from('staff').update(staffData).eq('id', staffId).select().single();
-    handleSupabaseError(error, 'updateStaff');
-    return data;
+    return rpcUpdate<Staff>('update_staff', staffId, staffData);
 }
 
 // Expenses
@@ -178,13 +180,10 @@ export const addExpense = async (expenseData: Omit<Expense, 'id'>) => {
     return Array.isArray(data) ? data[0] : data;
 };
 export const updateExpense = async (id: number, expenseData: Partial<Omit<Expense, 'id' | 'school_id'>>) => {
-    const { data, error } = await supabase.from('expenses').update(expenseData).eq('id', id).select().single();
-    handleSupabaseError(error, 'updateExpense');
-    return data;
+    return rpcUpdate<Expense>('update_expense', id, expenseData);
 };
 export const deleteExpense = async (id: number) => {
-    const { error } = await supabase.from('expenses').delete().eq('id', id);
-    handleSupabaseError(error, 'deleteExpense');
+    return rpcDelete('delete_expense', id);
 };
 
 // Revenues
@@ -194,13 +193,10 @@ export const addRevenue = async (revenueData: Omit<Revenue, 'id'>) => {
     return Array.isArray(data) ? data[0] : data;
 };
 export const updateRevenue = async (id: number, revenueData: Partial<Omit<Revenue, 'id' | 'school_id'>>) => {
-    const { data, error } = await supabase.from('revenues').update(revenueData).eq('id', id).select().single();
-    handleSupabaseError(error, 'updateRevenue');
-    return data;
+    return rpcUpdate<Revenue>('update_revenue', id, revenueData);
 };
 export const deleteRevenue = async (id: number) => {
-    const { error } = await supabase.from('revenues').delete().eq('id', id);
-    handleSupabaseError(error, 'deleteRevenue');
+    return rpcDelete('delete_revenue', id);
 };
 
 // Communications
@@ -217,28 +213,20 @@ export const addAgendaItem = async (itemData: Omit<AgendaItem, 'id'>) => {
     return Array.isArray(data) ? data[0] : data;
 };
 export const updateAgendaItem = async (id: number, itemData: Partial<Omit<AgendaItem, 'id' | 'school_id'>>) => {
-    const { data, error } = await supabase.from('agenda_items').update(itemData).eq('id', id).select().single();
-    handleSupabaseError(error, 'updateAgendaItem');
-    return data;
+    return rpcUpdate<AgendaItem>('update_agenda_item', id, itemData);
 };
 
 // Users
 export const addUser = async (userData: Omit<User, 'id'>) => {
-    // This assumes an RPC function `add_user` exists that handles creating
-    // both the auth user and the public user profile securely.
     const { data, error } = await supabase.rpc('add_user', { p_user: userData });
     handleSupabaseError(error, 'addUser (RPC)');
     return Array.isArray(data) ? data[0] : data;
 };
 export const updateUser = async (id: string, userData: Partial<Omit<User, 'id' | 'school_id'>>) => {
-    const { data, error } = await supabase.from('users').update(userData).eq('id', id).select().single();
-    handleSupabaseError(error, 'updateUser');
-    return data;
+    return rpcUpdate<User>('update_user', id, userData);
 };
 export const deleteUser = async (id: string) => {
-    // This should also be a secure server-side function
-    const { error } = await supabase.from('users').delete().eq('id', id);
-    handleSupabaseError(error, 'deleteUser');
+    return rpcDelete('delete_user', id);
 };
 
 // Campaigns
@@ -255,13 +243,13 @@ export const addPhotoAlbum = async (albumData: Omit<PhotoAlbum, 'id'>) => {
     return Array.isArray(data) ? data[0] : data;
 }
 export const deletePhotoAlbum = async (id: number) => {
-    const { error } = await supabase.from('photo_albums').delete().eq('id', id);
-    handleSupabaseError(error, 'deletePhotoAlbum');
+    return rpcDelete('delete_photo_album', id);
 }
 export const updateAlbumPhotos = async (albumId: number, photos: Photo[]) => {
-    const { data, error } = await supabase.from('photo_albums').update({ photos }).eq('id', albumId).select().single();
-    handleSupabaseError(error, 'updateAlbumPhotos');
-    return data;
+    // This is a special case where we update a JSONB column, an RPC is a good fit.
+    const { data, error } = await supabase.rpc('update_album_photos', { p_id: albumId, p_photos: photos });
+    handleSupabaseError(error, 'updateAlbumPhotos (RPC)');
+    return Array.isArray(data) ? data[0] : data;
 }
 
 // Library
