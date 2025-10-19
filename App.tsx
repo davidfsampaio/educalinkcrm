@@ -8,6 +8,7 @@ import { SettingsProvider } from './contexts/SettingsContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AccessDenied from './components/common/AccessDenied';
 import { PWAProvider } from './contexts/PWAContext';
+import { supabase } from './services/supabaseClient';
 
 // Lazy load components for code splitting
 const Dashboard = lazy(() => import('./components/Dashboard'));
@@ -192,15 +193,22 @@ const StaffLoginScreen: React.FC<{ onLogin: () => void, onBack: () => void }> = 
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
         setIsLoading(true);
         setError('');
 
-        // Simulate a successful login without calling Supabase
-        setTimeout(() => {
-            setIsLoading(false);
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password,
+        });
+
+        setIsLoading(false);
+
+        if (error) {
+            setError(error.message);
+        } else if (data.user) {
             onLogin();
-        }, 500); // Small delay for UX
+        }
     };
 
     return (
@@ -275,21 +283,41 @@ const AuthScreen: React.FC<{ setUserType: (type: 'staff' | 'parent') => void }> 
 
 
 const App: React.FC = () => {
-  const [userType, setUserType] = useState<'staff' | 'parent' | null>(() => {
-    // Read user type from localStorage on initial load
-    return localStorage.getItem('userType') as 'staff' | 'parent' | null;
-  });
+  const [userType, setUserType] = useState<'staff' | 'parent' | null>(null);
   const [page, setPage] = useState<'crm' | 'capture' | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // Create a wrapper function to set user type in state and localStorage
   const handleSetUserType = (type: 'staff' | 'parent' | null) => {
-    if (type) {
-      localStorage.setItem('userType', type);
-    } else {
-      localStorage.removeItem('userType');
-    }
     setUserType(type);
   };
+
+  useEffect(() => {
+    const checkSession = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            // Logic to determine if user is staff or parent could go here
+            // For now, assume any session is a staff session
+            setUserType('staff');
+        }
+        setAuthChecked(true);
+    };
+
+    checkSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN') {
+             setUserType('staff');
+        }
+        if (event === 'SIGNED_OUT') {
+            setUserType(null);
+        }
+    });
+
+    return () => {
+        authListener.subscription.unsubscribe();
+    };
+  }, []);
+
 
   useEffect(() => {
     const handleRouting = () => {
@@ -309,12 +337,13 @@ const App: React.FC = () => {
   }, []);
 
 
-  const handleLogout = () => {
-    handleSetUserType(null); // Use the new handler
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    handleSetUserType(null);
   };
 
   const renderContent = () => {
-    if (page === null) {
+    if (page === null || !authChecked) {
       return <div className="flex h-screen w-screen items-center justify-center"><p>Carregando...</p></div>;
     }
 
