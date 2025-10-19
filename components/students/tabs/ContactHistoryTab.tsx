@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { CommunicationLog } from '../../../types';
 import ProtectedComponent from '../../common/ProtectedComponent';
@@ -9,7 +8,7 @@ const PlusIcon: React.FC<{className?: string}> = ({ className }) => (
 
 interface ContactHistoryTabProps {
     log: CommunicationLog[];
-    onAdd: () => void;
+    onAdd?: () => void;
 }
 
 const getIconForType = (type: string) => {
@@ -27,15 +26,17 @@ const ContactHistoryTab: React.FC<ContactHistoryTabProps> = ({ log, onAdd }) => 
         <div>
             <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-bold text-brand-text-dark">Histórico de Contato</h3>
-                <ProtectedComponent requiredPermission='edit_students'>
-                    <button 
-                        onClick={onAdd}
-                        className="flex items-center justify-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm"
-                    >
-                        <PlusIcon className="w-5 h-5 mr-2" />
-                        Adicionar Contato
-                    </button>
-                </ProtectedComponent>
+                {onAdd && (
+                    <ProtectedComponent requiredPermission='edit_students'>
+                        <button 
+                            onClick={onAdd}
+                            className="flex items-center justify-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm"
+                        >
+                            <PlusIcon className="w-5 h-5 mr-2" />
+                            Adicionar Contato
+                        </button>
+                    </ProtectedComponent>
+                )}
             </div>
             {log.length === 0 ? (
                 <p className="text-brand-text-dark">Nenhum registro de contato encontrado.</p>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Student } from '../../types';
 import Card from '../common/Card';
