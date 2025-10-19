@@ -38,16 +38,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     // Auto-correction logic for admin metadata
                     const isAdmin = user.email === 'admin@educalink.com' || user.email === 'david.fsampaio@gmail.com';
                     const needsRoleUpdate = isAdmin && !user_metadata.role;
-                    const needsSchoolUpdate = isAdmin && !user_metadata.school_id;
+                    const needsSchoolUpdate = isAdmin && (!user_metadata.school_id || user_metadata.school_id === 'school-123');
 
                     if ((needsRoleUpdate || needsSchoolUpdate) && !isAwaitingCorrection) {
                         setIsAwaitingCorrection(true);
                         setAuthLoading(true); // Keep loading screen on
-                        console.log("Metadata missing, attempting auto-correction...");
+                        console.log("Metadata missing or invalid, attempting auto-correction...");
                         
                         const newMetadata: { [key: string]: any } = { ...user_metadata };
                         if (needsRoleUpdate) newMetadata.role = 'Admin';
-                        if (needsSchoolUpdate) newMetadata.school_id = '123e4567-e89b-12d3-a456-426614174000'; // FIX: Use a valid UUID
+                        if (needsSchoolUpdate) newMetadata.school_id = '123e4567-e89b-12d3-a456-426614174000';
 
                         const { error: updateUserError } = await supabase.auth.updateUser({ data: newMetadata });
                         
