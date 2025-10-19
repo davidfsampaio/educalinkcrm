@@ -17,17 +17,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [authLoading, setAuthLoading] = useState(true);
     const [authError, setAuthError] = useState<string | null>(null);
+    const [isAwaitingCorrection, setIsAwaitingCorrection] = useState(false);
+
 
     useEffect(() => {
-        setAuthLoading(true);
+        const handleAuthStateChange = async (event: string, session: any) => {
+            console.log(`Auth event: ${event}`);
 
-        const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-            let isAutoCorrecting = false; // Flag to prevent premature loading state change
-
-            // If the user is updated, the session can be null temporarily.
-            // We let the next SIGNED_IN event handle the logic.
-            if (event === 'USER_UPDATED' && session === null) {
-                return;
+            // If a correction has been triggered, we wait for the USER_UPDATED event.
+            if (isAwaitingCorrection && event !== 'USER_UPDATED') {
+                console.log("Awaiting user update after correction...");
+                return; 
             }
 
             try {
@@ -40,26 +40,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     const needsRoleUpdate = isAdmin && !user_metadata.role;
                     const needsSchoolUpdate = isAdmin && !user_metadata.school_id;
 
-                    if (needsRoleUpdate || needsSchoolUpdate) {
-                        isAutoCorrecting = true; // Signal that we are performing a correction
+                    if ((needsRoleUpdate || needsSchoolUpdate) && !isAwaitingCorrection) {
+                        setIsAwaitingCorrection(true);
+                        setAuthLoading(true); // Keep loading screen on
+                        console.log("Metadata missing, attempting auto-correction...");
+                        
                         const newMetadata: { [key: string]: any } = { ...user_metadata };
                         if (needsRoleUpdate) newMetadata.role = 'Admin';
-                        if (needsSchoolUpdate) newMetadata.school_id = 'school-123'; // Default school ID for admin
+                        if (needsSchoolUpdate) newMetadata.school_id = '123e4567-e89b-12d3-a456-426614174000'; // FIX: Use a valid UUID
 
                         const { error: updateUserError } = await supabase.auth.updateUser({ data: newMetadata });
                         
                         if (updateUserError) {
                             throw new Error(`Falha ao auto-corrigir metadados do usuário: ${updateUserError.message}`);
                         }
-                        // After updating, we STOP here. The `updateUser` call will trigger
-                        // a new onAuthStateChange event with the updated session, which we will process then.
-                        // `isAutoCorrecting` is true, so the `finally` block won't set loading to false.
+                        
+                        // After updating, we STOP. The `updateUser` call triggers a new onAuthStateChange event.
+                        console.log("User update triggered. Waiting for new session...");
+                        return;
+
                     } else {
-                        // If no correction was needed, proceed to build the user profile
+                        // If no correction was needed OR if this is the event after correction
                         const role: UserRoleName | undefined = user_metadata?.role;
                         const schoolId: string | undefined = user_metadata?.school_id;
 
                         if (role && schoolId) {
+                            console.log("Valid session found. Setting user profile.");
                             const profile: User = {
                                 id: user.id,
                                 email: user.email!,
@@ -72,6 +78,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                             };
                             setCurrentUser(profile);
                             setAuthError(null);
+                            setIsAwaitingCorrection(false); // Correction is complete
                         } else {
                             let missingFields = [];
                             if (!role) missingFields.push("'role'");
@@ -81,6 +88,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     }
                 } else {
                     // Handles logout or initial state with no user
+                    console.log("No active session. Clearing user.");
                     setCurrentUser(null);
                 }
             } catch (error: any) {
@@ -89,18 +97,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 console.error(errorMessage, actionMessage);
                 setAuthError(`${errorMessage}\n${actionMessage}`);
                 setCurrentUser(null);
+                setIsAwaitingCorrection(false);
             } finally {
-                // Only stop loading if we are NOT waiting for an auto-correction refresh
-                if (!isAutoCorrecting) {
+                // Only stop loading if we are not waiting for a correction to complete.
+                if (!isAwaitingCorrection) {
                     setAuthLoading(false);
                 }
             }
+        };
+
+        const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+            handleAuthStateChange(event, session);
         });
+        
+        // Initial check on component mount
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (!session) {
+                setAuthLoading(false);
+            }
+        });
+
 
         return () => {
             authListener?.subscription?.unsubscribe();
         };
-    }, []);
+    }, [isAwaitingCorrection]);
     
     const userPermissions = useMemo((): Set<Permission> => {
         if (!currentUser || !settings.roles) {
