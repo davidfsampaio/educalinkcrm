@@ -9,13 +9,13 @@ const ai: GoogleGenAI | null = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 if (!ai) {
   // Log an error if the key is missing.
-  console.error("API_KEY environment variable not set. AI features are disabled.");
+  console.error("A variável de ambiente API_KEY não está definida. Os recursos de IA estão desativados.");
 }
 
 export const generateText = async (prompt: string): Promise<string> => {
   // If the client could not be initialized (e.g., missing API key), return an error message.
   if (!ai) {
-    const errorMessage = "AI Service is not configured. Ensure the API_KEY is set.";
+    const errorMessage = "O Serviço de IA não está configurado. Certifique-se de que o API_KEY esteja definido.";
     return errorMessage;
   }
 
@@ -26,10 +26,10 @@ export const generateText = async (prompt: string): Promise<string> => {
     });
     return response.text;
   } catch (error) {
-    console.error("Error generating text with Gemini:", error);
+    console.error("Erro ao gerar texto com Gemini:", error);
     if (error instanceof Error) {
-        return `Error from Gemini: ${error.message}`;
+        return `Erro do Gemini: ${error.message}`;
     }
-    return "An unknown error occurred while contacting the AI model.";
+    return "Ocorreu um erro desconhecido ao contatar o modelo de IA.";
   }
 };

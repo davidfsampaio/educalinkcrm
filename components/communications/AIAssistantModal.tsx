@@ -31,7 +31,12 @@ const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onClose, on
 
         try {
             const result = await generateText(prompt);
-            setGeneratedText(result);
+            // Check for known error strings from the service
+            if (result.startsWith('O Serviço de IA não está configurado') || result.startsWith('Erro do Gemini') || result.startsWith('Ocorreu um erro desconhecido')) {
+                 setError(result);
+            } else {
+                setGeneratedText(result);
+            }
         } catch (err) {
             setError('Ocorreu um erro ao gerar o texto. Tente novamente.');
             console.error(err);
@@ -82,7 +87,7 @@ const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onClose, on
                     {isLoading ? 'Gerando...' : 'Gerar Comunicado'}
                 </button>
 
-                {error && <p className="text-sm text-red-600">{error}</p>}
+                {error && <p className="text-sm text-center text-red-600 bg-red-50 p-3 rounded-md">{error}</p>}
 
                 {generatedText && (
                     <div className="pt-4 border-t">
