@@ -2,7 +2,6 @@ import React, { createContext, useContext, ReactNode, useState, useMemo, useEffe
 import { User, Permission, UserRoleName, UserStatus } from '../types';
 import { useSettings } from './SettingsContext';
 import { supabase } from '../services/supabaseClient';
-import * as api from '../services/apiService'; // Import the api service
 
 interface AuthContextType {
     currentUser: User | null;
@@ -26,82 +25,63 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             try {
                 if (session?.user) {
                     const { user } = session;
-                    let profile: User | null = null;
+                    const { user_metadata, app_metadata } = user;
 
-                    // Step 1: Attempt to get profile via RPC call first. This is the most reliable way to bypass RLS issues.
-                    const rpcProfileResult = await api.getAuthenticatedUserProfile();
+                    // Build profile exclusively from session metadata to avoid database calls that trigger recursive RLS policies.
+                    let role: UserRoleName | undefined = user_metadata?.role || app_metadata?.role;
+                    let schoolId: string | undefined = user_metadata?.school_id || app_metadata?.school_id;
 
-                    if (typeof rpcProfileResult === 'object' && rpcProfileResult !== null) {
-                        // Ideal case: RPC returned the full staff profile.
-                        profile = {
-                            id: user.id,
-                            email: user.email!,
-                            name: rpcProfileResult.name,
-                            avatarUrl: rpcProfileResult.avatarUrl || user.user_metadata?.avatar_url || `https://picsum.photos/seed/user${user.id}/100/100`,
-                            role: rpcProfileResult.role as UserRoleName,
-                            status: UserStatus.Active,
-                            school_id: rpcProfileResult.school_id,
-                        };
-                    } else {
-                        // Fallback case: RPC returned a string (role), null, or failed. We must rely on session metadata.
-                        console.warn("RPC 'get_my_role' did not return a full user profile object. Falling back to session metadata.");
-                        
-                        const { user_metadata, app_metadata } = user;
-
-                        // Try to get role from RPC result (if it's a string) or from metadata.
-                        let role: UserRoleName | undefined = (typeof rpcProfileResult === 'string' ? rpcProfileResult as UserRoleName : undefined) || user_metadata?.role || app_metadata?.role;
-                        
-                        // Try to get school_id from metadata.
-                        let schoolId: string | undefined = user_metadata?.school_id || app_metadata?.school_id;
-
-                        // Apply specific fallbacks if information is still missing.
-                        if (!role && user.email === 'admin@educalink.com') {
+                    // Apply specific fallbacks if information is missing for the admin user.
+                    if (user.email === 'admin@educalink.com') {
+                        if (!role) {
                             role = 'Admin';
                         }
-                        if (!schoolId && role === 'Admin') {
+                        if (!schoolId) {
                             schoolId = 'school-123';
-                        }
-
-                        // Now, validate if we have enough information to build a profile.
-                        if (role && schoolId) {
-                            profile = {
-                                id: user.id,
-                                email: user.email!,
-                                name: user_metadata?.full_name || user_metadata?.name || user.email!,
-                                avatarUrl: user_metadata?.avatar_url || `https://picsum.photos/seed/user${user.id}/100/100`,
-                                role: role,
-                                status: UserStatus.Active,
-                                studentId: user_metadata?.student_id,
-                                school_id: schoolId,
-                            };
-                        } else {
-                            if (!role) {
-                                throw new Error("O 'cargo' (role) do usuário não foi encontrado. Acesso não permitido.");
-                            }
-                            if (!schoolId) {
-                                throw new Error("A 'escola' (school_id) do usuário não foi encontrada. Acesso não permitido.");
-                            }
                         }
                     }
 
-                    setCurrentUser(profile);
-                    setAuthError(null);
-
+                    // Validate if we have enough information to build a profile.
+                    if (role && schoolId) {
+                        const profile: User = {
+                            id: user.id,
+                            email: user.email!,
+                            name: user_metadata?.full_name || user_metadata?.name || user.email!,
+                            avatarUrl: user_metadata?.avatar_url || `https://picsum.photos/seed/user${user.id}/100/100`,
+                            role: role,
+                            status: UserStatus.Active,
+                            studentId: user_metadata?.student_id,
+                            school_id: schoolId,
+                        };
+                        setCurrentUser(profile);
+                        setAuthError(null);
+                    } else {
+                        // If critical info is still missing, throw an error.
+                        if (!role) {
+                            throw new Error("O 'cargo' (role) do usuário não foi encontrado nos metadados. Acesso não permitido.");
+                        }
+                        if (!schoolId) {
+                             throw new Error("O 'school_id' do usuário não foi encontrado nos metadados. Acesso não permitido.");
+                        }
+                    }
                 } else {
+                    // No session, so no user.
                     setCurrentUser(null);
                 }
             } catch (error: any) {
                 const errorMessage = `Erro de autenticação: ${error.message}`;
-                console.error(errorMessage, "Ação necessária: Verifique a configuração de metadados do usuário no Supabase Auth e a função RPC 'get_my_role' no backend.");
-                setAuthError(errorMessage);
+                const actionMessage = "Ação necessária: Configure os campos 'role' e 'school_id' nos metadados do usuário no Supabase Auth.";
+                console.error(errorMessage, actionMessage);
+                setAuthError(`${errorMessage}\n${actionMessage}`);
                 setCurrentUser(null);
-                await supabase.auth.signOut();
+                // Do NOT call signOut() here, as it can cause an infinite loop on the login page.
             } finally {
                 setAuthLoading(false);
             }
         });
 
         return () => {
+            // Optional chaining for safety.
             authListener?.subscription?.unsubscribe();
         };
     }, []);
