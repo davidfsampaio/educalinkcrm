@@ -47,10 +47,50 @@ export const getUsers = async (): Promise<User[]> => {
     return data || [];
 };
 
+export const getUserProfileRpc = async (): Promise<Staff | null> => {
+    // We assume an RPC function 'get_user_profile' exists on the backend.
+    // This function should securely fetch the staff profile for the currently authenticated user,
+    // bypassing potential RLS recursion issues found in direct table queries.
+    const { data, error } = await supabase.rpc('get_user_profile');
+    
+    if (error) {
+      console.error('Error calling getUserProfileRpc:', error);
+       // Don't throw for 'not found' style errors, just return null
+      return null;
+    }
+    
+    // The rpc call might return an array with one item, or just the item, or nothing.
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+        return null;
+    }
+
+    // If it returns an array, take the first element.
+    return Array.isArray(data) ? data[0] : data;
+};
+
+
+export const getStaffProfileByEmail = async (email: string): Promise<Staff | null> => {
+    const { data, error } = await supabase.from('staff').select('*').eq('email', email).single();
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+        console.error('Error fetching staff profile by email:', error);
+        return null;
+    }
+    return data;
+};
+
 export const getUserProfileByEmail = async (email: string): Promise<User | null> => {
     const { data, error } = await supabase.from('users').select('*').eq('email', email).single();
     if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
         console.error('Error fetching user profile by email:', error);
+        return null;
+    }
+    return data;
+};
+
+export const getUserProfileById = async (id: string): Promise<User | null> => {
+    const { data, error } = await supabase.from('users').select('*').eq('id', id).single();
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+        console.error('Error fetching user profile by id:', error);
         return null;
     }
     return data;

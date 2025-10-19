@@ -188,15 +188,16 @@ const InitialSelectionScreen: React.FC<{ onSelect: (type: 'staff' | 'parent') =>
   );
 };
 
-const StaffLoginScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+const StaffLoginScreen: React.FC<{ onBack: () => void; authError: string | null; setAuthError: (error: string | null) => void; }> = ({ onBack, authError, setAuthError }) => {
     const [email, setEmail] = useState('admin@educalink.com');
     const [password, setPassword] = useState('admin123');
-    const [error, setError] = useState('');
+    const [localError, setLocalError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     const handleLogin = async () => {
         setIsLoading(true);
-        setError('');
+        setLocalError('');
+        setAuthError(null);
 
         const { error: signInError } = await supabase.auth.signInWithPassword({
             email: email,
@@ -206,10 +207,23 @@ const StaffLoginScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         setIsLoading(false);
 
         if (signInError) {
-            setError(signInError.message);
+            setLocalError(signInError.message);
         }
-        // No onLogin() call needed. AuthProvider detects the sign-in.
     };
+    
+    const displayError = authError || localError;
+
+    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (authError) setAuthError(null);
+        if (localError) setLocalError('');
+        setEmail(e.target.value);
+    }
+    
+    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (authError) setAuthError(null);
+        if (localError) setLocalError('');
+        setPassword(e.target.value);
+    }
 
     return (
         <div className="w-full max-w-md p-6 sm:p-8 space-y-6 bg-white rounded-2xl shadow-xl">
@@ -217,7 +231,7 @@ const StaffLoginScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <SchoolIcon className="h-12 w-12 text-brand-primary" />
                 <h2 className="text-2xl font-bold mt-3 text-brand-text-dark">Login da Equipe</h2>
             </div>
-            {error && <p className="text-sm text-center text-red-600 bg-red-50 p-3 rounded-md">{error}</p>}
+            {displayError && <p className="text-sm text-center text-red-600 bg-red-50 p-3 rounded-md">{displayError}</p>}
             <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-4">
                 <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
@@ -225,7 +239,7 @@ const StaffLoginScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         id="email"
                         type="email"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={handleEmailChange}
                         required
                         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
                         placeholder="admin@educalink.com"
@@ -237,7 +251,7 @@ const StaffLoginScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         id="password"
                         type="password"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={handlePasswordChange}
                         required
                         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
                         placeholder="admin123"
@@ -264,19 +278,26 @@ const StaffLoginScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
 const AuthScreen: React.FC = () => {
     const [view, setView] = useState<'initial' | 'staff_login'>('initial');
+    const { authError, setAuthError } = useAuth();
 
     const handleSelect = (type: 'staff' | 'parent') => {
+        if (authError) setAuthError(null);
         if (type === 'staff') {
             setView('staff_login');
         } else {
             alert("Acesso de Pai/Responsável ainda não implementado.");
         }
     };
+    
+    const handleBackToInitial = () => {
+        if (authError) setAuthError(null);
+        setView('initial');
+    }
 
     return (
         <div className="flex items-center justify-center h-screen bg-slate-100 p-4">
             {view === 'initial' && <InitialSelectionScreen onSelect={handleSelect} />}
-            {view === 'staff_login' && <StaffLoginScreen onBack={() => setView('initial')} />}
+            {view === 'staff_login' && <StaffLoginScreen onBack={handleBackToInitial} authError={authError} setAuthError={setAuthError} />}
         </div>
     );
 };
