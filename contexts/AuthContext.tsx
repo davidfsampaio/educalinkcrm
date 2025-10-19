@@ -22,26 +22,43 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setAuthLoading(true);
 
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+            // Se o usuário for atualizado, a sessão pode ficar nula temporariamente. Aguardamos o próximo evento SIGNED_IN.
+            if (event === 'USER_UPDATED' && session === null) {
+                return;
+            }
+
             try {
                 if (session?.user) {
                     const { user } = session;
-                    const { user_metadata, app_metadata } = user;
+                    const { user_metadata } = user;
 
-                    // Build profile exclusively from session metadata to avoid database calls that trigger recursive RLS policies.
-                    let role: UserRoleName | undefined = user_metadata?.role || app_metadata?.role;
-                    let schoolId: string | undefined = user_metadata?.school_id || app_metadata?.school_id;
+                    // --- Lógica de autocorreção para metadados de administrador ---
+                    const isAdmin = user.email === 'admin@educalink.com' || user.email === 'david.fsampaio@gmail.com';
+                    const needsRoleUpdate = isAdmin && !user_metadata.role;
+                    const needsSchoolUpdate = isAdmin && !user_metadata.school_id;
 
-                    // Apply specific fallbacks if information is missing for admin users.
-                    if (user.email === 'admin@educalink.com' || user.email === 'david.fsampaio@gmail.com') {
-                        if (!role) {
-                            role = 'Admin';
+                    if (needsRoleUpdate || needsSchoolUpdate) {
+                        const newMetadata: { [key: string]: any } = { ...user_metadata };
+                        if (needsRoleUpdate) newMetadata.role = 'Admin';
+                        if (needsSchoolUpdate) newMetadata.school_id = 'school-123'; // ID da escola padrão para admin
+
+                        const { error: updateUserError } = await supabase.auth.updateUser({ data: newMetadata });
+                        
+                        if (updateUserError) {
+                            throw new Error(`Falha ao autoc-corrigir metadados do usuário: ${updateUserError.message}`);
                         }
-                        if (!schoolId) {
-                            schoolId = 'school-123';
-                        }
+                        
+                        // A chamada updateUser irá disparar outro evento onAuthStateChange com a sessão atualizada.
+                        // Podemos retornar aqui para que o próximo evento lide com a renderização, evitando um piscar de tela com dados antigos.
+                        setAuthLoading(true); // Mantém o estado de carregamento até a sessão correta chegar.
+                        return;
                     }
+                    // --- Fim da lógica de autocorreção ---
 
-                    // Validate if we have enough information to build a profile.
+                    // Constrói o perfil a partir dos metadados da sessão existente
+                    const role: UserRoleName | undefined = user_metadata?.role;
+                    const schoolId: string | undefined = user_metadata?.school_id;
+
                     if (role && schoolId) {
                         const profile: User = {
                             id: user.id,
@@ -56,31 +73,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         setCurrentUser(profile);
                         setAuthError(null);
                     } else {
-                        // If critical info is still missing, throw an error.
                         let missingFields = [];
                         if (!role) missingFields.push("'role'");
                         if (!schoolId) missingFields.push("'school_id'");
-
                         throw new Error(`A 'carga' (${missingFields.join(' e ')}) do usuário não foi encontrada nos metadados. Acesso não permitido.`);
                     }
                 } else {
-                    // No session, so no user.
+                    // Lida com logout ou estado inicial sem usuário
                     setCurrentUser(null);
                 }
             } catch (error: any) {
                 const errorMessage = `Erro de autenticação: ${error.message}`;
-                const actionMessage = "Ação necessária: Configure os campos 'role' e 'school_id' nos metadados do usuário no Supabase Auth.";
+                const actionMessage = "Ação necessária: Verifique os 'user_metadata' do usuário no painel do Supabase Auth.";
                 console.error(errorMessage, actionMessage);
                 setAuthError(`${errorMessage}\n${actionMessage}`);
                 setCurrentUser(null);
-                // Do NOT call signOut() here, as it can cause an infinite loop on the login page.
             } finally {
                 setAuthLoading(false);
             }
         });
 
         return () => {
-            // Optional chaining for safety.
             authListener?.subscription?.unsubscribe();
         };
     }, []);

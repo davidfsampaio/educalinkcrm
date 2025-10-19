@@ -6,6 +6,7 @@ import {
 } from '../types';
 import * as api from '../services/apiService';
 import { useAuth } from './AuthContext'; // We'll need this to get the school_id
+import { supabase } from '../services/supabaseClient';
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
@@ -148,14 +149,44 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
     
     const addLead = async (leadData: Omit<Lead, 'id' | 'school_id'>, campaignId?: string) => {
-        if (!currentUser?.school_id) return;
+        let schoolIdToAdd: string | undefined = currentUser?.school_id;
+
+        // Lógica para formulários públicos de captura de leads, onde não há currentUser.
+        if (!schoolIdToAdd && campaignId) {
+            try {
+                // Busca o school_id da campanha. A RLS para a tabela lead_capture_campaigns
+                // deve permitir a leitura pública das colunas 'id' e 'school_id'.
+                const { data: campaign, error } = await supabase
+                    .from('lead_capture_campaigns')
+                    .select('school_id')
+                    .eq('id', campaignId)
+                    .single();
+                
+                if (error) throw error;
+                if (campaign) {
+                    schoolIdToAdd = campaign.school_id;
+                } else {
+                     throw new Error('Campanha de captura de lead não encontrada.');
+                }
+            } catch (error) {
+                 console.error("Falha ao buscar dados da campanha pública:", error);
+                 alert(`Erro ao submeter formulário: ${(error as Error).message}`);
+                 return; // Para a execução
+            }
+        }
+        
+        if (!schoolIdToAdd) {
+            alert('Erro: Não foi possível identificar a escola. O envio falhou.');
+            return;
+        }
+
         try {
             const newLeadPayload: LeadColumns = {
-                school_id: currentUser.school_id,
+                school_id: schoolIdToAdd,
                 ...leadData,
             };
             const newLeadFromDb = await api.addLead(newLeadPayload);
-            // Rehydrate for local state
+            // Rehidrata para o estado local
             const newLeadForState: Lead = {
                 ...newLeadFromDb,
                 tasks: leadData.tasks || [],
@@ -163,6 +194,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 communicationLog: leadData.communicationLog || []
             };
             setLeads(prev => [newLeadForState, ...prev]);
+            
+            // Atualiza a contagem de leads da campanha (só funcionará para usuários logados, o que é aceitável)
             if (campaignId) {
                 setLeadCaptureCampaigns(prev => prev.map(c => 
                     c.id === campaignId ? { ...c, leadsCaptured: c.leadsCaptured + 1 } : c
