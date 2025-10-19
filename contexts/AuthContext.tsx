@@ -22,7 +22,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setAuthLoading(true);
 
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-            // Se o usuário for atualizado, a sessão pode ficar nula temporariamente. Aguardamos o próximo evento SIGNED_IN.
+            let isAutoCorrecting = false; // Flag to prevent premature loading state change
+
+            // If the user is updated, the session can be null temporarily.
+            // We let the next SIGNED_IN event handle the logic.
             if (event === 'USER_UPDATED' && session === null) {
                 return;
             }
@@ -32,54 +35,52 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     const { user } = session;
                     const { user_metadata } = user;
 
-                    // --- Lógica de autocorreção para metadados de administrador ---
+                    // Auto-correction logic for admin metadata
                     const isAdmin = user.email === 'admin@educalink.com' || user.email === 'david.fsampaio@gmail.com';
                     const needsRoleUpdate = isAdmin && !user_metadata.role;
                     const needsSchoolUpdate = isAdmin && !user_metadata.school_id;
 
                     if (needsRoleUpdate || needsSchoolUpdate) {
+                        isAutoCorrecting = true; // Signal that we are performing a correction
                         const newMetadata: { [key: string]: any } = { ...user_metadata };
                         if (needsRoleUpdate) newMetadata.role = 'Admin';
-                        if (needsSchoolUpdate) newMetadata.school_id = 'school-123'; // ID da escola padrão para admin
+                        if (needsSchoolUpdate) newMetadata.school_id = 'school-123'; // Default school ID for admin
 
                         const { error: updateUserError } = await supabase.auth.updateUser({ data: newMetadata });
                         
                         if (updateUserError) {
-                            throw new Error(`Falha ao autoc-corrigir metadados do usuário: ${updateUserError.message}`);
+                            throw new Error(`Falha ao auto-corrigir metadados do usuário: ${updateUserError.message}`);
                         }
-                        
-                        // A chamada updateUser irá disparar outro evento onAuthStateChange com a sessão atualizada.
-                        // Podemos retornar aqui para que o próximo evento lide com a renderização, evitando um piscar de tela com dados antigos.
-                        setAuthLoading(true); // Mantém o estado de carregamento até a sessão correta chegar.
-                        return;
-                    }
-                    // --- Fim da lógica de autocorreção ---
-
-                    // Constrói o perfil a partir dos metadados da sessão existente
-                    const role: UserRoleName | undefined = user_metadata?.role;
-                    const schoolId: string | undefined = user_metadata?.school_id;
-
-                    if (role && schoolId) {
-                        const profile: User = {
-                            id: user.id,
-                            email: user.email!,
-                            name: user_metadata?.full_name || user_metadata?.name || user.email!,
-                            avatarUrl: user_metadata?.avatar_url || `https://picsum.photos/seed/user${user.id}/100/100`,
-                            role: role,
-                            status: UserStatus.Active,
-                            studentId: user_metadata?.student_id,
-                            school_id: schoolId,
-                        };
-                        setCurrentUser(profile);
-                        setAuthError(null);
+                        // After updating, we STOP here. The `updateUser` call will trigger
+                        // a new onAuthStateChange event with the updated session, which we will process then.
+                        // `isAutoCorrecting` is true, so the `finally` block won't set loading to false.
                     } else {
-                        let missingFields = [];
-                        if (!role) missingFields.push("'role'");
-                        if (!schoolId) missingFields.push("'school_id'");
-                        throw new Error(`A 'carga' (${missingFields.join(' e ')}) do usuário não foi encontrada nos metadados. Acesso não permitido.`);
+                        // If no correction was needed, proceed to build the user profile
+                        const role: UserRoleName | undefined = user_metadata?.role;
+                        const schoolId: string | undefined = user_metadata?.school_id;
+
+                        if (role && schoolId) {
+                            const profile: User = {
+                                id: user.id,
+                                email: user.email!,
+                                name: user_metadata?.full_name || user_metadata?.name || user.email!,
+                                avatarUrl: user_metadata?.avatar_url || `https://picsum.photos/seed/user${user.id}/100/100`,
+                                role: role,
+                                status: UserStatus.Active,
+                                studentId: user_metadata?.student_id,
+                                school_id: schoolId,
+                            };
+                            setCurrentUser(profile);
+                            setAuthError(null);
+                        } else {
+                            let missingFields = [];
+                            if (!role) missingFields.push("'role'");
+                            if (!schoolId) missingFields.push("'school_id'");
+                            throw new Error(`A 'carga' (${missingFields.join(' e ')}) do usuário não foi encontrada nos metadados. Acesso não permitido.`);
+                        }
                     }
                 } else {
-                    // Lida com logout ou estado inicial sem usuário
+                    // Handles logout or initial state with no user
                     setCurrentUser(null);
                 }
             } catch (error: any) {
@@ -89,7 +90,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 setAuthError(`${errorMessage}\n${actionMessage}`);
                 setCurrentUser(null);
             } finally {
-                setAuthLoading(false);
+                // Only stop loading if we are NOT waiting for an auto-correction refresh
+                if (!isAutoCorrecting) {
+                    setAuthLoading(false);
+                }
             }
         });
 
