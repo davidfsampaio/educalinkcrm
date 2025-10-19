@@ -44,9 +44,9 @@ const CommunicationDetailModal: React.FC<CommunicationDetailModalProps> = ({ isO
                         </div>
                         <h2 class="comm-title">${communication.title}</h2>
                         <div class="comm-meta">
-                            {/* FIX: Corrected property name from `recipientGroup` to `recipient_group`. */}
+                            {/* FIX: Corrected property access to use the 'communication' object and snake_case naming. */}
                             <p><strong>Para:</strong> ${communication.recipient_group}</p>
-                            {/* FIX: Corrected property name from `sentDate` to `sent_date`. */}
+                            {/* FIX: Corrected property access to use the 'communication' object and snake_case naming. */}
                             <p><strong>Enviado em:</strong> ${new Date(communication.sent_date).toLocaleDateString('pt-BR')}</p>
                         </div>
                         <div class="comm-content">${communication.content.replace(/\n/g, '<br>')}</div>
@@ -80,7 +80,7 @@ const CommunicationDetailModal: React.FC<CommunicationDetailModalProps> = ({ isO
                     <div>
                         <h2 className="text-xl font-bold text-brand-text-dark">{communication.title}</h2>
                         <p className="text-sm text-brand-text-light">
-                            {/* FIX: Corrected property names from `sentDate` and `recipientGroup` to `sent_date` and `recipient_group`. */}
+                            {/* FIX: Corrected property access to use the 'communication' object and snake_case naming. */}
                             Enviado em {new Date(communication.sent_date).toLocaleDateString('pt-BR')} para <span className="font-semibold">{communication.recipient_group}</span>
                         </p>
                     </div>
