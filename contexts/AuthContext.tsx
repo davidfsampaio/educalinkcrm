@@ -53,13 +53,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         };
                         setCurrentUser(profile);
                     } else if (profileResult && typeof profileResult === 'string') {
-                        // Case 2: RPC returned just a role string. Fallback to user_metadata.
+                        // Case 2: RPC returned just a role string. Fallback to user/app metadata.
                         const roleName = profileResult;
-                        const { user_metadata } = user;
-                        
-                        if (!user_metadata.school_id) {
+                        const { user_metadata, app_metadata } = user;
+
+                        // Try to find school_id in user_metadata first, then in app_metadata
+                        const schoolId = user_metadata?.school_id || app_metadata?.school_id;
+
+                        if (!schoolId) {
                             const errorMsg = `Erro de autenticação: 'school_id' ausente nos metadados do usuário. Este é um campo obrigatório para carregar o perfil.`;
-                            console.error(errorMsg, "Causa provável: O usuário foi criado sem os metadados necessários no Supabase Auth.");
+                            console.error(errorMsg, "Causa provável: O usuário foi criado sem os metadados necessários ('school_id') em 'user_metadata' ou 'app_metadata' no Supabase Auth.");
                             setAuthError(errorMsg);
                             await supabase.auth.signOut();
                         } else {
@@ -72,7 +75,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                                 role: staffRoleToUserRole(roleName),
                                 status: UserStatus.Active,
                                 studentId: undefined,
-                                school_id: user_metadata.school_id,
+                                school_id: schoolId,
                             };
                             setCurrentUser(profile);
                         }
