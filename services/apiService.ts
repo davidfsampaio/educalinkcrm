@@ -5,53 +5,38 @@ import {
 } from '../types';
 import { supabase } from './supabaseClient';
 
-// Helper for error handling that now also checks for empty data responses
-const handleRpcResponse = (response: { data: any, error: any }, context: string) => {
-    const { data, error } = response;
-    if (error) {
-        console.error(`Error in ${context}:`, error);
-        throw new Error(error.message);
-    }
-    // This is the crucial new check: if the RPC succeeds but returns no data, it's an application-level error.
-    // This catches silent failures from RLS policies.
-    if (data === null || (Array.isArray(data) && data.length === 0)) {
-        console.error(`Error in ${context}: RPC returned no data. Check RLS policies.`);
-        throw new Error(`A operação em '${context}' não retornou dados. Verifique as permissões (RLS) e a função no backend.`);
-    }
-    return Array.isArray(data) ? data[0] : data;
-};
-
 
 // --- READ operations ---
-// Refactored to use RPC calls to bypass restrictive RLS policies that cause "infinite recursion" errors.
+// As operações de leitura usam RPCs, que parecem estar funcionando corretamente no backend.
+// Manteremos esta parte como está para evitar a reintrodução de erros de "recursão infinita" na leitura.
 
 export const getStudents = async (): Promise<Student[]> => {
     const { data, error } = await supabase.rpc('get_students');
-    if (error) handleRpcResponse({data, error}, 'getStudents');
+    if (error) { console.error('Error in getStudents:', error); throw error; }
     return (data || []).sort((a: Student, b: Student) => a.name.localeCompare(b.name));
 };
 
 export const getInvoices = async (): Promise<Invoice[]> => {
     const { data, error } = await supabase.rpc('get_invoices');
-    if (error) handleRpcResponse({data, error}, 'getInvoices');
+    if (error) { console.error('Error in getInvoices:', error); throw error; }
     return (data || []).sort((a: Invoice, b: Invoice) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
 };
 
 export const getLeads = async (): Promise<Lead[]> => {
     const { data, error } = await supabase.rpc('get_leads');
-    if (error) handleRpcResponse({data, error}, 'getLeads');
+    if (error) { console.error('Error in getLeads:', error); throw error; }
     return (data || []).sort((a: Lead, b: Lead) => new Date(b.interestDate).getTime() - new Date(a.interestDate).getTime());
 };
 
 export const getStaff = async (): Promise<Staff[]> => {
     const { data, error } = await supabase.rpc('get_staff');
-    if (error) handleRpcResponse({data, error}, 'getStaff');
+    if (error) { console.error('Error in getStaff:', error); throw error; }
     return (data || []).sort((a: Staff, b: Staff) => a.name.localeCompare(b.name));
 };
 
 export const getUsers = async (): Promise<User[]> => {
     const { data, error } = await supabase.rpc('get_users');
-    if (error) handleRpcResponse({data, error}, 'getUsers');
+    if (error) { console.error('Error in getUsers:', error); throw error; }
     return data || [];
 };
 
@@ -64,20 +49,14 @@ export const getAuthenticatedUserProfile = async (): Promise<Staff | string | nu
     }
     
     if (data === null || (Array.isArray(data) && data.length === 0)) {
+        console.warn("RPC 'get_my_role' did not return a valid profile object.", data);
         return null;
     }
 
     const result = Array.isArray(data) ? data[0] : data;
 
-    // Case 1: RPC returns the full profile object (ideal)
-    if (typeof result === 'object' && result !== null) {
-        return result as Staff;
-    }
-    
-    // Case 2: RPC returns just the role name as a string
-    if (typeof result === 'string' && result.length > 0) {
-        return result;
-    }
+    if (typeof result === 'object' && result !== null) return result as Staff;
+    if (typeof result === 'string' && result.length > 0) return result;
 
     console.warn("RPC 'get_my_role' returned an unexpected value.", result);
     return null;
@@ -86,173 +65,194 @@ export const getAuthenticatedUserProfile = async (): Promise<Staff | string | nu
 
 export const getCommunications = async (): Promise<Communication[]> => {
     const { data, error } = await supabase.rpc('get_communications');
-    if (error) handleRpcResponse({data, error}, 'getCommunications');
+    if (error) { console.error('Error in getCommunications:', error); throw error; }
     return (data || []).sort((a: Communication, b: Communication) => new Date(b.sentDate).getTime() - new Date(a.sentDate).getTime());
 };
 
 export const getAgendaItems = async (): Promise<AgendaItem[]> => {
     const { data, error } = await supabase.rpc('get_agenda_items');
-    if (error) handleRpcResponse({data, error}, 'getAgendaItems');
+    if (error) { console.error('Error in getAgendaItems:', error); throw error; }
     return (data || []).sort((a: AgendaItem, b: AgendaItem) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
 
 export const getLibraryBooks = async (): Promise<LibraryBook[]> => {
     const { data, error } = await supabase.rpc('get_library_books');
-    if (error) handleRpcResponse({data, error}, 'getLibraryBooks');
+    if (error) { console.error('Error in getLibraryBooks:', error); throw error; }
     return data || [];
 };
 
 export const getPhotoAlbums = async (): Promise<PhotoAlbum[]> => {
     const { data, error } = await supabase.rpc('get_photo_albums');
-    if (error) handleRpcResponse({data, error}, 'getPhotoAlbums');
+    if (error) { console.error('Error in getPhotoAlbums:', error); throw error; }
     return (data || []).sort((a: PhotoAlbum, b: PhotoAlbum) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
 
 export const getExpenses = async (): Promise<Expense[]> => {
     const { data, error } = await supabase.rpc('get_expenses');
-    if (error) handleRpcResponse({data, error}, 'getExpenses');
+    if (error) { console.error('Error in getExpenses:', error); throw error; }
     return (data || []).sort((a: Expense, b: Expense) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
 
 export const getRevenues = async (): Promise<Revenue[]> => {
     const { data, error } = await supabase.rpc('get_revenues');
-    if (error) handleRpcResponse({data, error}, 'getRevenues');
+    if (error) { console.error('Error in getRevenues:', error); throw error; }
     return (data || []).sort((a: Revenue, b: Revenue) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
 
 export const getLeadCaptureCampaigns = async (): Promise<LeadCaptureCampaign[]> => {
     const { data, error } = await supabase.rpc('get_lead_capture_campaigns');
-    if (error) handleRpcResponse({data, error}, 'getLeadCaptureCampaigns');
+    if (error) { console.error('Error in getLeadCaptureCampaigns:', error); throw error; }
     return (data || []).sort((a: LeadCaptureCampaign, b: LeadCaptureCampaign) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 };
 
 
-// --- WRITE operations (ALL refactored to use RPC to bypass RLS) ---
-
-const rpcUpdate = async <T>(rpcName: string, id: number | string, dataToUpdate: object) => {
-    const response = await supabase.rpc(rpcName, { p_id: id, p_data: dataToUpdate });
-    return handleRpcResponse(response, rpcName);
-}
-
-const rpcDelete = async (rpcName: string, id: number | string) => {
-    const { error } = await supabase.rpc(rpcName, { p_id: id });
-    if (error) {
-        console.error(`Error in ${rpcName} (RPC):`, error);
-        throw new Error(error.message);
-    }
-}
+// --- WRITE operations (REVERTED to standard Supabase client methods with .select() to get feedback on RLS failures) ---
 
 // Students
 export const addStudent = async (studentData: StudentColumns): Promise<Student> => {
-    const response = await supabase.rpc('add_student', { p_student: studentData });
-    return handleRpcResponse(response, 'add_student');
+    const { data, error } = await supabase.from('students').insert(studentData).select().single();
+    if (error) { console.error('Error adding student:', error); throw error; }
+    return data;
 };
 export const updateStudent = async (studentId: number, studentData: StudentUpdate): Promise<Student> => {
-    return rpcUpdate<Student>('update_student', studentId, studentData);
+    const { data, error } = await supabase.from('students').update(studentData).eq('id', studentId).select().single();
+    if (error) { console.error('Error updating student:', error); throw error; }
+    return data;
 };
 
 // Invoices
 export const addInvoice = async (invoiceData: InvoiceColumns): Promise<Invoice> => {
-    const response = await supabase.rpc('add_invoice', { p_invoice: invoiceData });
-    return handleRpcResponse(response, 'add_invoice');
+    const { data, error } = await supabase.from('invoices').insert(invoiceData).select().single();
+    if (error) { console.error('Error adding invoice:', error); throw error; }
+    return data;
 }
 export const updateInvoice = async (invoiceId: string, invoiceData: InvoiceUpdate): Promise<Invoice> => {
-    return rpcUpdate<Invoice>('update_invoice', invoiceId, invoiceData);
+    const { data, error } = await supabase.from('invoices').update(invoiceData).eq('id', invoiceId).select().single();
+    if (error) { console.error('Error updating invoice:', error); throw error; }
+    return data;
 }
 export const deleteInvoice = async (invoiceId: string) => {
-    return rpcDelete('delete_invoice', invoiceId);
+    const { error } = await supabase.from('invoices').delete().eq('id', invoiceId);
+    if (error) { console.error('Error deleting invoice:', error); throw error; }
 }
 
 // Leads
 export const addLead = async (leadData: LeadColumns): Promise<Lead> => {
-    const response = await supabase.rpc('add_lead', { p_lead: leadData });
-    return handleRpcResponse(response, 'add_lead');
+    const { data, error } = await supabase.from('leads').insert(leadData).select().single();
+    if (error) { console.error('Error adding lead:', error); throw error; }
+    return data;
 }
 export const updateLead = async (leadId: number, leadData: LeadUpdate): Promise<Lead> => {
-    return rpcUpdate<Lead>('update_lead', leadId, leadData);
+    const { data, error } = await supabase.from('leads').update(leadData).eq('id', leadId).select().single();
+    if (error) { console.error('Error updating lead:', error); throw error; }
+    return data;
 }
 
 // Staff
-export const addStaff = async (staffData: Omit<Staff, 'id'>) => {
-    const response = await supabase.rpc('add_staff', { p_staff: staffData });
-    return handleRpcResponse(response, 'add_staff');
+export const addStaff = async (staffData: Omit<Staff, 'id'>): Promise<Staff> => {
+    const { data, error } = await supabase.from('staff').insert(staffData).select().single();
+    if (error) { console.error('Error adding staff:', error); throw error; }
+    return data;
 }
-export const updateStaff = async (staffId: number, staffData: Partial<Omit<Staff, 'id' | 'school_id'>>) => {
-    return rpcUpdate<Staff>('update_staff', staffId, staffData);
+export const updateStaff = async (staffId: number, staffData: Partial<Omit<Staff, 'id' | 'school_id'>>): Promise<Staff> => {
+    const { data, error } = await supabase.from('staff').update(staffData).eq('id', staffId).select().single();
+    if (error) { console.error('Error updating staff:', error); throw error; }
+    return data;
 }
 
 // Expenses
-export const addExpense = async (expenseData: Omit<Expense, 'id'>) => {
-    const response = await supabase.rpc('add_expense', { p_expense: expenseData });
-    return handleRpcResponse(response, 'add_expense');
+export const addExpense = async (expenseData: Omit<Expense, 'id'>): Promise<Expense> => {
+    const { data, error } = await supabase.from('expenses').insert(expenseData).select().single();
+    if (error) { console.error('Error adding expense:', error); throw error; }
+    return data;
 };
-export const updateExpense = async (id: number, expenseData: Partial<Omit<Expense, 'id' | 'school_id'>>) => {
-    return rpcUpdate<Expense>('update_expense', id, expenseData);
+export const updateExpense = async (id: number, expenseData: Partial<Omit<Expense, 'id' | 'school_id'>>): Promise<Expense> => {
+    const { data, error } = await supabase.from('expenses').update(expenseData).eq('id', id).select().single();
+    if (error) { console.error('Error updating expense:', error); throw error; }
+    return data;
 };
 export const deleteExpense = async (id: number) => {
-    return rpcDelete('delete_expense', id);
+    const { error } = await supabase.from('expenses').delete().eq('id', id);
+    if (error) { console.error('Error deleting expense:', error); throw error; }
 };
 
 // Revenues
-export const addRevenue = async (revenueData: Omit<Revenue, 'id'>) => {
-    const response = await supabase.rpc('add_revenue', { p_revenue: revenueData });
-    return handleRpcResponse(response, 'add_revenue');
+export const addRevenue = async (revenueData: Omit<Revenue, 'id'>): Promise<Revenue> => {
+    const { data, error } = await supabase.from('revenues').insert(revenueData).select().single();
+    if (error) { console.error('Error adding revenue:', error); throw error; }
+    return data;
 };
-export const updateRevenue = async (id: number, revenueData: Partial<Omit<Revenue, 'id' | 'school_id'>>) => {
-    return rpcUpdate<Revenue>('update_revenue', id, revenueData);
+export const updateRevenue = async (id: number, revenueData: Partial<Omit<Revenue, 'id' | 'school_id'>>): Promise<Revenue> => {
+    const { data, error } = await supabase.from('revenues').update(revenueData).eq('id', id).select().single();
+    if (error) { console.error('Error updating revenue:', error); throw error; }
+    return data;
 };
 export const deleteRevenue = async (id: number) => {
-    return rpcDelete('delete_revenue', id);
+    const { error } = await supabase.from('revenues').delete().eq('id', id);
+    if (error) { console.error('Error deleting revenue:', error); throw error; }
 };
 
 // Communications
-export const addCommunication = async (commData: Omit<Communication, 'id'>) => {
-    const response = await supabase.rpc('add_communication', { p_communication: commData });
-    return handleRpcResponse(response, 'add_communication');
+export const addCommunication = async (commData: Omit<Communication, 'id'>): Promise<Communication> => {
+    const { data, error } = await supabase.from('communications').insert(commData).select().single();
+    if (error) { console.error('Error adding communication:', error); throw error; }
+    return data;
 };
 
 // Agenda
-export const addAgendaItem = async (itemData: Omit<AgendaItem, 'id'>) => {
-    const response = await supabase.rpc('add_agenda_item', { p_item: itemData });
-    return handleRpcResponse(response, 'add_agenda_item');
+export const addAgendaItem = async (itemData: Omit<AgendaItem, 'id'>): Promise<AgendaItem> => {
+    const { data, error } = await supabase.from('agenda_items').insert(itemData).select().single();
+    if (error) { console.error('Error adding agenda item:', error); throw error; }
+    return data;
 };
-export const updateAgendaItem = async (id: number, itemData: Partial<Omit<AgendaItem, 'id' | 'school_id'>>) => {
-    return rpcUpdate<AgendaItem>('update_agenda_item', id, itemData);
+export const updateAgendaItem = async (id: number, itemData: Partial<Omit<AgendaItem, 'id' | 'school_id'>>): Promise<AgendaItem> => {
+    const { data, error } = await supabase.from('agenda_items').update(itemData).eq('id', id).select().single();
+    if (error) { console.error('Error updating agenda item:', error); throw error; }
+    return data;
 };
 
 // Users
-export const addUser = async (userData: Omit<User, 'id'>) => {
-    const response = await supabase.rpc('add_user', { p_user: userData });
-    return handleRpcResponse(response, 'add_user');
+export const addUser = async (userData: Omit<User, 'id'>): Promise<User> => {
+    const { data, error } = await supabase.from('users').insert(userData).select().single();
+    if (error) { console.error('Error adding user:', error); throw error; }
+    return data;
 };
-export const updateUser = async (id: string, userData: Partial<Omit<User, 'id' | 'school_id'>>) => {
-    return rpcUpdate<User>('update_user', id, userData);
+export const updateUser = async (id: string, userData: Partial<Omit<User, 'id' | 'school_id'>>): Promise<User> => {
+    const { data, error } = await supabase.from('users').update(userData).eq('id', id).select().single();
+    if (error) { console.error('Error updating user:', error); throw error; }
+    return data;
 };
 export const deleteUser = async (id: string) => {
-    return rpcDelete('delete_user', id);
+    const { error } = await supabase.from('users').delete().eq('id', id);
+    if (error) { console.error('Error deleting user:', error); throw error; }
 };
 
 // Campaigns
-export const addLeadCaptureCampaign = async (campaignData: LeadCaptureCampaign) => {
-    const response = await supabase.rpc('add_lead_capture_campaign', { p_campaign: campaignData });
-    return handleRpcResponse(response, 'add_lead_capture_campaign');
+export const addLeadCaptureCampaign = async (campaignData: LeadCaptureCampaign): Promise<LeadCaptureCampaign> => {
+    const { data, error } = await supabase.from('lead_capture_campaigns').insert(campaignData).select().single();
+    if (error) { console.error('Error adding campaign:', error); throw error; }
+    return data;
 }
 
 // Photo Albums
 export const addPhotoAlbum = async (albumData: PhotoAlbumColumns): Promise<PhotoAlbum> => {
-    const response = await supabase.rpc('add_photo_album', { p_album: albumData });
-    return handleRpcResponse(response, 'add_photo_album');
+    const { data, error } = await supabase.from('photo_albums').insert(albumData).select().single();
+    if (error) { console.error('Error adding album:', error); throw error; }
+    return data;
 }
 export const deletePhotoAlbum = async (id: number) => {
-    return rpcDelete('delete_photo_album', id);
+    const { error } = await supabase.from('photo_albums').delete().eq('id', id);
+    if (error) { console.error('Error deleting album:', error); throw error; }
 }
 export const updateAlbumPhotos = async (albumId: number, photos: Photo[]): Promise<PhotoAlbum> => {
-    const response = await supabase.rpc('update_album_photos', { p_id: albumId, p_photos: photos });
-    return handleRpcResponse(response, 'update_album_photos');
+    const { data, error } = await supabase.from('photo_albums').update({ photos }).eq('id', albumId).select().single();
+    if (error) { console.error('Error updating album photos:', error); throw error; }
+    return data;
 }
 
 // Library
-export const addLibraryBook = async (bookData: Omit<LibraryBook, 'id'>) => {
-    const response = await supabase.rpc('add_library_book', { p_book: bookData });
-    return handleRpcResponse(response, 'add_library_book');
+export const addLibraryBook = async (bookData: Omit<LibraryBook, 'id'>): Promise<LibraryBook> => {
+    const { data, error } = await supabase.from('library_books').insert(bookData).select().single();
+    if (error) { console.error('Error adding book:', error); throw error; }
+    return data;
 };
