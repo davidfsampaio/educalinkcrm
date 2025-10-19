@@ -47,54 +47,35 @@ export const getUsers = async (): Promise<User[]> => {
     return data || [];
 };
 
-export const getUserProfileRpc = async (): Promise<Staff | null> => {
-    // We assume an RPC function 'get_user_profile' exists on the backend.
-    // This function should securely fetch the staff profile for the currently authenticated user,
-    // bypassing potential RLS recursion issues found in direct table queries.
-    const { data, error } = await supabase.rpc('get_user_profile');
+export const getAuthenticatedUserProfile = async (): Promise<Staff | null> => {
+    // Based on the DB error hint "Perhaps you meant to call the function public.get_my_role",
+    // we are calling this RPC. We assume it's a SECURITY DEFINER function that can bypass RLS
+    // and return the full staff profile of the authenticated user.
+    const { data, error } = await supabase.rpc('get_my_role');
     
     if (error) {
-      console.error('Error calling getUserProfileRpc:', error);
-       // Don't throw for 'not found' style errors, just return null
+      console.error('Error calling get_my_role RPC:', error);
       return null;
     }
     
-    // The rpc call might return an array with one item, or just the item, or nothing.
+    // The RPC might return an array or a single object. Let's handle both.
+    // If data is null or an empty array, it means no profile was found.
     if (!data || (Array.isArray(data) && data.length === 0)) {
         return null;
     }
 
-    // If it returns an array, take the first element.
-    return Array.isArray(data) ? data[0] : data;
-};
+    // If it returns an array, take the first element. Otherwise, use the object directly.
+    const profile = Array.isArray(data) ? data[0] : data;
 
-
-export const getStaffProfileByEmail = async (email: string): Promise<Staff | null> => {
-    const { data, error } = await supabase.from('staff').select('*').eq('email', email).single();
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
-        console.error('Error fetching staff profile by email:', error);
-        return null;
+    // We optimistically assume the returned object has the shape of a Staff profile.
+    if (typeof profile === 'object' && profile !== null) {
+        return profile as Staff;
     }
-    return data;
+
+    console.warn("RPC 'get_my_role' did not return a valid profile object.", profile);
+    return null;
 };
 
-export const getUserProfileByEmail = async (email: string): Promise<User | null> => {
-    const { data, error } = await supabase.from('users').select('*').eq('email', email).single();
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
-        console.error('Error fetching user profile by email:', error);
-        return null;
-    }
-    return data;
-};
-
-export const getUserProfileById = async (id: string): Promise<User | null> => {
-    const { data, error } = await supabase.from('users').select('*').eq('id', id).single();
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
-        console.error('Error fetching user profile by id:', error);
-        return null;
-    }
-    return data;
-};
 
 export const getCommunications = async (): Promise<Communication[]> => {
     const { data, error } = await supabase.from('communications').select('*').order('sentDate', { ascending: false });

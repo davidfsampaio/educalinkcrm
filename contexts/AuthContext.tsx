@@ -27,6 +27,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (role === 'Diretor(a)') return 'Admin';
             if (role === 'Secretário(a)') return 'Secretário(a)';
             if (role === 'Coordenador(a)') return 'Coordenador(a)';
+            // Default fallback role if something unexpected is returned
             return 'Coordenador(a)'; 
         };
 
@@ -35,10 +36,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (session?.user) {
                     const { user } = session;
                     
-                    // Use an RPC call to avoid RLS recursion issues on direct table selects.
-                    const staffProfile = await api.getUserProfileRpc();
+                    // Use the RPC call suggested by the database error hint to avoid RLS issues.
+                    const staffProfile = await api.getAuthenticatedUserProfile();
 
-                    if (staffProfile) {
+                    if (staffProfile && typeof staffProfile === 'object') {
                         setAuthError(null);
                         const profile: User = {
                             id: user.id, // Use the auth user ID
@@ -52,8 +53,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         };
                         setCurrentUser(profile);
                     } else {
-                        const errorMsg = `Erro de autenticação: Não foi possível carregar o perfil do funcionário. O acesso não é permitido.`;
-                        console.error(errorMsg, "Causa provável: O usuário não possui um perfil de funcionário correspondente ou a função RPC 'get_user_profile' não foi encontrada/falhou no backend.");
+                        // This case handles when the RPC call succeeds but returns no profile,
+                        // or returns something other than an object (like just the role as a string).
+                        const errorMsg = `Erro de autenticação: Perfil de funcionário não encontrado ou inválido. O acesso não é permitido.`;
+                        console.error(errorMsg, "Causa provável: O usuário autenticado não tem um perfil correspondente na tabela 'staff' ou a função 'get_my_role' não retornou os dados esperados.");
                         setAuthError(errorMsg);
                         await supabase.auth.signOut();
                     }
