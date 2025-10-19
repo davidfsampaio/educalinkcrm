@@ -178,6 +178,11 @@ export interface Student {
     school_id: string;
 }
 
+// Represents the columns in the 'students' table for inserts/updates
+export type StudentColumns = Omit<Student, 'id' | 'grades' | 'attendance' | 'occurrences' | 'documents' | 'individualAgenda' | 'communicationLog'>;
+export type StudentUpdate = Partial<Omit<StudentColumns, 'school_id'>>;
+
+
 export interface Payment {
     id: number;
     amount: number;
@@ -196,6 +201,10 @@ export interface Invoice {
     payments: Payment[];
     school_id: string;
 }
+
+export type InvoiceColumns = Omit<Invoice, 'school_id' | 'payments'>;
+export type InvoiceUpdate = Partial<Omit<InvoiceColumns, 'id' | 'studentId' | 'studentName'>>;
+
 
 export interface Task {
     id: number;
@@ -222,6 +231,10 @@ export interface Lead {
     communicationLog: CommunicationLog[];
     school_id: string;
 }
+
+export type LeadColumns = Omit<Lead, 'id' | 'tasks' | 'requiredDocuments' | 'communicationLog'>;
+export type LeadUpdate = Partial<Omit<LeadColumns, 'school_id'>>;
+
 
 export interface FinancialSummaryPoint {
     name: string;
@@ -291,6 +304,8 @@ export interface PhotoAlbum {
     photos: Photo[];
     school_id: string;
 }
+
+export type PhotoAlbumColumns = Omit<PhotoAlbum, 'id' | 'photos'>;
 
 
 export interface TuitionPlan {

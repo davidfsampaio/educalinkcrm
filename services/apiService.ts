@@ -1,6 +1,7 @@
 import {
     Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum,
-    User, Expense, Revenue, LeadCaptureCampaign, Photo
+    User, Expense, Revenue, LeadCaptureCampaign, Photo, StudentColumns, StudentUpdate,
+    LeadColumns, LeadUpdate, InvoiceColumns, InvoiceUpdate, PhotoAlbumColumns
 } from '../types';
 import { supabase } from './supabaseClient';
 
@@ -119,7 +120,7 @@ export const getLeadCaptureCampaigns = async (): Promise<LeadCaptureCampaign[]> 
 
 // --- WRITE operations (ALL refactored to use RPC to bypass RLS) ---
 
-const rpcUpdate = async <T>(rpcName: string, id: number | string, dataToUpdate: Partial<T>) => {
+const rpcUpdate = async <T>(rpcName: string, id: number | string, dataToUpdate: object) => {
     const { data, error } = await supabase.rpc(rpcName, { p_id: id, p_data: dataToUpdate });
     handleSupabaseError(error, `${rpcName} (RPC)`);
     return Array.isArray(data) ? data[0] : data;
@@ -131,22 +132,22 @@ const rpcDelete = async (rpcName: string, id: number | string) => {
 }
 
 // Students
-export const addStudent = async (studentData: Omit<Student, 'id'>) => {
+export const addStudent = async (studentData: StudentColumns): Promise<Student> => {
     const { data, error } = await supabase.rpc('add_student', { p_student: studentData });
     handleSupabaseError(error, 'addStudent (RPC)');
     return Array.isArray(data) ? data[0] : data;
 };
-export const updateStudent = async (studentId: number, studentData: Partial<Omit<Student, 'id' | 'school_id'>>) => {
+export const updateStudent = async (studentId: number, studentData: StudentUpdate): Promise<Student> => {
     return rpcUpdate<Student>('update_student', studentId, studentData);
 };
 
 // Invoices
-export const addInvoice = async (invoiceData: Omit<Invoice, 'school_id'>) => {
+export const addInvoice = async (invoiceData: InvoiceColumns): Promise<Invoice> => {
     const { data, error } = await supabase.rpc('add_invoice', { p_invoice: invoiceData });
     handleSupabaseError(error, 'addInvoice (RPC)');
     return Array.isArray(data) ? data[0] : data;
 }
-export const updateInvoice = async (invoiceId: string, invoiceData: Partial<Omit<Invoice, 'id' | 'school_id'>>) => {
+export const updateInvoice = async (invoiceId: string, invoiceData: InvoiceUpdate): Promise<Invoice> => {
     return rpcUpdate<Invoice>('update_invoice', invoiceId, invoiceData);
 }
 export const deleteInvoice = async (invoiceId: string) => {
@@ -154,12 +155,12 @@ export const deleteInvoice = async (invoiceId: string) => {
 }
 
 // Leads
-export const addLead = async (leadData: Omit<Lead, 'id'>) => {
+export const addLead = async (leadData: LeadColumns): Promise<Lead> => {
     const { data, error } = await supabase.rpc('add_lead', { p_lead: leadData });
     handleSupabaseError(error, 'addLead (RPC)');
     return Array.isArray(data) ? data[0] : data;
 }
-export const updateLead = async (leadId: number, leadData: Partial<Omit<Lead, 'id' | 'school_id'>>) => {
+export const updateLead = async (leadId: number, leadData: LeadUpdate): Promise<Lead> => {
     return rpcUpdate<Lead>('update_lead', leadId, leadData);
 }
 
@@ -237,7 +238,7 @@ export const addLeadCaptureCampaign = async (campaignData: LeadCaptureCampaign) 
 }
 
 // Photo Albums
-export const addPhotoAlbum = async (albumData: Omit<PhotoAlbum, 'id'>) => {
+export const addPhotoAlbum = async (albumData: PhotoAlbumColumns): Promise<PhotoAlbum> => {
     const { data, error } = await supabase.rpc('add_photo_album', { p_album: albumData });
     handleSupabaseError(error, 'addPhotoAlbum (RPC)');
     return Array.isArray(data) ? data[0] : data;
@@ -245,7 +246,7 @@ export const addPhotoAlbum = async (albumData: Omit<PhotoAlbum, 'id'>) => {
 export const deletePhotoAlbum = async (id: number) => {
     return rpcDelete('delete_photo_album', id);
 }
-export const updateAlbumPhotos = async (albumId: number, photos: Photo[]) => {
+export const updateAlbumPhotos = async (albumId: number, photos: Photo[]): Promise<PhotoAlbum> => {
     // This is a special case where we update a JSONB column, an RPC is a good fit.
     const { data, error } = await supabase.rpc('update_album_photos', { p_id: albumId, p_photos: photos });
     handleSupabaseError(error, 'updateAlbumPhotos (RPC)');

@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum, FinancialSummaryPoint, User, Expense, Revenue, LeadCaptureCampaign, LeadStatus, StudentStatus, PaymentStatus, StaffStatus, UserStatus, Photo, DataContextType, RevenueCategory } from '../types';
+import { 
+    Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum, 
+    FinancialSummaryPoint, User, Expense, Revenue, LeadCaptureCampaign, Photo, DataContextType, 
+    RevenueCategory, StudentStatus, PaymentStatus, UserStatus, StudentColumns, LeadColumns, InvoiceColumns, PhotoAlbumColumns
+} from '../types';
 import * as api from '../services/apiService';
 import { useAuth } from './AuthContext'; // We'll need this to get the school_id
 
@@ -105,18 +109,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const addStudent = async (studentData: Omit<Student, 'id' | 'school_id' | 'status' | 'enrollmentDate' | 'avatarUrl' | 'grades' | 'attendance' | 'occurrences' | 'documents' | 'individualAgenda' | 'communicationLog' | 'tuitionPlanId' | 'medicalNotes'>) => {
         if (!currentUser?.school_id) return;
         try {
-            const newStudentPayload = {
+            const newStudentPayload: StudentColumns = {
                 school_id: currentUser.school_id,
                 ...studentData,
                 status: StudentStatus.Active,
                 enrollmentDate: new Date().toISOString().split('T')[0],
                 avatarUrl: `https://picsum.photos/seed/student${Date.now()}/100/100`,
-                grades: [], attendance: [], occurrences: [], documents: [],
-                individualAgenda: [], communicationLog: [], tuitionPlanId: 1, medicalNotes: ''
+                tuitionPlanId: 1, 
+                medicalNotes: ''
             };
-            const newStudent = await api.addStudent(newStudentPayload);
-            if (newStudent) {
-                setStudents(prev => [newStudent, ...prev]);
+            const newStudentFromDb = await api.addStudent(newStudentPayload);
+            if (newStudentFromDb) {
+                // Rehydrate the object with empty arrays for local state consistency
+                const newStudentForState: Student = {
+                    ...newStudentFromDb,
+                    grades: [], attendance: [], occurrences: [], documents: [], individualAgenda: [], communicationLog: []
+                }
+                setStudents(prev => [newStudentForState, ...prev]);
             }
         } catch (error) {
             console.error('Failed to add student:', error);
@@ -125,10 +134,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updateStudent = async (updatedStudent: Student) => {
         try {
-            const { id, school_id, ...studentData } = updatedStudent;
-            const updated = await api.updateStudent(id, studentData);
-            if (updated) {
-                setStudents(prev => prev.map(s => (s.id === updated.id ? updated : s)));
+            const { id, school_id, grades, attendance, occurrences, documents, individualAgenda, communicationLog, ...studentColumns } = updatedStudent;
+            const updatedFromDb = await api.updateStudent(id, studentColumns);
+            if (updatedFromDb) {
+                // Re-attach the relational arrays to the updated object for local state consistency
+                const rehydratedStudent: Student = {
+                    ...updatedFromDb,
+                    grades, attendance, occurrences, documents, individualAgenda, communicationLog
+                };
+                setStudents(prev => prev.map(s => (s.id === id ? rehydratedStudent : s)));
             }
         } catch (error) {
             console.error('Failed to update student:', error);
@@ -138,15 +152,21 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const addLead = async (leadData: Omit<Lead, 'id' | 'school_id'>, campaignId?: string) => {
         if (!currentUser?.school_id) return;
         try {
-            const newLeadPayload = {
+            const newLeadPayload: LeadColumns = {
                 school_id: currentUser.school_id,
                 ...leadData,
             };
-            const newLead = await api.addLead(newLeadPayload);
-            if (newLead) {
-                setLeads(prev => [newLead, ...prev]);
+            const newLeadFromDb = await api.addLead(newLeadPayload);
+            if (newLeadFromDb) {
+                // Rehydrate for local state
+                const newLeadForState: Lead = {
+                    ...newLeadFromDb,
+                    tasks: leadData.tasks || [],
+                    requiredDocuments: leadData.requiredDocuments || [],
+                    communicationLog: leadData.communicationLog || []
+                };
+                setLeads(prev => [newLeadForState, ...prev]);
                 if (campaignId) {
-                    // This update also needs to be scoped by RLS, which is fine
                     setLeadCaptureCampaigns(prev => prev.map(c => 
                         c.id === campaignId ? { ...c, leadsCaptured: c.leadsCaptured + 1 } : c
                     ));
@@ -159,10 +179,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const updateLead = async (updatedLead: Lead) => {
         try {
-             const { id, school_id, ...leadData } = updatedLead;
-            const updated = await api.updateLead(id, leadData);
-            if (updated) {
-                setLeads(prev => prev.map(l => (l.id === updated.id ? updated : l)));
+             const { id, school_id, tasks, requiredDocuments, communicationLog, ...leadColumns } = updatedLead;
+            const updatedFromDb = await api.updateLead(id, leadColumns);
+            if (updatedFromDb) {
+                const rehydratedLead: Lead = {
+                    ...updatedFromDb,
+                    tasks, requiredDocuments, communicationLog
+                };
+                setLeads(prev => prev.map(l => (l.id === id ? rehydratedLead : l)));
             }
         } catch(error) {
             console.error("Failed to update lead:", error);
@@ -176,16 +200,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (!student) throw new Error("Student not found");
 
             const id = `INV-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(Date.now()).slice(-5)}`;
-            const payload: Omit<Invoice, 'school_id'> = {
+            
+            const payload: InvoiceColumns = {
                 id,
                 ...newInvoiceData,
                 studentName: student.name,
                 status: new Date(newInvoiceData.dueDate) < new Date() ? PaymentStatus.Overdue : PaymentStatus.Pending,
-                payments: [],
             };
-            const newInvoice = await api.addInvoice(payload);
-            if (newInvoice) {
-                setInvoices(prev => [newInvoice, ...prev]);
+            const newInvoiceFromDb = await api.addInvoice(payload);
+            if (newInvoiceFromDb) {
+                 const newInvoiceForState: Invoice = { ...newInvoiceFromDb, school_id: currentUser.school_id, payments: [] };
+                setInvoices(prev => [newInvoiceForState, ...prev]);
             }
         } catch(error) {
             console.error("Failed to add invoice:", error);
@@ -194,10 +219,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updateInvoice = async (updatedInvoice: Invoice) => {
         try {
-            const { id, school_id, ...invoiceData } = updatedInvoice;
-            const updated = await api.updateInvoice(id, invoiceData);
-            if(updated) {
-                setInvoices(prev => prev.map(inv => (inv.id === updated.id ? updated : inv)));
+            const { id, school_id, studentId, studentName, payments, ...invoiceColumns } = updatedInvoice;
+            const updatedFromDb = await api.updateInvoice(id, invoiceColumns);
+            if(updatedFromDb) {
+                const rehydratedInvoice: Invoice = { ...updatedFromDb, school_id, studentId, studentName, payments };
+                setInvoices(prev => prev.map(inv => (inv.id === id ? rehydratedInvoice : inv)));
             }
         } catch(error) {
             console.error("Failed to update invoice:", error);
@@ -323,9 +349,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const addPhotoAlbum = async (albumData: Omit<PhotoAlbum, 'id' | 'school_id' | 'photos'>) => {
         if (!currentUser?.school_id) return;
         try {
-            const payload = { school_id: currentUser.school_id, ...albumData, photos: [] };
-            const newAlbum = await api.addPhotoAlbum(payload);
-            if(newAlbum) setPhotoAlbums(prev => [newAlbum, ...prev]);
+            const payload: PhotoAlbumColumns = { school_id: currentUser.school_id, ...albumData };
+            const newAlbumFromDb = await api.addPhotoAlbum(payload);
+            if(newAlbumFromDb) {
+                const newAlbumForState: PhotoAlbum = { ...newAlbumFromDb, photos: [] };
+                setPhotoAlbums(prev => [newAlbumForState, ...prev]);
+            }
         } catch (error) { console.error("Failed to add album:", error); }
     };
 
