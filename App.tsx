@@ -194,8 +194,8 @@ const StaffLoginScreen: React.FC<{ onBack: () => void; authError: string | null;
 
     const handleLogin = async () => {
         setIsLoading(true);
-        setAuthError(null);
         await signInAsStaff(email, password);
+        // O AuthContext agora lida com o estado de carregamento e erro
         setIsLoading(false);
     };
     
@@ -263,7 +263,6 @@ const ParentLoginScreen: React.FC<{ onBack: () => void; authError: string | null
 
     const handleLogin = async () => {
         setIsLoading(true);
-        setAuthError(null);
         await signInAsParent(email, password);
         setIsLoading(false);
     };
