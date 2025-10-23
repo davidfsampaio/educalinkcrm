@@ -44,17 +44,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         checkSession();
 
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+            // On sign out, always clear the user
             if (event === 'SIGNED_OUT') {
                 setCurrentUser(null);
-            } else if (session?.user) {
-                 const { data: profile } = await supabase
+                return;
+            }
+
+            // On sign in or token refresh, if we have a session and a user...
+            if (session?.user) {
+                // ...try to fetch the profile.
+                const { data: profile } = await supabase
                     .from('users')
                     .select('*')
                     .eq('id', session.user.id)
                     .single();
-                // This might be null if the profile creation trigger hasn't finished.
-                // The key is that `performLogin` handles the initial, definitive profile check.
-                setCurrentUser(profile as User | null);
+
+                // IMPORTANT: Only update the current user if a profile was successfully found.
+                // Do NOT set currentUser to null if the profile fetch fails, as `performLogin` might be in the middle of creating it.
+                // The only event that should nullify the user is 'SIGNED_OUT'.
+                if (profile) {
+                    setCurrentUser(profile as User);
+                }
             }
         });
 
