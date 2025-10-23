@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useData } from '../contexts/DataContext';
 import Card from './common/Card';
-import { Student, StudentStatus } from '../types';
+import { Student, StudentStatus, TuitionPlan } from '../types';
 import StudentDetailModal from './students/StudentDetailModal';
 import AddStudentModal from './students/AddStudentModal'; // Import the new modal
 import EditStudentModal from './students/EditStudentModal'; // Import the edit modal
@@ -9,7 +9,7 @@ import ProtectedComponent from './common/ProtectedComponent';
 import { useSettings } from '../contexts/SettingsContext';
 
 const PlusIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
 );
 
 interface StudentsProps {
@@ -18,7 +18,7 @@ interface StudentsProps {
 }
 
 const Students: React.FC<StudentsProps> = ({ initialStudent, initialAction }) => {
-    const { students, addStudent, updateStudent, loading } = useData();
+    const { students, tuitionPlans, addStudent, updateStudent, loading } = useData();
     const { settings } = useSettings();
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -70,7 +70,7 @@ const Students: React.FC<StudentsProps> = ({ initialStudent, initialAction }) =>
         setEditingStudent(null);
     };
 
-    const handleAddStudent = (newStudentData: Omit<Student, 'id'|'status'|'enrollment_date'|'avatar_url'|'grades'|'attendance'|'occurrences'|'documents'|'individual_agenda'|'communication_log'|'tuition_plan_id'|'medical_notes'|'school_id'>) => {
+    const handleAddStudent = (newStudentData: Pick<Student, 'name' | 'class' | 'parent_name' | 'parent_contact' | 'cpf' | 'address' | 'email' | 'phone' | 'tuition_plan_id'>) => {
         addStudent(newStudentData);
         setAddModalOpen(false);
     };
@@ -150,6 +150,7 @@ const Students: React.FC<StudentsProps> = ({ initialStudent, initialAction }) =>
                 isOpen={isAddModalOpen}
                 onClose={() => setAddModalOpen(false)}
                 onAddStudent={handleAddStudent}
+                tuitionPlans={tuitionPlans}
             />
 
             {editingStudent && (

@@ -3,6 +3,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import Card from './common/Card';
 import { Settings, DeclarationType } from '../types';
 import PermissionsSettings from './settings/PermissionsSettings';
+import TuitionPlansEditor from './settings/TuitionPlansEditor';
 
 type SettingsTab = 'general' | 'permissions';
 
@@ -194,6 +195,8 @@ const GeneralSettings: React.FC<{
                     </div>
                 </div>
             </Card>
+            
+            <TuitionPlansEditor />
 
             <Card>
                 <h2 className="text-xl font-bold mb-4 text-brand-text-dark border-b pb-2">Gestão Acadêmica e Pessoal</h2>
@@ -220,7 +223,8 @@ const Settings: React.FC = () => {
 
     const handleSave = () => {
         // We separate role updates from other settings updates
-        const { roles, ...otherSettings } = localSettings;
+        // Tuition plans are managed separately via DataContext now.
+        const { roles, tuitionPlans, ...otherSettings } = localSettings;
         updateSettings(otherSettings);
         updateRoles(roles);
 

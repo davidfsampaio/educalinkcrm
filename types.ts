@@ -180,7 +180,7 @@ export interface Student {
 
 // Represents the columns in the 'students' table for inserts/updates
 export type StudentColumns = Omit<Student, 'id' | 'grades' | 'attendance' | 'occurrences' | 'documents' | 'individual_agenda' | 'communication_log'>;
-export type StudentUpdate = Partial<Omit<StudentColumns, 'school_id'>>;
+export type StudentUpdate = Partial<Omit<Student, 'id' | 'school_id'>>;
 
 
 export interface Payment {
@@ -203,7 +203,7 @@ export interface Invoice {
 }
 
 export type InvoiceColumns = Omit<Invoice, 'school_id' | 'payments'>;
-export type InvoiceUpdate = Partial<Omit<InvoiceColumns, 'id' | 'student_id' | 'student_name'>>;
+export type InvoiceUpdate = Partial<Omit<Invoice, 'id' | 'student_id' | 'student_name' | 'school_id'>>;
 
 
 export interface Task {
@@ -233,7 +233,7 @@ export interface Lead {
 }
 
 export type LeadColumns = Omit<Lead, 'id' | 'tasks' | 'required_documents' | 'communication_log'>;
-export type LeadUpdate = Partial<Omit<LeadColumns, 'school_id'>>;
+export type LeadUpdate = Partial<Omit<Lead, 'id' | 'school_id'>>;
 
 
 export interface FinancialSummaryPoint {
@@ -338,8 +338,9 @@ export interface DataContextType {
     expenses: Expense[];
     revenues: Revenue[];
     leadCaptureCampaigns: LeadCaptureCampaign[];
+    tuitionPlans: TuitionPlan[];
     loading: boolean;
-    addStudent: (studentData: Pick<Student, 'name' | 'class' | 'parent_name' | 'parent_contact' | 'cpf' | 'address' | 'email' | 'phone'>) => void;
+    addStudent: (studentData: Pick<Student, 'name' | 'class' | 'parent_name' | 'parent_contact' | 'cpf' | 'address' | 'email' | 'phone' | 'tuition_plan_id'>) => void;
     updateStudent: (updatedStudent: Student) => void;
     addLead: (leadData: Omit<Lead, 'id' | 'school_id'>, campaignId?: string) => void;
     updateLead: (updatedLead: Lead) => void;
@@ -365,6 +366,9 @@ export interface DataContextType {
     deletePhotoAlbum: (albumId: number) => void;
     addPhotoToAlbum: (albumId: number, photoData: { url: string; caption: string }) => void;
     deletePhotoFromAlbum: (albumId: number, photoId: number) => void;
+    addTuitionPlan: (planData: Omit<TuitionPlan, 'id' | 'school_id'>) => void;
+    updateTuitionPlan: (updatedPlan: Omit<TuitionPlan, 'school_id'>) => void;
+    deleteTuitionPlan: (planId: number) => void;
 }
 
 export type Permission = 

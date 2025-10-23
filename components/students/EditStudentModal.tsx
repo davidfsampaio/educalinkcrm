@@ -1,10 +1,8 @@
-
-
 import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { useSettings } from '../../contexts/SettingsContext';
-// FIX: Corrected import path for types.
-import { Student, StudentStatus } from '../../types';
+import { Student, StudentStatus, TuitionPlan } from '../../types';
+import { useData } from '../../contexts/DataContext';
 
 interface EditStudentModalProps {
     isOpen: boolean;
@@ -15,6 +13,7 @@ interface EditStudentModalProps {
 
 const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, onClose, student, onUpdateStudent }) => {
     const { settings } = useSettings();
+    const { tuitionPlans } = useData();
     const [name, setName] = useState('');
     const [studentClass, setStudentClass] = useState('');
     const [parentName, setParentName] = useState('');
@@ -23,6 +22,7 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, onClose, st
     const [address, setAddress] = useState('');
     const [email, setEmail] = useState('');
     const [status, setStatus] = useState<StudentStatus>(StudentStatus.Active);
+    const [tuitionPlanId, setTuitionPlanId] = useState<number | ''>('');
     
     const [error, setError] = useState('');
 
@@ -36,12 +36,13 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, onClose, st
             setAddress(student.address);
             setEmail(student.email);
             setStatus(student.status);
+            setTuitionPlanId(student.tuition_plan_id);
         }
     }, [student]);
 
     const handleSubmit = () => {
-        if (!name || !studentClass || !parentName || !parentContact) {
-            setError('Nome, Turma, Nome do Responsável e Contato são obrigatórios.');
+        if (!name || !studentClass || !parentName || !parentContact || !tuitionPlanId) {
+            setError('Nome, Turma, Nome do Responsável, Contato e Plano são obrigatórios.');
             return;
         }
 
@@ -55,6 +56,7 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, onClose, st
             address,
             email,
             status,
+            tuition_plan_id: tuitionPlanId,
         };
 
         onUpdateStudent(updatedStudent);
@@ -99,6 +101,14 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ isOpen, onClose, st
                         <select id="edit-status" value={status} onChange={e => setStatus(e.target.value as StudentStatus)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm">
                             {Object.values(StudentStatus).map(s => (
                                 <option key={s} value={s}>{s}</option>
+                            ))}
+                        </select>
+                    </div>
+                     <div>
+                        <label htmlFor="edit-tuitionPlan" className="block text-sm font-medium text-gray-700">Plano de Mensalidade</label>
+                        <select id="edit-tuitionPlan" value={tuitionPlanId} onChange={e => setTuitionPlanId(Number(e.target.value))} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm">
+                           {tuitionPlans.map(plan => (
+                                <option key={plan.id} value={plan.id}>{plan.name} - {plan.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</option>
                             ))}
                         </select>
                     </div>

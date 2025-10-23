@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { 
     Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum, 
     FinancialSummaryPoint, User, Expense, Revenue, LeadCaptureCampaign, Photo, DataContextType, 
-    RevenueCategory, StudentStatus, PaymentStatus, UserStatus, StudentColumns, LeadColumns, InvoiceColumns, PhotoAlbumColumns, StaffStatus
+    RevenueCategory, StudentStatus, PaymentStatus, UserStatus, StudentColumns, LeadColumns, InvoiceColumns, PhotoAlbumColumns, StaffStatus, TuitionPlan
 } from '../types';
 import * as api from '../services/apiService';
 import { useAuth } from './AuthContext'; // We'll need this to get the schoolId
@@ -28,6 +28,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [revenues, setRevenues] = useState<Revenue[]>([]);
     const [leadCaptureCampaigns, setLeadCaptureCampaigns] = useState<LeadCaptureCampaign[]>([]);
+    const [tuitionPlans, setTuitionPlans] = useState<TuitionPlan[]>([]);
     const [loading, setLoading] = useState(true);
 
     const loadData = useCallback(async () => {
@@ -43,11 +44,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const [
                 studentsData, invoicesData, leadsData, staffData, usersData,
                 communicationsData, agendaData, libraryData, albumData,
-                expensesData, revenuesData, campaignsData,
+                expensesData, revenuesData, campaignsData, tuitionPlansData,
             ] = await Promise.all([
                 api.getStudents(), api.getInvoices(), api.getLeads(), api.getStaff(), api.getUsers(),
                 api.getCommunications(), api.getAgendaItems(), api.getLibraryBooks(), api.getPhotoAlbums(),
-                api.getExpenses(), api.getRevenues(), api.getLeadCaptureCampaigns(),
+                api.getExpenses(), api.getRevenues(), api.getLeadCaptureCampaigns(), api.getTuitionPlans(),
             ]);
             
             setStudents(studentsData);
@@ -62,6 +63,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setExpenses(expensesData);
             setRevenues(revenuesData);
             setLeadCaptureCampaigns(campaignsData);
+            setTuitionPlans(tuitionPlansData);
             
             // Calculate Financial Summary Dynamically
             const summaryByMonth: { [key: string]: FinancialSummaryPoint & { year: number, monthIndex: number } } = {};
@@ -107,7 +109,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loadData();
     }, [loadData]);
 
-    const addStudent = async (studentData: Pick<Student, 'name' | 'class' | 'parent_name' | 'parent_contact' | 'cpf' | 'address' | 'email' | 'phone'>) => {
+    const addStudent = async (studentData: Pick<Student, 'name' | 'class' | 'parent_name' | 'parent_contact' | 'cpf' | 'address' | 'email' | 'phone' | 'tuition_plan_id'>) => {
         if (!currentUser?.school_id) return;
         try {
             const newStudentPayload: Omit<StudentColumns, 'school_id'> & { school_id: string } = {
@@ -116,7 +118,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 status: StudentStatus.Active,
                 enrollment_date: new Date().toISOString().split('T')[0],
                 avatar_url: `https://picsum.photos/seed/student${Date.now()}/100/100`,
-                tuition_plan_id: 1, 
                 medical_notes: ''
             };
             const newStudentFromDb = await api.addStudent(newStudentPayload);
@@ -134,14 +135,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updateStudent = async (updatedStudent: Student) => {
         try {
-            const { id, school_id, grades, attendance, occurrences, documents, individual_agenda, communication_log, ...studentColumns } = updatedStudent;
-            const updatedFromDb = await api.updateStudent(id, studentColumns);
-            // Re-attach the relational arrays to the updated object for local state consistency
-            const rehydratedStudent: Student = {
-                ...updatedFromDb,
-                grades, attendance, occurrences, documents, individual_agenda, communication_log
-            };
-            setStudents(prev => prev.map(s => (s.id === id ? rehydratedStudent : s)));
+            const { id, school_id, ...studentUpdateData } = updatedStudent;
+            const updatedFromDb = await api.updateStudent(id, studentUpdateData);
+            setStudents(prev => prev.map(s => (s.id === id ? updatedFromDb : s)));
         } catch (error) {
             console.error('Falha ao atualizar aluno:', error);
             alert(`Erro ao atualizar aluno: ${(error as Error).message}`);
@@ -209,13 +205,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const updateLead = async (updatedLead: Lead) => {
         try {
-             const { id, school_id, tasks, required_documents, communication_log, ...leadColumns } = updatedLead;
-            const updatedFromDb = await api.updateLead(id, leadColumns);
-            const rehydratedLead: Lead = {
-                ...updatedFromDb,
-                tasks, required_documents, communication_log
-            };
-            setLeads(prev => prev.map(l => (l.id === id ? rehydratedLead : l)));
+            const { id, school_id, ...leadUpdateData } = updatedLead;
+            const updatedFromDb = await api.updateLead(id, leadUpdateData);
+            setLeads(prev => prev.map(l => (l.id === id ? updatedFromDb : l)));
         } catch(error) {
             console.error("Falha ao atualizar lead:", error);
             alert(`Erro ao atualizar lead: ${(error as Error).message}`);
@@ -247,9 +239,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updateInvoice = async (updatedInvoice: Invoice) => {
         try {
-            const { id, school_id, student_id, student_name, payments, ...invoiceColumns } = updatedInvoice;
-            const updatedFromDb = await api.updateInvoice(id, invoiceColumns);
-            const rehydratedInvoice: Invoice = { ...updatedFromDb, school_id, student_id, student_name, payments };
+            const { id, school_id, student_id, student_name, ...invoiceUpdateData } = updatedInvoice;
+            const updatedFromDb = await api.updateInvoice(id, invoiceUpdateData);
+             const rehydratedInvoice: Invoice = { ...updatedFromDb, school_id, student_id, student_name };
             setInvoices(prev => prev.map(inv => (inv.id === id ? rehydratedInvoice : inv)));
         } catch(error) {
             console.error("Falha ao atualizar fatura:", error);
@@ -308,6 +300,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const expenseOps = createCrudOperations(setExpenses, { add: api.addExpense, update: api.updateExpense, delete: api.deleteExpense }, "despesa");
     const revenueOps = createCrudOperations(setRevenues, { add: api.addRevenue, update: api.updateRevenue, delete: api.deleteRevenue }, "receita");
     const staffOps = createCrudOperations(setStaff, { add: api.addStaff, update: api.updateStaff, delete: () => Promise.resolve() }, "funcionário");
+    const tuitionPlanOps = createCrudOperations(setTuitionPlans, { add: api.addTuitionPlan, update: api.updateTuitionPlan, delete: api.deleteTuitionPlan }, "plano de mensalidade");
     
     const addStaff = async (staffData: Pick<Staff, 'name' | 'role' | 'email' | 'phone' | 'cpf' | 'address'>) => {
         if (!currentUser?.school_id) return;
@@ -472,14 +465,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const value: DataContextType = {
         students, invoices, leads, staff, users, communications, agendaItems, libraryBooks, photoAlbums,
-        financialSummary, expenses, revenues, leadCaptureCampaigns, loading,
+        financialSummary, expenses, revenues, leadCaptureCampaigns, tuitionPlans, loading,
         addStudent, updateStudent, addLead, updateLead, addInvoice, updateInvoice, deleteInvoice,
         addExpense: expenseOps.add, updateExpense: expenseOps.update, deleteExpense: expenseOps.delete,
         addRevenue: revenueOps.add, updateRevenue: revenueOps.update, deleteRevenue: revenueOps.delete,
         addStaff: addStaff, updateStaff: staffOps.update,
         addCommunication, addAgendaItem, updateAgendaItem,
         addUser, updateUser, deleteUser,
-        addLeadCaptureCampaign, addPhotoAlbum, deletePhotoAlbum, addPhotoToAlbum, deletePhotoFromAlbum
+        addLeadCaptureCampaign, addPhotoAlbum, deletePhotoAlbum, addPhotoToAlbum, deletePhotoFromAlbum,
+        addTuitionPlan: tuitionPlanOps.add, updateTuitionPlan: tuitionPlanOps.update, deleteTuitionPlan: tuitionPlanOps.delete,
     };
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

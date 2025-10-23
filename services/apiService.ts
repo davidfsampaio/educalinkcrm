@@ -1,7 +1,7 @@
 import {
     Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum,
     User, Expense, Revenue, LeadCaptureCampaign, Photo, StudentColumns, StudentUpdate,
-    LeadColumns, LeadUpdate, InvoiceColumns, InvoiceUpdate, PhotoAlbumColumns
+    LeadColumns, LeadUpdate, InvoiceColumns, InvoiceUpdate, PhotoAlbumColumns, TuitionPlan
 } from '../types';
 import { supabase } from './supabaseClient';
 
@@ -52,6 +52,8 @@ export const getPhotoAlbums = async (): Promise<PhotoAlbum[]> => handleRpcRead(s
 export const getExpenses = async (): Promise<Expense[]> => handleRpcRead(supabase.rpc('get_expenses'), 'get_expenses');
 export const getRevenues = async (): Promise<Revenue[]> => handleRpcRead(supabase.rpc('get_revenues'), 'get_revenues');
 export const getLeadCaptureCampaigns = async (): Promise<LeadCaptureCampaign[]> => handleRpcRead(supabase.rpc('get_lead_capture_campaigns'), 'get_lead_capture_campaigns');
+export const getTuitionPlans = async (): Promise<TuitionPlan[]> => handleRpcRead(supabase.rpc('get_tuition_plans'), 'get_tuition_plans');
+
 
 export const getAuthenticatedUserProfile = async (): Promise<Staff | string | null> => {
     try {
@@ -160,3 +162,13 @@ export const updateAlbumPhotos = async (albumId: number, photos: Photo[]): Promi
 // Library
 export const addLibraryBook = async (bookData: Omit<LibraryBook, 'id'>): Promise<LibraryBook> =>
     handleRpcWrite('insert_library_book', { p_data: bookData });
+
+// Tuition Plans
+export const addTuitionPlan = async (planData: Omit<TuitionPlan, 'id'>): Promise<TuitionPlan> =>
+    handleRpcWrite('insert_tuition_plan', { p_data: planData });
+
+export const updateTuitionPlan = async (id: number, planData: Partial<Omit<TuitionPlan, 'id' | 'school_id'>>): Promise<TuitionPlan> =>
+    handleRpcWrite('update_tuition_plan', { p_id: id, p_data: planData });
+
+export const deleteTuitionPlan = async (id: number): Promise<void> =>
+    handleRpcDelete('delete_tuition_plan', { p_id: id });

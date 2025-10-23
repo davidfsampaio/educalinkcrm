@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import Modal from '../common/Modal';
 import { useSettings } from '../../contexts/SettingsContext';
-// FIX: Corrected import path for types.
-import { Student } from '../../types';
+import { Student, TuitionPlan } from '../../types';
 
 interface AddStudentModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAddStudent: (studentData: Pick<Student, 'name' | 'class' | 'parent_name' | 'parent_contact' | 'cpf' | 'address' | 'email' | 'phone'>) => void;
+    onAddStudent: (studentData: Pick<Student, 'name' | 'class' | 'parent_name' | 'parent_contact' | 'cpf' | 'address' | 'email' | 'phone' | 'tuition_plan_id'>) => void;
+    tuitionPlans: TuitionPlan[];
 }
 
-const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAddStudent }) => {
+const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAddStudent, tuitionPlans }) => {
     const { settings } = useSettings();
     const [name, setName] = useState('');
     const [studentClass, setStudentClass] = useState(settings.classes[0] || '');
@@ -20,12 +20,13 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
     const [address, setAddress] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
+    const [tuitionPlanId, setTuitionPlanId] = useState<number | ''>(tuitionPlans[0]?.id || '');
 
     const [error, setError] = useState('');
 
     const handleSubmit = () => {
-        if (!name || !studentClass || !parentName || !parentContact) {
-            setError('Nome, Turma, Nome do Responsável e Contato são obrigatórios.');
+        if (!name || !studentClass || !parentName || !parentContact || !tuitionPlanId) {
+            setError('Todos os campos, incluindo o plano de mensalidade, são obrigatórios.');
             return;
         }
 
@@ -38,6 +39,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
             address,
             email,
             phone,
+            tuition_plan_id: tuitionPlanId
         });
         
         // Reset form and close
@@ -49,6 +51,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
         setAddress('');
         setEmail('');
         setPhone('');
+        setTuitionPlanId(tuitionPlans[0]?.id || '');
         setError('');
         onClose();
     };
@@ -89,6 +92,22 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
                     <div className="col-span-2">
                         <label htmlFor="address" className="block text-sm font-medium text-gray-700">Endereço</label>
                         <input type="text" id="address" value={address} onChange={e => setAddress(e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm" />
+                    </div>
+                    <div className="col-span-2">
+                        <label htmlFor="tuitionPlan" className="block text-sm font-medium text-gray-700">Plano de Mensalidade</label>
+                        <select id="tuitionPlan" value={tuitionPlanId} onChange={e => setTuitionPlanId(Number(e.target.value))} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm">
+                            {tuitionPlans.length === 0 ? (
+                                <option value="" disabled>Nenhum plano disponível</option>
+                            ) : (
+                                <>
+                                 <option value="" disabled>Selecione um plano</option>
+                                {tuitionPlans.map(plan => (
+                                    <option key={plan.id} value={plan.id}>{plan.name} - {plan.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</option>
+                                ))}
+                                </>
+                            )}
+                        </select>
+                        {tuitionPlans.length === 0 && <p className="mt-2 text-xs text-gray-500">Nenhum plano de mensalidade cadastrado. Adicione planos na tela de Configurações.</p>}
                     </div>
                 </div>
 
