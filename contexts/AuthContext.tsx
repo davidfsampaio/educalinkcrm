@@ -148,9 +148,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setCurrentUser(profile as User);
 
         } catch (error: any) {
+            // FIX: Only set the error message. Do not sign out or clear the user,
+            // as this causes the login loop. The user should see the error on the login screen.
             setAuthError(error.message);
-            await supabase.auth.signOut();
-            setCurrentUser(null);
         } finally {
             setAuthLoading(false);
         }
