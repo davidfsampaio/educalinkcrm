@@ -276,8 +276,96 @@ const StaffLoginScreen: React.FC<{ onBack: () => void; authError: string | null;
     );
 };
 
+const ParentLoginScreen: React.FC<{ onBack: () => void; authError: string | null; setAuthError: (error: string | null) => void; }> = ({ onBack, authError, setAuthError }) => {
+    const [email, setEmail] = useState('ana.silva@email.com');
+    const [password, setPassword] = useState('senha123'); // Example password
+    const [localError, setLocalError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleLogin = async () => {
+        setIsLoading(true);
+        setLocalError('');
+        setAuthError(null);
+
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password,
+        });
+
+        setIsLoading(false);
+
+        if (signInError) {
+            setLocalError("Email ou senha inválidos. Verifique suas credenciais.");
+        }
+    };
+
+    const displayError = authError || localError;
+
+    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (authError) setAuthError(null);
+        if (localError) setLocalError('');
+        setEmail(e.target.value);
+    }
+    
+    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (authError) setAuthError(null);
+        if (localError) setLocalError('');
+        setPassword(e.target.value);
+    }
+
+    return (
+        <div className="w-full max-w-md p-6 sm:p-8 space-y-6 bg-white rounded-2xl shadow-xl">
+            <div className="flex flex-col items-center text-center">
+                <SchoolIcon className="h-12 w-12 text-brand-primary" />
+                <h2 className="text-2xl font-bold mt-3 text-brand-text-dark">Portal do Responsável</h2>
+            </div>
+            {displayError && <p className="text-sm text-center text-red-600 bg-red-50 p-3 rounded-md">{displayError}</p>}
+            <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-4">
+                <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+                    <input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={handleEmailChange}
+                        required
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
+                        placeholder="responsavel@email.com"
+                    />
+                </div>
+                 <div>
+                    <label htmlFor="password"className="block text-sm font-medium text-gray-700">Senha</label>
+                    <input
+                        id="password"
+                        type="password"
+                        value={password}
+                        onChange={handlePasswordChange}
+                        required
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
+                        placeholder="********"
+                    />
+                </div>
+                 <div className="pt-2">
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full py-3 px-4 font-semibold rounded-lg text-white bg-brand-primary hover:bg-sky-600 transition-all duration-300 disabled:bg-slate-400"
+                    >
+                        {isLoading ? 'Entrando...' : 'Entrar'}
+                    </button>
+                </div>
+            </form>
+            <div className="text-center">
+                <button onClick={onBack} className="text-sm font-medium text-brand-primary hover:underline">
+                    &larr; Voltar para a seleção de perfil
+                </button>
+            </div>
+        </div>
+    );
+};
+
 const AuthScreen: React.FC = () => {
-    const [view, setView] = useState<'initial' | 'staff_login'>('initial');
+    const [view, setView] = useState<'initial' | 'staff_login' | 'parent_login'>('initial');
     const { authError, setAuthError } = useAuth();
 
     const handleSelect = (type: 'staff' | 'parent') => {
@@ -285,7 +373,7 @@ const AuthScreen: React.FC = () => {
         if (type === 'staff') {
             setView('staff_login');
         } else {
-            alert("Acesso de Pai/Responsável ainda não implementado.");
+            setView('parent_login');
         }
     };
     
@@ -298,6 +386,7 @@ const AuthScreen: React.FC = () => {
         <div className="flex items-center justify-center h-screen bg-slate-100 p-4">
             {view === 'initial' && <InitialSelectionScreen onSelect={handleSelect} />}
             {view === 'staff_login' && <StaffLoginScreen onBack={handleBackToInitial} authError={authError} setAuthError={setAuthError} />}
+            {view === 'parent_login' && <ParentLoginScreen onBack={handleBackToInitial} authError={authError} setAuthError={setAuthError} />}
         </div>
     );
 };
