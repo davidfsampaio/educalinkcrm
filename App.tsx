@@ -194,8 +194,9 @@ const StaffLoginScreen: React.FC<{ onBack: () => void; authError: string | null;
 
     const handleLogin = async () => {
         setIsLoading(true);
+        setAuthError(null);
         await signInAsStaff(email, password);
-        // O AuthContext agora lida com o estado de carregamento e erro
+        // The AuthContext now handles the global loading state and sets the error
         setIsLoading(false);
     };
     
@@ -263,6 +264,7 @@ const ParentLoginScreen: React.FC<{ onBack: () => void; authError: string | null
 
     const handleLogin = async () => {
         setIsLoading(true);
+        setAuthError(null);
         await signInAsParent(email, password);
         setIsLoading(false);
     };
@@ -352,7 +354,7 @@ const AuthScreen: React.FC = () => {
 
 
 const AppRouter: React.FC = () => {
-    const { currentUser, authError } = useAuth();
+    const { currentUser, isLoading } = useAuth();
     const [page, setPage] = useState<'crm' | 'capture' | null>(null);
 
     useEffect(() => {
@@ -373,8 +375,12 @@ const AppRouter: React.FC = () => {
         await supabase.auth.signOut();
     };
 
-    if (page === null) {
-        return <div className="flex h-screen w-screen items-center justify-center"><p>Carregando...</p></div>;
+    if (isLoading || page === null) {
+        return (
+            <div className="flex h-screen w-screen items-center justify-center">
+                <p>Verificando sessão...</p>
+            </div>
+        );
     }
 
     if (page === 'capture') {
@@ -405,7 +411,6 @@ const AppRouter: React.FC = () => {
         );
     }
     
-    // Default fallback to AuthScreen if something is still loading or in an intermittent state
     return <AuthScreen />;
 };
 

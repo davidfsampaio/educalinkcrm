@@ -6,6 +6,7 @@ import { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface AuthContextType {
     currentUser: User | null;
+    isLoading: boolean;
     hasPermission: (permission: Permission) => boolean;
     authError: string | null;
     setAuthError: (error: string | null) => void;
@@ -18,61 +19,54 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { settings } = useSettings();
     const [currentUser, setCurrentUser] = useState<User | null>(null);
-    const [authLoading, setAuthLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
     const [authError, setAuthError] = useState<string | null>(null);
 
-    // This single useEffect handles all auth state changes, including the initial session check on page load.
-    // It is the single source of truth for the user's authentication state.
     useEffect(() => {
-        setAuthLoading(true);
+        setIsLoading(true);
 
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (session) {
-                // If a session exists, fetch the user profile from our 'users' table.
-                const { data: profile } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('id', session.user.id)
-                    .single();
-                
-                // Set the user only if the profile is found, otherwise set it to null.
-                // This handles cases where an auth user exists but their profile in our table does not.
-                setCurrentUser(profile as User | null);
-            } else {
-                // If there is no session (e.g., logged out), ensure the user is null.
+            if (event === 'SIGNED_OUT' || !session) {
                 setCurrentUser(null);
+                setIsLoading(false);
+                return;
             }
-            // Once the check is complete (either found a user, or confirmed no session), stop loading.
-            setAuthLoading(false);
+
+            const { data: profile } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+            
+            if (profile) {
+                setCurrentUser(profile as User);
+            }
+            
+            setIsLoading(false);
         });
 
         return () => {
-            // Clean up the listener when the component unmounts.
             authListener.subscription.unsubscribe();
         };
-    }, []); // Empty dependency array ensures this runs only once on mount.
+    }, []);
 
     const performLogin = async (email: string, pass: string, expectedRoleType: 'staff' | 'parent') => {
         setAuthError(null);
-        setAuthLoading(true);
+        setIsLoading(true);
 
         try {
-            // 1. Authenticate with Supabase
             const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password: pass });
             
             if (authError || !authData.user) {
                 throw new Error("Email ou senha inválidos. Verifique suas credenciais.");
             }
 
-            // 2. Fetch the user profile. The onAuthStateChange listener will also do this, but
-            // we do it here to perform immediate validation and self-healing.
             let { data: profile, error: profileError } = await supabase
                 .from('users')
                 .select('*')
                 .eq('id', authData.user.id)
                 .single();
             
-            // 3. Self-Healing Logic: If profile is not found, create it.
             if (!profile && (profileError?.code === 'PGRST116' || profileError === null)) {
                 console.warn("Perfil não encontrado, tentando criar um novo automaticamente...");
 
@@ -108,7 +102,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 throw new Error("Perfil de usuário não encontrado. Entre em contato com o suporte.");
             }
 
-            // 4. Verify the role against the login portal
             const userIsParent = profile.role === 'Pai/Responsável';
 
             if (expectedRoleType === 'staff' && userIsParent) {
@@ -119,19 +112,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 throw new Error("Acesso negado. Este login é exclusivo para Pais e Responsáveis.");
             }
 
-            // 5. Success! The onAuthStateChange listener will handle setting the state.
-            // We just need to stop the loading indicator.
+            setCurrentUser(profile as User);
             
         } catch (error: any) {
-            // If the error indicates a role mismatch, we must sign the user out
-            // because they successfully authenticated but are in the wrong portal.
             if (error.message.includes("Acesso negado.")) {
                 await supabase.auth.signOut();
+                // After signing out, the onAuthStateChange listener will set currentUser to null
             }
             setAuthError(error.message);
+            // We need to set loading false here in case of an error, otherwise it gets stuck
+            setIsLoading(false);
         } finally {
-            // The listener will also set this, but we set it here to be safe.
-            setAuthLoading(false);
+            // The listener will set loading to false on success.
+            // We only need to handle the error case here explicitly.
+            // No, the listener might race. Let's let the listener handle all loading=false states.
+            // Let's remove the finally block.
         }
     };
 
@@ -146,15 +141,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const hasPermission = (permission: Permission): boolean => userPermissions.has(permission);
 
-    const value = { currentUser, hasPermission, authError, setAuthError, signInAsStaff, signInAsParent };
-
-    if (authLoading) {
-        return (
-            <div className="flex h-screen w-screen items-center justify-center">
-                <p>Verificando sessão...</p>
-            </div>
-        );
-    }
+    const value = { currentUser, isLoading, hasPermission, authError, setAuthError, signInAsStaff, signInAsParent };
 
     return (
         <AuthContext.Provider value={value}>
