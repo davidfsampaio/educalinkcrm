@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { 
     Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum, 
     FinancialSummaryPoint, User, Expense, Revenue, LeadCaptureCampaign, Photo, DataContextType, 
-    RevenueCategory, StudentStatus, PaymentStatus, UserStatus, StudentColumns, LeadColumns, InvoiceColumns, PhotoAlbumColumns
+    RevenueCategory, StudentStatus, PaymentStatus, UserStatus, StudentColumns, LeadColumns, InvoiceColumns, PhotoAlbumColumns, StaffStatus
 } from '../types';
 import * as api from '../services/apiService';
 import { useAuth } from './AuthContext'; // We'll need this to get the schoolId
@@ -309,6 +309,24 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const revenueOps = createCrudOperations(setRevenues, { add: api.addRevenue, update: api.updateRevenue, delete: api.deleteRevenue }, "receita");
     const staffOps = createCrudOperations(setStaff, { add: api.addStaff, update: api.updateStaff, delete: () => Promise.resolve() }, "funcionário");
     
+    const addStaff = async (staffData: Pick<Staff, 'name' | 'role' | 'email' | 'phone' | 'cpf' | 'address'>) => {
+        if (!currentUser?.school_id) return;
+        try {
+            const payload: Omit<Staff, 'id'> = {
+                ...staffData,
+                school_id: currentUser.school_id,
+                status: StaffStatus.Active,
+                hire_date: new Date().toISOString().split('T')[0],
+                avatar_url: `https://picsum.photos/seed/staff${Date.now()}/100/100`,
+            };
+            const newStaff = await api.addStaff(payload);
+            setStaff(prev => [newStaff, ...prev]);
+        } catch (error) {
+            console.error('Falha ao adicionar funcionário:', error);
+            alert(`Erro ao salvar funcionário: ${(error as Error).message}`);
+        }
+    };
+
     const addUser = async (userData: Omit<User, 'id' | 'school_id' | 'avatar_url' | 'status'> & { password?: string }) => {
         if (!currentUser?.school_id) return;
         try {
@@ -458,7 +476,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addStudent, updateStudent, addLead, updateLead, addInvoice, updateInvoice, deleteInvoice,
         addExpense: expenseOps.add, updateExpense: expenseOps.update, deleteExpense: expenseOps.delete,
         addRevenue: revenueOps.add, updateRevenue: revenueOps.update, deleteRevenue: revenueOps.delete,
-        addStaff: staffOps.add, updateStaff: staffOps.update,
+        addStaff: addStaff, updateStaff: staffOps.update,
         addCommunication, addAgendaItem, updateAgendaItem,
         addUser, updateUser, deleteUser,
         addLeadCaptureCampaign, addPhotoAlbum, deletePhotoAlbum, addPhotoToAlbum, deletePhotoFromAlbum

@@ -352,7 +352,7 @@ export interface DataContextType {
     addRevenue: (revenueData: Omit<Revenue, 'id' | 'school_id'>) => void;
     updateRevenue: (updatedRevenue: Revenue) => void;
     deleteRevenue: (revenueId: number) => void;
-    addStaff: (staffData: Omit<Staff, 'id' | 'school_id' | 'status' | 'hire_date' | 'avatar_url'>) => void;
+    addStaff: (staffData: Pick<Staff, 'name' | 'role' | 'email' | 'phone' | 'cpf' | 'address'>) => void;
     updateStaff: (updatedStaff: Staff) => void;
     addCommunication: (commData: Omit<Communication, 'id' | 'school_id' | 'sent_date'>) => void;
     addAgendaItem: (itemData: Omit<AgendaItem, 'id' | 'school_id' | 'is_sent'>) => void;
