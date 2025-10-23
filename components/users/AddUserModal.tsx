@@ -13,7 +13,7 @@ interface AddUserModalProps {
 
 const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onAddUser }) => {
     const { settings } = useSettings();
-    const { students, loading: studentsLoading } = useData();
+    const { students, users, loading: studentsLoading } = useData();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [role, setRole] = useState<UserRoleName>('Secretário(a)');
@@ -44,6 +44,10 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onAddUser 
         }
         if (role === 'Pai/Responsável' && !linkedStudentId) {
             setError('Por favor, vincule um aluno para o perfil de Pai/Responsável.');
+            return;
+        }
+        if (users.some(user => user.email.toLowerCase() === email.trim().toLowerCase())) {
+            setError('Este email já está em uso por outro usuário.');
             return;
         }
         
