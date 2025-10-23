@@ -187,46 +187,21 @@ const InitialSelectionScreen: React.FC<{ onSelect: (type: 'staff' | 'parent') =>
 };
 
 const StaffLoginScreen: React.FC<{ onBack: () => void; authError: string | null; setAuthError: (error: string | null) => void; }> = ({ onBack, authError, setAuthError }) => {
+    const { signInAsStaff } = useAuth();
     const [email, setEmail] = useState('admin@educalink.com');
     const [password, setPassword] = useState('admin123');
-    const [localError, setLocalError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     const handleLogin = async () => {
         setIsLoading(true);
-        setLocalError('');
         setAuthError(null);
-
-        const { error } = await supabase.auth.signInWithPassword({
-            email: email,
-            password: password,
-        });
-
-        if (error) {
-            setIsLoading(false);
-            if (error.message.includes("Invalid login credentials")) {
-                setLocalError("Email ou senha inválidos.");
-            } else if (error.message.includes("denied")) { // Catch custom errors from AuthContext
-                setLocalError(error.message);
-            } else {
-                setLocalError("Ocorreu um erro inesperado durante o login.");
-            }
-        }
-        // No need for 'else' - the AuthContext listener will handle successful login
+        await signInAsStaff(email, password);
+        setIsLoading(false);
     };
     
-    const displayError = authError || localError;
-
-    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
         if (authError) setAuthError(null);
-        if (localError) setLocalError('');
-        setEmail(e.target.value);
-    }
-    
-    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (authError) setAuthError(null);
-        if (localError) setLocalError('');
-        setPassword(e.target.value);
+        setter(e.target.value);
     }
 
     return (
@@ -235,7 +210,7 @@ const StaffLoginScreen: React.FC<{ onBack: () => void; authError: string | null;
                 <SchoolIcon className="h-12 w-12 text-brand-primary" />
                 <h2 className="text-2xl font-bold mt-3 text-brand-text-dark">Login da Equipe</h2>
             </div>
-            {displayError && <p className="text-sm text-center text-red-600 bg-red-50 p-3 rounded-md">{displayError}</p>}
+            {authError && <p className="text-sm text-center text-red-600 bg-red-50 p-3 rounded-md">{authError}</p>}
             <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-4">
                 <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
@@ -243,7 +218,7 @@ const StaffLoginScreen: React.FC<{ onBack: () => void; authError: string | null;
                         id="email"
                         type="email"
                         value={email}
-                        onChange={handleEmailChange}
+                        onChange={handleInputChange(setEmail)}
                         required
                         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
                         placeholder="admin@educalink.com"
@@ -255,7 +230,7 @@ const StaffLoginScreen: React.FC<{ onBack: () => void; authError: string | null;
                         id="password"
                         type="password"
                         value={password}
-                        onChange={handlePasswordChange}
+                        onChange={handleInputChange(setPassword)}
                         required
                         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
                         placeholder="admin123"
@@ -281,46 +256,21 @@ const StaffLoginScreen: React.FC<{ onBack: () => void; authError: string | null;
 };
 
 const ParentLoginScreen: React.FC<{ onBack: () => void; authError: string | null; setAuthError: (error: string | null) => void; }> = ({ onBack, authError, setAuthError }) => {
+    const { signInAsParent } = useAuth();
     const [email, setEmail] = useState('ana.silva@email.com');
     const [password, setPassword] = useState('senha123'); // Example password
-    const [localError, setLocalError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     const handleLogin = async () => {
         setIsLoading(true);
-        setLocalError('');
         setAuthError(null);
-
-        const { error } = await supabase.auth.signInWithPassword({
-            email: email,
-            password: password,
-        });
-
-        if (error) {
-            setIsLoading(false);
-            if (error.message.includes("Invalid login credentials")) {
-                setLocalError("Email ou senha inválidos. Verifique suas credenciais.");
-            } else if (error.message.includes("negado")) { // Catch custom errors from AuthContext
-                setLocalError(error.message);
-            } else {
-                setLocalError("Ocorreu um erro inesperado durante o login.");
-            }
-        }
-        // No need for 'else' - the AuthContext listener will handle successful login
+        await signInAsParent(email, password);
+        setIsLoading(false);
     };
 
-    const displayError = authError || localError;
-
-    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
         if (authError) setAuthError(null);
-        if (localError) setLocalError('');
-        setEmail(e.target.value);
-    }
-    
-    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (authError) setAuthError(null);
-        if (localError) setLocalError('');
-        setPassword(e.target.value);
+        setter(e.target.value);
     }
 
     return (
@@ -329,7 +279,7 @@ const ParentLoginScreen: React.FC<{ onBack: () => void; authError: string | null
                 <SchoolIcon className="h-12 w-12 text-brand-primary" />
                 <h2 className="text-2xl font-bold mt-3 text-brand-text-dark">Portal do Responsável</h2>
             </div>
-            {displayError && <p className="text-sm text-center text-red-600 bg-red-50 p-3 rounded-md">{displayError}</p>}
+            {authError && <p className="text-sm text-center text-red-600 bg-red-50 p-3 rounded-md">{authError}</p>}
             <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-4">
                 <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
@@ -337,7 +287,7 @@ const ParentLoginScreen: React.FC<{ onBack: () => void; authError: string | null
                         id="email"
                         type="email"
                         value={email}
-                        onChange={handleEmailChange}
+                        onChange={handleInputChange(setEmail)}
                         required
                         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
                         placeholder="responsavel@email.com"
@@ -349,7 +299,7 @@ const ParentLoginScreen: React.FC<{ onBack: () => void; authError: string | null
                         id="password"
                         type="password"
                         value={password}
-                        onChange={handlePasswordChange}
+                        onChange={handleInputChange(setPassword)}
                         required
                         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
                         placeholder="********"
@@ -436,12 +386,8 @@ const AppRouter: React.FC = () => {
         );
     }
     
-    if (!currentUser && !authError) {
+    if (!currentUser) {
         return <AuthScreen />;
-    }
-    
-    if (authError && !currentUser) {
-         return <AuthScreen />;
     }
 
     if (currentUser) {
