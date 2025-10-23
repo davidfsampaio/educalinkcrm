@@ -342,8 +342,10 @@ export interface DataContextType {
     loading: boolean;
     addStudent: (studentData: Pick<Student, 'name' | 'class' | 'parent_name' | 'parent_contact' | 'cpf' | 'address' | 'email' | 'phone' | 'tuition_plan_id'>) => void;
     updateStudent: (updatedStudent: Student) => void;
+    deleteStudent: (studentId: number) => void;
     addLead: (leadData: Omit<Lead, 'id' | 'school_id'>, campaignId?: string) => void;
     updateLead: (updatedLead: Lead) => void;
+    deleteLead: (leadId: number) => void;
     addInvoice: (invoiceData: Omit<Invoice, 'id' | 'school_id' | 'status' | 'payments' | 'student_name'> & { student_id: number }) => void;
     updateInvoice: (updatedInvoice: Invoice) => void;
     deleteInvoice: (invoiceId: string) => void;
@@ -355,17 +357,25 @@ export interface DataContextType {
     deleteRevenue: (revenueId: number) => void;
     addStaff: (staffData: Pick<Staff, 'name' | 'role' | 'email' | 'phone' | 'cpf' | 'address'>) => void;
     updateStaff: (updatedStaff: Staff) => void;
+    deleteStaff: (staffId: number) => void;
     addCommunication: (commData: Omit<Communication, 'id' | 'school_id' | 'sent_date'>) => void;
+    updateCommunication: (updatedComm: Communication) => void;
+    deleteCommunication: (commId: number) => void;
     addAgendaItem: (itemData: Omit<AgendaItem, 'id' | 'school_id' | 'is_sent'>) => void;
     updateAgendaItem: (updatedItem: AgendaItem) => void;
+    deleteAgendaItem: (itemId: number) => void;
     addUser: (userData: Omit<User, 'id' | 'school_id' | 'avatar_url' | 'status'> & { password?: string }) => void;
     updateUser: (updatedUser: User) => void;
     deleteUser: (userId: string) => void;
     addLeadCaptureCampaign: (campaign: Omit<LeadCaptureCampaign, 'id' | 'school_id' | 'public_url' | 'created_at' | 'leads_captured'>) => void;
     addPhotoAlbum: (albumData: Omit<PhotoAlbum, 'id' | 'school_id' | 'photos'>) => void;
+    updatePhotoAlbum: (updatedAlbum: Omit<PhotoAlbum, 'school_id' | 'photos'>) => void;
     deletePhotoAlbum: (albumId: number) => void;
     addPhotoToAlbum: (albumId: number, photoData: { url: string; caption: string }) => void;
     deletePhotoFromAlbum: (albumId: number, photoId: number) => void;
+    addLibraryBook: (bookData: Omit<LibraryBook, 'id' | 'school_id'>) => void;
+    updateLibraryBook: (updatedBook: LibraryBook) => void;
+    deleteLibraryBook: (bookId: number) => void;
     addTuitionPlan: (planData: Omit<TuitionPlan, 'id' | 'school_id'>) => void;
     updateTuitionPlan: (updatedPlan: Omit<TuitionPlan, 'school_id'>) => void;
     deleteTuitionPlan: (planId: number) => void;
@@ -378,10 +388,12 @@ export type Permission =
   'view_students' |
   'create_students' |
   'edit_students' |
+  'delete_students' |
   // Staff
   'view_staff' |
   'create_staff' |
   'edit_staff' |
+  'delete_staff' |
   // Financials
   'view_financials' |
   'create_invoices' |
@@ -393,13 +405,18 @@ export type Permission =
   'view_leads' |
   'create_leads' |
   'edit_leads' |
-  'manage_lead_forms' | // New permission
+  'delete_leads' |
+  'manage_lead_forms' |
   // Agenda
   'view_agenda' |
   'create_agenda_items' |
+  'edit_agenda_items' |
+  'delete_agenda_items' |
   // Communications
   'view_communications' |
   'send_communications' |
+  'edit_communications' |
+  'delete_communications' |
   // Declarations
   'view_declarations' |
   'generate_declarations' |

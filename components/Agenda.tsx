@@ -3,28 +3,48 @@ import { useData } from '../contexts/DataContext';
 import Card from './common/Card';
 import { AgendaItem } from '../types';
 import AddEventModal from './agenda/AddEventModal';
+import EditEventModal from './agenda/EditEventModal';
 import ProtectedComponent from './common/ProtectedComponent';
 
 const PlusIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
 );
 
 const SendIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
 );
 
 const CheckIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
 );
 
+const EditIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+);
+
+const Trash2Icon: React.FC<{className?: string}> = ({ className }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+);
 
 const Agenda: React.FC = () => {
-    const { agendaItems, addAgendaItem, updateAgendaItem } = useData();
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const { agendaItems, addAgendaItem, updateAgendaItem, deleteAgendaItem } = useData();
+    const [isAddModalOpen, setAddModalOpen] = useState(false);
+    const [editingItem, setEditingItem] = useState<AgendaItem | null>(null);
 
     const handleAddEvent = (eventData: Omit<AgendaItem, 'id' | 'is_sent' | 'school_id'>) => {
         addAgendaItem(eventData);
-        setIsModalOpen(false);
+        setAddModalOpen(false);
+    };
+
+    const handleUpdateEvent = (updatedItem: AgendaItem) => {
+        updateAgendaItem(updatedItem);
+        setEditingItem(null);
+    };
+
+    const handleDelete = (itemId: number) => {
+        if (window.confirm('Tem certeza que deseja excluir este item da agenda?')) {
+            deleteAgendaItem(itemId);
+        }
     };
 
     const handleSend = (itemId: number) => {
@@ -45,7 +65,7 @@ const Agenda: React.FC = () => {
                     <h2 className="text-xl font-bold text-brand-text-dark">Agenda Online</h2>
                     <ProtectedComponent requiredPermission='create_agenda_items'>
                         <button
-                            onClick={() => setIsModalOpen(true)}
+                            onClick={() => setAddModalOpen(true)}
                             className="w-full sm:w-auto flex items-center justify-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm"
                         >
                             <PlusIcon className="w-5 h-5 mr-2" />
@@ -65,7 +85,19 @@ const Agenda: React.FC = () => {
                                 <p className="text-sm text-brand-text">Para: {item.class_target}</p>
                                 <p className="mt-2 text-brand-text">{item.description}</p>
                             </div>
-                            <div className="mt-4 pt-4 border-t border-slate-200/80 flex justify-end items-center">
+                            <div className="mt-4 pt-4 border-t border-slate-200/80 flex justify-between items-center">
+                                <div className="flex items-center space-x-2">
+                                    <ProtectedComponent requiredPermission='edit_agenda_items'>
+                                        <button onClick={() => setEditingItem(item)} className="text-slate-500 hover:text-brand-primary" title="Editar item">
+                                            <EditIcon className="w-5 h-5" />
+                                        </button>
+                                    </ProtectedComponent>
+                                     <ProtectedComponent requiredPermission='delete_agenda_items'>
+                                        <button onClick={() => handleDelete(item.id)} className="text-slate-500 hover:text-red-500" title="Excluir item">
+                                            <Trash2Icon className="w-5 h-5" />
+                                        </button>
+                                    </ProtectedComponent>
+                                </div>
                                {/* FIX: Corrected property name from `isSent` to `is_sent`. */}
                                {item.is_sent ? (
                                     <div className="flex items-center text-green-600 font-semibold text-sm">
@@ -87,10 +119,18 @@ const Agenda: React.FC = () => {
                 </div>
             </Card>
             <AddEventModal 
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                isOpen={isAddModalOpen}
+                onClose={() => setAddModalOpen(false)}
                 onAddEvent={handleAddEvent}
             />
+            {editingItem && (
+                <EditEventModal
+                    isOpen={!!editingItem}
+                    onClose={() => setEditingItem(null)}
+                    onEditEvent={handleUpdateEvent}
+                    eventItem={editingItem}
+                />
+            )}
         </>
     );
 };

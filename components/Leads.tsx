@@ -8,11 +8,11 @@ import ProtectedComponent from './common/ProtectedComponent';
 import LeadCaptureLinksModal from './leads/LeadCaptureLinksModal';
 
 const PlusIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
 );
 
 const LinkIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"/></svg>
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"/></svg>
 );
 
 const LeadCard: React.FC<{ lead: Lead; onClick: () => void }> = ({ lead, onClick }) => (
@@ -44,7 +44,7 @@ interface LeadsProps {
 }
 
 const Leads: React.FC<LeadsProps> = ({ initialAction }) => {
-    const { leads, addLead, updateLead } = useData();
+    const { leads, addLead, updateLead, deleteLead } = useData();
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [isLinkManagerOpen, setLinkManagerOpen] = useState(false);
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -74,6 +74,13 @@ const Leads: React.FC<LeadsProps> = ({ initialAction }) => {
         // If the updated lead is the one currently selected, update the selectedLead state as well
         if (selectedLead && selectedLead.id === updatedLead.id) {
             setSelectedLead(updatedLead);
+        }
+    };
+
+    const handleDeleteLead = (leadId: number) => {
+        if (window.confirm('Tem certeza que deseja excluir este lead?')) {
+            deleteLead(leadId);
+            handleCloseDetailModal();
         }
     };
 
@@ -138,6 +145,7 @@ const Leads: React.FC<LeadsProps> = ({ initialAction }) => {
                     onClose={handleCloseDetailModal}
                     lead={selectedLead}
                     onUpdateLead={handleUpdateLead}
+                    onDeleteLead={handleDeleteLead}
                 />
             )}
         </>

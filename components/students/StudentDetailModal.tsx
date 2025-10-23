@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef } from 'react';
 // FIX: Corrected import path for types.
 import { Student, StudentDetailTab, IndividualAgendaItem, IndividualAgendaItemType, Grade, Attendance, Occurrence, Document, CommunicationLog } from '../../types';
@@ -22,11 +20,15 @@ import AddContactModal from './modals/AddContactModal';
 import EditIndividualAgendaItemModal from './modals/EditIndividualAgendaItemModal';
 
 const EditIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
 );
 
 const CameraIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>
+);
+
+const Trash2Icon: React.FC<{className?: string}> = ({ className }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
 );
 
 
@@ -36,9 +38,10 @@ interface StudentDetailModalProps {
     student: Student;
     onEdit: (student: Student) => void;
     onUpdateStudent: (student: Student) => void;
+    onDelete: (studentId: number) => void;
 }
 
-const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ isOpen, onClose, student, onEdit, onUpdateStudent }) => {
+const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ isOpen, onClose, student, onEdit, onUpdateStudent, onDelete }) => {
     const [activeTab, setActiveTab] = useState<StudentDetailTab>('details');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -212,13 +215,21 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({ isOpen, onClose
                             <p className="text-brand-text-dark">{student.parent_name}</p>
                             <p className="text-brand-text-dark text-sm">{student.parent_contact}</p>
                         </div>
-                        <div className="mt-6 border-t pt-4">
+                        <div className="mt-6 border-t pt-4 space-y-2">
                             <ProtectedComponent requiredPermission='edit_students'>
                                 <button 
                                     onClick={() => onEdit(student)}
                                     className="w-full flex items-center justify-center bg-brand-primary/10 text-brand-primary font-bold py-2 px-4 rounded-lg hover:bg-brand-primary/20 transition-colors duration-300">
                                     <EditIcon className="w-4 h-4 mr-2" />
                                     Editar Perfil
+                                </button>
+                            </ProtectedComponent>
+                             <ProtectedComponent requiredPermission='delete_students'>
+                                <button 
+                                    onClick={() => onDelete(student.id)}
+                                    className="w-full flex items-center justify-center bg-red-500/10 text-red-600 font-bold py-2 px-4 rounded-lg hover:bg-red-500/20 transition-colors duration-300">
+                                    <Trash2Icon className="w-4 h-4 mr-2" />
+                                    Excluir Aluno
                                 </button>
                             </ProtectedComponent>
                         </div>

@@ -5,14 +5,27 @@ import { useData } from '../contexts/DataContext';
 import { Communication } from '../types';
 import Composer from './communications/Composer';
 import History from './communications/History';
+import EditCommunicationModal from './communications/EditCommunicationModal';
 
 const Communications: React.FC = () => {
-    const { communications, addCommunication } = useData();
+    const { communications, addCommunication, updateCommunication, deleteCommunication } = useData();
     const [activeTab, setActiveTab] = useState<'composer' | 'history'>('composer');
+    const [editingComm, setEditingComm] = useState<Communication | null>(null);
 
     const handleSendCommunication = (newComm: Omit<Communication, 'id' | 'sent_date' | 'school_id'>) => {
         addCommunication(newComm);
         setActiveTab('history'); // Switch to history tab after sending
+    };
+
+    const handleUpdateCommunication = (updatedComm: Communication) => {
+        updateCommunication(updatedComm);
+        setEditingComm(null);
+    };
+
+    const handleDeleteCommunication = (commId: number) => {
+        if (window.confirm('Tem certeza de que deseja excluir este comunicado?')) {
+            deleteCommunication(commId);
+        }
     };
     
     // Sort communications for display
@@ -48,9 +61,17 @@ const Communications: React.FC = () => {
                 </div>
                 <div className="p-6">
                     {activeTab === 'composer' && <Composer onSend={handleSendCommunication} />}
-                    {activeTab === 'history' && <History communications={sortedCommunications} />}
+                    {activeTab === 'history' && <History communications={sortedCommunications} onEdit={setEditingComm} onDelete={handleDeleteCommunication} />}
                 </div>
             </div>
+            {editingComm && (
+                <EditCommunicationModal
+                    isOpen={!!editingComm}
+                    onClose={() => setEditingComm(null)}
+                    communication={editingComm}
+                    onSave={handleUpdateCommunication}
+                />
+            )}
         </div>
     );
 };

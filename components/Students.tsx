@@ -18,7 +18,7 @@ interface StudentsProps {
 }
 
 const Students: React.FC<StudentsProps> = ({ initialStudent, initialAction }) => {
-    const { students, tuitionPlans, addStudent, updateStudent, loading } = useData();
+    const { students, tuitionPlans, addStudent, updateStudent, deleteStudent, loading } = useData();
     const { settings } = useSettings();
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -73,6 +73,13 @@ const Students: React.FC<StudentsProps> = ({ initialStudent, initialAction }) =>
     const handleAddStudent = (newStudentData: Pick<Student, 'name' | 'class' | 'parent_name' | 'parent_contact' | 'cpf' | 'address' | 'email' | 'phone' | 'tuition_plan_id'>) => {
         addStudent(newStudentData);
         setAddModalOpen(false);
+    };
+
+    const handleDeleteStudent = (studentId: number) => {
+        if (window.confirm('Tem certeza que deseja excluir este aluno? Esta ação é irreversível e excluirá todos os dados associados.')) {
+            deleteStudent(studentId);
+            handleCloseDetailModal();
+        }
     };
 
     const filteredStudents = useMemo(() => {
@@ -169,6 +176,7 @@ const Students: React.FC<StudentsProps> = ({ initialStudent, initialAction }) =>
                     student={selectedStudent}
                     onEdit={handleOpenEditModal}
                     onUpdateStudent={handleUpdateStudent}
+                    onDelete={handleDeleteStudent}
                 />
             )}
         </>

@@ -80,6 +80,9 @@ export const addStudent = async (studentData: StudentColumns): Promise<Student> 
 export const updateStudent = async (studentId: number, studentData: StudentUpdate): Promise<Student> => 
     handleRpcWrite('update_student', { p_id: studentId, p_data: studentData });
 
+export const deleteStudent = async (studentId: number): Promise<void> =>
+    handleRpcDelete('delete_student', { p_id: studentId });
+
 // Invoices
 export const addInvoice = async (invoiceData: InvoiceColumns): Promise<Invoice> =>
     handleRpcWrite('insert_invoice', { p_data: invoiceData });
@@ -97,12 +100,18 @@ export const addLead = async (leadData: LeadColumns): Promise<Lead> =>
 export const updateLead = async (leadId: number, leadData: LeadUpdate): Promise<Lead> =>
     handleRpcWrite('update_lead', { p_id: leadId, p_data: leadData });
 
+export const deleteLead = async (leadId: number): Promise<void> =>
+    handleRpcDelete('delete_lead', { p_id: leadId });
+
 // Staff
 export const addStaff = async (staffData: Omit<Staff, 'id'>): Promise<Staff> =>
     handleRpcWrite('insert_staff', { p_data: staffData });
 
 export const updateStaff = async (staffId: number, staffData: Partial<Omit<Staff, 'id' | 'school_id'>>): Promise<Staff> =>
     handleRpcWrite('update_staff', { p_id: staffId, p_data: staffData });
+
+export const deleteStaff = async (staffId: number): Promise<void> =>
+    handleRpcDelete('delete_staff', { p_id: staffId });
 
 // Expenses
 export const addExpense = async (expenseData: Omit<Expense, 'id'>): Promise<Expense> =>
@@ -128,12 +137,21 @@ export const deleteRevenue = async (id: number): Promise<void> =>
 export const addCommunication = async (commData: Omit<Communication, 'id'>): Promise<Communication> =>
     handleRpcWrite('insert_communication', { p_data: commData });
 
+export const updateCommunication = async (id: number, commData: Partial<Omit<Communication, 'id' | 'school_id'>>): Promise<Communication> =>
+    handleRpcWrite('update_communication', { p_id: id, p_data: commData });
+
+export const deleteCommunication = async (id: number): Promise<void> =>
+    handleRpcDelete('delete_communication', { p_id: id });
+
 // Agenda
 export const addAgendaItem = async (itemData: Omit<AgendaItem, 'id'>): Promise<AgendaItem> =>
     handleRpcWrite('insert_agenda_item', { p_data: itemData });
 
 export const updateAgendaItem = async (id: number, itemData: Partial<Omit<AgendaItem, 'id' | 'school_id'>>): Promise<AgendaItem> =>
     handleRpcWrite('update_agenda_item', { p_id: id, p_data: itemData });
+
+export const deleteAgendaItem = async (id: number): Promise<void> =>
+    handleRpcDelete('delete_agenda_item', { p_id: id });
 
 // Users
 export const addUser = async (userData: Omit<User, 'id'> & { password?: string }): Promise<User> =>
@@ -153,6 +171,9 @@ export const addLeadCaptureCampaign = async (campaignData: LeadCaptureCampaign):
 export const addPhotoAlbum = async (albumData: PhotoAlbumColumns): Promise<PhotoAlbum> =>
     handleRpcWrite('insert_photo_album', { p_data: albumData });
 
+export const updatePhotoAlbum = async (id: number, albumData: Partial<Omit<PhotoAlbum, 'id' | 'school_id' | 'photos'>>): Promise<PhotoAlbum> =>
+    handleRpcWrite('update_photo_album', { p_id: id, p_data: albumData });
+
 export const deletePhotoAlbum = async (id: number): Promise<void> =>
     handleRpcDelete('delete_photo_album', { p_id: id });
 
@@ -162,6 +183,12 @@ export const updateAlbumPhotos = async (albumId: number, photos: Photo[]): Promi
 // Library
 export const addLibraryBook = async (bookData: Omit<LibraryBook, 'id'>): Promise<LibraryBook> =>
     handleRpcWrite('insert_library_book', { p_data: bookData });
+
+export const updateLibraryBook = async (id: number, bookData: Partial<Omit<LibraryBook, 'id' | 'school_id'>>): Promise<LibraryBook> =>
+    handleRpcWrite('update_library_book', { p_id: id, p_data: bookData });
+
+export const deleteLibraryBook = async (id: number): Promise<void> =>
+    handleRpcDelete('delete_library_book', { p_id: id });
 
 // Tuition Plans
 export const addTuitionPlan = async (planData: Omit<TuitionPlan, 'id'>): Promise<TuitionPlan> =>

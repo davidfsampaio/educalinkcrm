@@ -143,6 +143,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             alert(`Erro ao atualizar aluno: ${(error as Error).message}`);
         }
     };
+
+    const deleteStudent = async (studentId: number) => {
+        try {
+            await api.deleteStudent(studentId);
+            setStudents(prev => prev.filter(s => s.id !== studentId));
+        } catch (error) {
+            console.error('Falha ao excluir aluno:', error);
+            alert(`Erro ao excluir aluno: ${(error as Error).message}`);
+        }
+    };
     
     const addLead = async (leadData: Omit<Lead, 'id' | 'school_id'>, campaignId?: string) => {
         let schoolIdToAdd: string | undefined = currentUser?.school_id;
@@ -211,6 +221,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } catch(error) {
             console.error("Falha ao atualizar lead:", error);
             alert(`Erro ao atualizar lead: ${(error as Error).message}`);
+        }
+    };
+
+    const deleteLead = async (leadId: number) => {
+        try {
+            await api.deleteLead(leadId);
+            setLeads(prev => prev.filter(l => l.id !== leadId));
+        } catch (error) {
+            console.error('Falha ao excluir lead:', error);
+            alert(`Erro ao excluir lead: ${(error as Error).message}`);
         }
     };
 
@@ -299,9 +319,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const expenseOps = createCrudOperations(setExpenses, { add: api.addExpense, update: api.updateExpense, delete: api.deleteExpense }, "despesa");
     const revenueOps = createCrudOperations(setRevenues, { add: api.addRevenue, update: api.updateRevenue, delete: api.deleteRevenue }, "receita");
-    const staffOps = createCrudOperations(setStaff, { add: api.addStaff, update: api.updateStaff, delete: () => Promise.resolve() }, "funcionário");
     const tuitionPlanOps = createCrudOperations(setTuitionPlans, { add: api.addTuitionPlan, update: api.updateTuitionPlan, delete: api.deleteTuitionPlan }, "plano de mensalidade");
-    
+    const libraryBookOps = createCrudOperations(setLibraryBooks, { add: api.addLibraryBook, update: api.updateLibraryBook, delete: api.deleteLibraryBook }, "livro");
+
     const addStaff = async (staffData: Pick<Staff, 'name' | 'role' | 'email' | 'phone' | 'cpf' | 'address'>) => {
         if (!currentUser?.school_id) return;
         try {
@@ -317,6 +337,27 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } catch (error) {
             console.error('Falha ao adicionar funcionário:', error);
             alert(`Erro ao salvar funcionário: ${(error as Error).message}`);
+        }
+    };
+    
+    const updateStaff = async (updatedStaff: Staff) => {
+        try {
+            const { id, school_id, ...staffData } = updatedStaff;
+            const updated = await api.updateStaff(id, staffData);
+            setStaff(prev => prev.map(s => (s.id === id ? updated : s)));
+        } catch (error) {
+            console.error('Falha ao atualizar funcionário:', error);
+            alert(`Erro ao atualizar funcionário: ${(error as Error).message}`);
+        }
+    };
+    
+    const deleteStaff = async (staffId: number) => {
+        try {
+            await api.deleteStaff(staffId);
+            setStaff(prev => prev.filter(s => s.id !== staffId));
+        } catch (error) {
+            console.error('Falha ao excluir funcionário:', error);
+            alert(`Erro ao excluir funcionário: ${(error as Error).message}`);
         }
     };
 
@@ -358,7 +399,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     }
 
-    // Non-standard CRUD
     const addCommunication = async (commData: Omit<Communication, 'id' | 'school_id' | 'sent_date'>) => {
         if (!currentUser?.school_id) return;
         try {
@@ -368,6 +408,27 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } catch (error) { 
             console.error("Falha ao adicionar comunicação:", error);
             alert(`Erro ao enviar comunicação: ${(error as Error).message}`);
+        }
+    };
+
+    const updateCommunication = async (updatedComm: Communication) => {
+        try {
+            const { id, school_id, ...commData } = updatedComm;
+            const updated = await api.updateCommunication(id, commData);
+            setCommunications(prev => prev.map(c => (c.id === id ? updated : c)));
+        } catch (error) {
+            console.error("Falha ao atualizar comunicação:", error);
+            alert(`Erro ao atualizar comunicação: ${(error as Error).message}`);
+        }
+    };
+    
+    const deleteCommunication = async (commId: number) => {
+        try {
+            await api.deleteCommunication(commId);
+            setCommunications(prev => prev.filter(c => c.id !== commId));
+        } catch (error) {
+            console.error("Falha ao excluir comunicação:", error);
+            alert(`Erro ao excluir comunicação: ${(error as Error).message}`);
         }
     };
     
@@ -391,6 +452,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } catch (error) { 
             console.error("Falha ao atualizar item na agenda:", error);
             alert(`Erro ao atualizar item na agenda: ${(error as Error).message}`);
+        }
+    };
+
+    const deleteAgendaItem = async (itemId: number) => {
+        try {
+            await api.deleteAgendaItem(itemId);
+            setAgendaItems(prev => prev.filter(item => item.id !== itemId));
+        } catch (error) {
+            console.error("Falha ao excluir item da agenda:", error);
+            alert(`Erro ao excluir item da agenda: ${(error as Error).message}`);
         }
     };
 
@@ -424,6 +495,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } catch (error) { 
             console.error("Falha ao adicionar álbum:", error);
             alert(`Erro ao criar álbum: ${(error as Error).message}`);
+        }
+    };
+
+    const updatePhotoAlbum = async (updatedAlbum: Omit<PhotoAlbum, 'school_id' | 'photos'>) => {
+        try {
+            const { id, ...albumData } = updatedAlbum;
+            const updated = await api.updatePhotoAlbum(id, albumData);
+            setPhotoAlbums(prev => prev.map(a => a.id === id ? { ...a, ...updated } : a));
+        } catch (error) {
+            console.error("Falha ao atualizar álbum:", error);
+            alert(`Erro ao atualizar álbum: ${(error as Error).message}`);
         }
     };
 
@@ -466,13 +548,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const value: DataContextType = {
         students, invoices, leads, staff, users, communications, agendaItems, libraryBooks, photoAlbums,
         financialSummary, expenses, revenues, leadCaptureCampaigns, tuitionPlans, loading,
-        addStudent, updateStudent, addLead, updateLead, addInvoice, updateInvoice, deleteInvoice,
+        addStudent, updateStudent, deleteStudent, 
+        addLead, updateLead, deleteLead,
+        addInvoice, updateInvoice, deleteInvoice,
         addExpense: expenseOps.add, updateExpense: expenseOps.update, deleteExpense: expenseOps.delete,
         addRevenue: revenueOps.add, updateRevenue: revenueOps.update, deleteRevenue: revenueOps.delete,
-        addStaff: addStaff, updateStaff: staffOps.update,
-        addCommunication, addAgendaItem, updateAgendaItem,
+        addStaff: addStaff, updateStaff: updateStaff, deleteStaff: deleteStaff,
+        addCommunication, updateCommunication, deleteCommunication,
+        addAgendaItem, updateAgendaItem, deleteAgendaItem,
         addUser, updateUser, deleteUser,
-        addLeadCaptureCampaign, addPhotoAlbum, deletePhotoAlbum, addPhotoToAlbum, deletePhotoFromAlbum,
+        addLeadCaptureCampaign, 
+        addPhotoAlbum, updatePhotoAlbum, deletePhotoAlbum, addPhotoToAlbum, deletePhotoFromAlbum,
+        addLibraryBook: libraryBookOps.add, updateLibraryBook: libraryBookOps.update, deleteLibraryBook: libraryBookOps.delete,
         addTuitionPlan: tuitionPlanOps.add, updateTuitionPlan: tuitionPlanOps.update, deleteTuitionPlan: tuitionPlanOps.delete,
     };
 

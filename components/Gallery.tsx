@@ -2,15 +2,21 @@ import React, { useState } from 'react';
 import { useData } from '../contexts/DataContext';
 import Card from './common/Card';
 import AddAlbumModal from './gallery/AddAlbumModal';
+import EditAlbumModal from './gallery/EditAlbumModal';
 import AlbumDetailModal from './gallery/AlbumDetailModal';
 import { PhotoAlbum } from '../types';
+import ProtectedComponent from './common/ProtectedComponent';
 
 const PlusIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
 );
 
 const Trash2Icon: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+);
+
+const EditIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
 );
 
 
@@ -18,6 +24,7 @@ const Gallery: React.FC = () => {
     const { photoAlbums, deletePhotoAlbum } = useData();
     const [isAddAlbumModalOpen, setAddAlbumModalOpen] = useState(false);
     const [selectedAlbum, setSelectedAlbum] = useState<PhotoAlbum | null>(null);
+    const [editingAlbum, setEditingAlbum] = useState<PhotoAlbum | null>(null);
 
     const handleDelete = (e: React.MouseEvent, albumId: number) => {
         e.stopPropagation(); // Prevent modal from opening
@@ -26,17 +33,24 @@ const Gallery: React.FC = () => {
         }
     };
 
+    const handleEdit = (e: React.MouseEvent, album: PhotoAlbum) => {
+        e.stopPropagation();
+        setEditingAlbum(album);
+    };
+
     return (
         <>
             <div className="flex justify-between items-center mb-6">
                  <h2 className="text-2xl font-bold text-brand-text-dark">Mural de Fotos</h2>
-                 <button
-                    onClick={() => setAddAlbumModalOpen(true)}
-                    className="flex items-center justify-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm"
-                 >
-                    <PlusIcon className="w-5 h-5 mr-2" />
-                    Criar Novo Álbum
-                </button>
+                 <ProtectedComponent requiredPermission='manage_gallery'>
+                    <button
+                        onClick={() => setAddAlbumModalOpen(true)}
+                        className="flex items-center justify-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm"
+                    >
+                        <PlusIcon className="w-5 h-5 mr-2" />
+                        Criar Novo Álbum
+                    </button>
+                </ProtectedComponent>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {photoAlbums.map((album) => (
@@ -46,14 +60,25 @@ const Gallery: React.FC = () => {
                         <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <span className="text-white text-lg font-bold">Ver Álbum</span>
                         </div>
-
-                        <button
-                            onClick={(e) => handleDelete(e, album.id)}
-                            className="absolute top-2 right-2 bg-red-600/80 text-white p-2 rounded-full hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-all transform scale-75 group-hover:scale-100"
-                            title="Excluir álbum"
-                        >
-                            <Trash2Icon className="w-5 h-5" />
-                        </button>
+                        
+                        <ProtectedComponent requiredPermission='manage_gallery'>
+                            <div className="absolute top-2 right-2 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <button
+                                    onClick={(e) => handleEdit(e, album)}
+                                    className="bg-sky-600/80 text-white p-2 rounded-full hover:bg-sky-700 transform scale-75 group-hover:scale-100 transition-all"
+                                    title="Editar álbum"
+                                >
+                                    <EditIcon className="w-5 h-5" />
+                                </button>
+                                <button
+                                    onClick={(e) => handleDelete(e, album.id)}
+                                    className="bg-red-600/80 text-white p-2 rounded-full hover:bg-red-700 transform scale-75 group-hover:scale-100 transition-all"
+                                    title="Excluir álbum"
+                                >
+                                    <Trash2Icon className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </ProtectedComponent>
                         
                         <div className="p-4">
                             <h3 className="font-bold text-lg">{album.title}</h3>
@@ -68,6 +93,14 @@ const Gallery: React.FC = () => {
                 isOpen={isAddAlbumModalOpen}
                 onClose={() => setAddAlbumModalOpen(false)}
             />
+
+            {editingAlbum && (
+                <EditAlbumModal
+                    isOpen={!!editingAlbum}
+                    onClose={() => setEditingAlbum(null)}
+                    album={editingAlbum}
+                />
+            )}
             
             {selectedAlbum && (
                 <AlbumDetailModal
