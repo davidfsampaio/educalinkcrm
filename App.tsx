@@ -199,15 +199,41 @@ const StaffLoginScreen: React.FC<{ onBack: () => void; authError: string | null;
         setLocalError('');
         setAuthError(null);
 
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
             email: email,
             password: password,
         });
 
-        setIsLoading(false);
-
         if (signInError) {
-            setLocalError(signInError.message);
+            setIsLoading(false);
+            setLocalError(signInError.message === "Invalid login credentials" ? "Email ou senha inválidos." : signInError.message);
+            return;
+        }
+
+        if (signInData.user) {
+            const { data: profile, error: profileError } = await supabase
+                .from('users')
+                .select('role')
+                .eq('id', signInData.user.id)
+                .single();
+
+            if (profileError || !profile) {
+                await supabase.auth.signOut();
+                setIsLoading(false);
+                setLocalError("Não foi possível verificar seu perfil. Contate o suporte.");
+                return;
+            }
+            
+            if (profile.role !== 'Pai/Responsável') {
+                setIsLoading(false);
+            } else {
+                await supabase.auth.signOut();
+                setIsLoading(false);
+                setLocalError("Acesso negado. Este login é para a equipe da escola.");
+            }
+        } else {
+            setIsLoading(false);
+            setLocalError("Ocorreu um erro inesperado durante o login.");
         }
     };
     
@@ -287,15 +313,41 @@ const ParentLoginScreen: React.FC<{ onBack: () => void; authError: string | null
         setLocalError('');
         setAuthError(null);
 
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
             email: email,
             password: password,
         });
 
-        setIsLoading(false);
-
         if (signInError) {
+            setIsLoading(false);
             setLocalError("Email ou senha inválidos. Verifique suas credenciais.");
+            return;
+        }
+
+        if (signInData.user) {
+            const { data: profile, error: profileError } = await supabase
+                .from('users')
+                .select('role')
+                .eq('id', signInData.user.id)
+                .single();
+
+            if (profileError || !profile) {
+                await supabase.auth.signOut();
+                setIsLoading(false);
+                setLocalError("Não foi possível verificar seu perfil. Contate o suporte.");
+                return;
+            }
+
+            if (profile.role === 'Pai/Responsável') {
+                setIsLoading(false);
+            } else {
+                await supabase.auth.signOut();
+                setIsLoading(false);
+                setLocalError("Acesso negado. Este login é exclusivo para Pais e Responsáveis.");
+            }
+        } else {
+            setIsLoading(false);
+            setLocalError("Ocorreu um erro inesperado durante o login.");
         }
     };
 
