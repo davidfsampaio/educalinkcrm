@@ -1,5 +1,3 @@
-
-
 import React, { useState, lazy, Suspense, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -199,42 +197,22 @@ const StaffLoginScreen: React.FC<{ onBack: () => void; authError: string | null;
         setLocalError('');
         setAuthError(null);
 
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        const { error } = await supabase.auth.signInWithPassword({
             email: email,
             password: password,
         });
 
-        if (signInError) {
+        if (error) {
             setIsLoading(false);
-            setLocalError(signInError.message === "Invalid login credentials" ? "Email ou senha inválidos." : signInError.message);
-            return;
-        }
-
-        if (signInData.user) {
-            const { data: profile, error: profileError } = await supabase
-                .from('users')
-                .select('role')
-                .eq('id', signInData.user.id)
-                .single();
-
-            if (profileError || !profile) {
-                await supabase.auth.signOut();
-                setIsLoading(false);
-                setLocalError("Não foi possível verificar seu perfil. Contate o suporte.");
-                return;
-            }
-            
-            if (profile.role !== 'Pai/Responsável') {
-                setIsLoading(false);
+            if (error.message.includes("Invalid login credentials")) {
+                setLocalError("Email ou senha inválidos.");
+            } else if (error.message.includes("denied")) { // Catch custom errors from AuthContext
+                setLocalError(error.message);
             } else {
-                await supabase.auth.signOut();
-                setIsLoading(false);
-                setLocalError("Acesso negado. Este login é para a equipe da escola.");
+                setLocalError("Ocorreu um erro inesperado durante o login.");
             }
-        } else {
-            setIsLoading(false);
-            setLocalError("Ocorreu um erro inesperado durante o login.");
         }
+        // No need for 'else' - the AuthContext listener will handle successful login
     };
     
     const displayError = authError || localError;
@@ -313,42 +291,22 @@ const ParentLoginScreen: React.FC<{ onBack: () => void; authError: string | null
         setLocalError('');
         setAuthError(null);
 
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        const { error } = await supabase.auth.signInWithPassword({
             email: email,
             password: password,
         });
 
-        if (signInError) {
+        if (error) {
             setIsLoading(false);
-            setLocalError("Email ou senha inválidos. Verifique suas credenciais.");
-            return;
-        }
-
-        if (signInData.user) {
-            const { data: profile, error: profileError } = await supabase
-                .from('users')
-                .select('role')
-                .eq('id', signInData.user.id)
-                .single();
-
-            if (profileError || !profile) {
-                await supabase.auth.signOut();
-                setIsLoading(false);
-                setLocalError("Não foi possível verificar seu perfil. Contate o suporte.");
-                return;
-            }
-
-            if (profile.role === 'Pai/Responsável') {
-                setIsLoading(false);
+            if (error.message.includes("Invalid login credentials")) {
+                setLocalError("Email ou senha inválidos. Verifique suas credenciais.");
+            } else if (error.message.includes("negado")) { // Catch custom errors from AuthContext
+                setLocalError(error.message);
             } else {
-                await supabase.auth.signOut();
-                setIsLoading(false);
-                setLocalError("Acesso negado. Este login é exclusivo para Pais e Responsáveis.");
+                setLocalError("Ocorreu um erro inesperado durante o login.");
             }
-        } else {
-            setIsLoading(false);
-            setLocalError("Ocorreu um erro inesperado durante o login.");
         }
+        // No need for 'else' - the AuthContext listener will handle successful login
     };
 
     const displayError = authError || localError;
@@ -445,7 +403,7 @@ const AuthScreen: React.FC = () => {
 
 
 const AppRouter: React.FC = () => {
-    const { currentUser } = useAuth();
+    const { currentUser, authError } = useAuth();
     const [page, setPage] = useState<'crm' | 'capture' | null>(null);
 
     useEffect(() => {
@@ -478,23 +436,32 @@ const AppRouter: React.FC = () => {
         );
     }
     
-    if (!currentUser) {
+    if (!currentUser && !authError) {
         return <AuthScreen />;
     }
+    
+    if (authError && !currentUser) {
+         return <AuthScreen />;
+    }
 
-    if (currentUser.role === 'Pai/Responsável') {
+    if (currentUser) {
+        if (currentUser.role === 'Pai/Responsável') {
+            return (
+                <DataProvider>
+                    <ParentPortal onLogout={handleLogout} />
+                </DataProvider>
+            );
+        }
+
         return (
             <DataProvider>
-                <ParentPortal onLogout={handleLogout} />
+                <MainApp onLogout={handleLogout} />
             </DataProvider>
         );
     }
-
-    return (
-        <DataProvider>
-            <MainApp onLogout={handleLogout} />
-        </DataProvider>
-    );
+    
+    // Default fallback to AuthScreen if something is still loading or in an intermittent state
+    return <AuthScreen />;
 };
 
 

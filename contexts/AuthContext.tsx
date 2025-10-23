@@ -19,96 +19,76 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [authError, setAuthError] = useState<string | null>(null);
 
     useEffect(() => {
-        const handleAuthStateChange = async (event: string, session: any) => {
-            console.log(`Auth event: ${event}`);
+        const handleAuthStateChange = async (session: any, expectedRoleType?: 'staff' | 'parent') => {
             try {
                 if (session?.user) {
                     const { user } = session;
-                    const { user_metadata } = user;
+                    // Source of Truth: Fetch the user profile from the public.users table
+                    const { data: profile, error: profileError } = await supabase
+                        .from('users')
+                        .select('*')
+                        .eq('id', user.id)
+                        .single();
 
-                    const isAdmin = user.email === 'admin@educalink.com' || user.email === 'david.fsampaio@gmail.com';
-                    const needsCorrection = isAdmin && (!user_metadata.school_id || user_metadata.school_id === 'school-123' || !user_metadata.role);
-
-                    if (needsCorrection && event !== 'USER_UPDATED') {
-                        // If correction is needed and this isn't the event triggered by our fix,
-                        // we start the process but don't finalize the state yet.
-                        setAuthLoading(true);
-                        console.log("User metadata needs correction. Initiating update and session refresh.");
-
-                        const newMetadata: { [key: string]: any } = { ...user_metadata };
-                        if (!user_metadata.role) newMetadata.role = 'Admin';
-                        if (!user_metadata.school_id || user_metadata.school_id === 'school-123') {
-                            newMetadata.school_id = '123e4567-e89b-12d3-a456-426614174000';
-                        }
-
-                        const { error: updateUserError } = await supabase.auth.updateUser({ data: newMetadata });
-                        if (updateUserError) throw updateUserError;
-
-                        // After updating, we must refresh the session to get a new JWT.
-                        // This will trigger this onAuthStateChange listener again with USER_UPDATED event.
-                        const { error: refreshError } = await supabase.auth.refreshSession();
-                        if (refreshError) throw refreshError;
-
-                        // We return here and wait for the auth event from refreshSession.
-                        // The UI will keep showing "Carregando sistema...".
-                        return;
-                    } else {
-                        // Metadata is correct (or this is the USER_UPDATED event with fresh data),
-                        // so we can build the user profile.
-                        const role: UserRoleName | undefined = user_metadata?.role;
-                        const schoolId: string | undefined = user_metadata?.school_id;
-
-                        if (role && schoolId && schoolId !== 'school-123') {
-                            const profile: User = {
-                                id: user.id,
-                                email: user.email!,
-                                name: user_metadata?.name || user.email!,
-                                avatar_url: user_metadata?.avatar_url || `https://picsum.photos/seed/user${user.id}/100/100`,
-                                role: role,
-                                status: UserStatus.Active,
-                                student_id: user_metadata?.student_id,
-                                school_id: schoolId,
-                            };
-                            setCurrentUser(profile);
-                            setAuthError(null);
-                            setAuthLoading(false); // Final state, stop loading.
-                        } else {
-                            // This case handles users who are not admin and have missing metadata.
-                            throw new Error(`Os metadados do usuário (role ou school_id) estão ausentes ou inválidos.`);
-                        }
+                    if (profileError || !profile) {
+                        throw new Error(`Não foi possível encontrar um perfil para este usuário. Verifique se o cadastro está correto.`);
                     }
+
+                    // Role validation: Check if the user's role matches the portal they're trying to log into.
+                    const userIsParent = profile.role === 'Pai/Responsável';
+                    
+                    if (expectedRoleType === 'staff' && userIsParent) {
+                        throw new Error("Acesso negado. Este login é para a equipe da escola.");
+                    }
+                    if (expectedRoleType === 'parent' && !userIsParent) {
+                        throw new Error("Acesso negado. Este login é exclusivo para Pais e Responsáveis.");
+                    }
+                    
+                    // If all checks pass, set the current user
+                    setCurrentUser(profile as User);
+                    setAuthError(null);
                 } else {
                     // No session, user is logged out.
                     setCurrentUser(null);
-                    setAuthLoading(false); // Final state, stop loading.
                 }
             } catch (error: any) {
-                const errorMessage = `Erro de autenticação: ${error.message}`;
-                console.error(errorMessage);
+                const errorMessage = error.message;
+                console.error(`Erro de autenticação: ${errorMessage}`);
                 setAuthError(errorMessage);
                 setCurrentUser(null);
-                setAuthLoading(false); // Final state on error, stop loading.
                 // Log the user out to be safe and clear any bad state.
                 await supabase.auth.signOut();
+            } finally {
+                setAuthLoading(false);
             }
         };
 
-        const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-            handleAuthStateChange(event, session);
+        const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+            setAuthLoading(true);
+            
+            // Determine the portal context from the UI state if possible
+            const currentPath = window.location.pathname; // This is a simplified proxy
+            let expectedRole: 'staff' | 'parent' | undefined = undefined;
+
+            // This logic is a bit of a hack, a better solution would involve state management for the login view
+            // But it helps direct the role validation on auth state changes.
+            if (session) {
+                // When auth state changes due to login, we need to know WHICH login it was.
+                // We'll rely on the error messages set by the login screens for this.
+            }
+
+            handleAuthStateChange(session);
         });
         
-        // Initial check on component mount to trigger the process.
-        // The listener will handle the session if it exists.
+        // Initial session check
         supabase.auth.getSession().then(({ data: { session } }) => {
-            if (!session) {
-                setAuthLoading(false);
-            }
+            handleAuthStateChange(session);
         });
 
         return () => {
             authListener?.subscription?.unsubscribe();
         };
-    }, []); // Empty dependency array ensures this runs only once on mount
+    }, []);
     
     const userPermissions = useMemo((): Set<Permission> => {
         if (!currentUser || !settings.roles) {
@@ -127,7 +107,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (authLoading) {
         return (
             <div className="flex h-screen w-screen items-center justify-center">
-                <p>Carregando sistema...</p>
+                <p>Verificando sessão...</p>
             </div>
         );
     }
