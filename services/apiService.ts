@@ -212,17 +212,11 @@ export const updateSchoolSettings = async (schoolId: string, settingsData: any):
     if (!schoolId) {
         throw new Error("ID da escola não fornecido para atualizar as configurações.");
     }
-
-    const { error: updateError } = await supabase
-        .from('school_settings')
-        .update(settingsData)
-        .eq('school_id', schoolId);
-
-    if (updateError) {
-        console.error('Erro ao atualizar as configurações da escola:', updateError);
-        if (updateError.code === '42P01') { // undefined_table
-            throw new Error("A tabela 'school_settings' não foi encontrada. Verifique se a tabela existe no banco de dados.");
-        }
-        throw new Error(`Falha ao salvar as configurações: ${updateError.message}`);
-    }
+    // Revertendo para uma chamada RPC, que é o padrão de acesso a dados neste aplicativo
+    // e a maneira correta de lidar com as políticas de segurança de linha (RLS) do Supabase.
+    // Isso pressupõe que uma função `update_school_settings` existe no backend.
+    await handleRpcWriteVoid('update_school_settings', {
+        p_school_id: schoolId,
+        p_data: settingsData
+    });
 };
