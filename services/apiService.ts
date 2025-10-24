@@ -1,4 +1,3 @@
-
 import {
     Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum,
     User, Expense, Revenue, LeadCaptureCampaign, Photo, StudentColumns, StudentUpdate,
@@ -6,8 +5,7 @@ import {
 } from '../types';
 import { supabase } from './supabaseClient';
 
-// --- Helper para chamadas RPC de escrita (INSERT, UPDATE, DELETE) ---
-// Esta é a abordagem recomendada para contornar problemas de RLS recursiva.
+// --- Helper para chamadas RPC de escrita que RETORNAM dados (INSERT, UPDATE) ---
 const handleRpcWrite = async (rpcName: string, params: object) => {
     const { data, error } = await supabase.rpc(rpcName, params);
     if (error) {
@@ -22,8 +20,8 @@ const handleRpcWrite = async (rpcName: string, params: object) => {
     return Array.isArray(data) ? data[0] : data;
 };
 
-// --- Helper para chamadas DELETE RPC (que podem não retornar dados) ---
-const handleRpcDelete = async (rpcName: string, params: object) => {
+// --- Helper para chamadas RPC de escrita que NÃO RETORNAM dados (DELETE, alguns UPDATEs) ---
+const handleRpcWriteVoid = async (rpcName: string, params: object) => {
     const { error } = await supabase.rpc(rpcName, params);
      if (error) {
         console.error(`Error in RPC '${rpcName}':`, error);
@@ -31,7 +29,7 @@ const handleRpcDelete = async (rpcName: string, params: object) => {
     }
 };
 
-// --- READ operations (mantendo RPCs para leitura) ---
+// --- Helper para chamadas READ operations (mantendo RPCs para leitura) ---
 const handleRpcRead = async (rpcCall: Promise<{ data: any, error: any }>, rpcName: string) => {
     const { data, error } = await rpcCall;
     if (error) {
@@ -90,7 +88,7 @@ export const updateStudent = async (studentId: number, studentData: StudentUpdat
     handleRpcWrite('update_student', { p_id: studentId, p_data: studentData });
 
 export const deleteStudent = async (studentId: number): Promise<void> =>
-    handleRpcDelete('delete_student', { p_id: studentId });
+    handleRpcWriteVoid('delete_student', { p_id: studentId });
 
 // Invoices
 export const addInvoice = async (invoiceData: InvoiceColumns): Promise<Invoice> =>
@@ -100,7 +98,7 @@ export const updateInvoice = async (invoiceId: string, invoiceData: InvoiceUpdat
     handleRpcWrite('update_invoice', { p_id: invoiceId, p_data: invoiceData });
 
 export const deleteInvoice = async (invoiceId: string): Promise<void> =>
-    handleRpcDelete('delete_invoice', { p_id: invoiceId });
+    handleRpcWriteVoid('delete_invoice', { p_id: invoiceId });
 
 // Leads
 export const addLead = async (leadData: LeadColumns): Promise<Lead> =>
@@ -110,7 +108,7 @@ export const updateLead = async (leadId: number, leadData: LeadUpdate): Promise<
     handleRpcWrite('update_lead', { p_id: leadId, p_data: leadData });
 
 export const deleteLead = async (leadId: number): Promise<void> =>
-    handleRpcDelete('delete_lead', { p_id: leadId });
+    handleRpcWriteVoid('delete_lead', { p_id: leadId });
 
 // Staff
 export const addStaff = async (staffData: Omit<Staff, 'id'>): Promise<Staff> =>
@@ -120,7 +118,7 @@ export const updateStaff = async (staffId: number, staffData: Partial<Omit<Staff
     handleRpcWrite('update_staff', { p_id: staffId, p_data: staffData });
 
 export const deleteStaff = async (staffId: number): Promise<void> =>
-    handleRpcDelete('delete_staff', { p_id: staffId });
+    handleRpcWriteVoid('delete_staff', { p_id: staffId });
 
 // Expenses
 export const addExpense = async (expenseData: Omit<Expense, 'id'>): Promise<Expense> =>
@@ -130,7 +128,7 @@ export const updateExpense = async (id: number, expenseData: Partial<Omit<Expens
     handleRpcWrite('update_expense', { p_id: id, p_data: expenseData });
 
 export const deleteExpense = async (id: number): Promise<void> =>
-    handleRpcDelete('delete_expense', { p_id: id });
+    handleRpcWriteVoid('delete_expense', { p_id: id });
 
 // Revenues
 export const addRevenue = async (revenueData: Omit<Revenue, 'id'>): Promise<Revenue> =>
@@ -140,7 +138,7 @@ export const updateRevenue = async (id: number, revenueData: Partial<Omit<Revenu
     handleRpcWrite('update_revenue', { p_id: id, p_data: revenueData });
 
 export const deleteRevenue = async (id: number): Promise<void> =>
-    handleRpcDelete('delete_revenue', { p_id: id });
+    handleRpcWriteVoid('delete_revenue', { p_id: id });
 
 // Communications
 export const addCommunication = async (commData: Omit<Communication, 'id'>): Promise<Communication> =>
@@ -150,7 +148,7 @@ export const updateCommunication = async (id: number, commData: Partial<Omit<Com
     handleRpcWrite('update_communication', { p_id: id, p_data: commData });
 
 export const deleteCommunication = async (id: number): Promise<void> =>
-    handleRpcDelete('delete_communication', { p_id: id });
+    handleRpcWriteVoid('delete_communication', { p_id: id });
 
 // Agenda
 export const addAgendaItem = async (itemData: Omit<AgendaItem, 'id'>): Promise<AgendaItem> =>
@@ -160,7 +158,7 @@ export const updateAgendaItem = async (id: number, itemData: Partial<Omit<Agenda
     handleRpcWrite('update_agenda_item', { p_id: id, p_data: itemData });
 
 export const deleteAgendaItem = async (id: number): Promise<void> =>
-    handleRpcDelete('delete_agenda_item', { p_id: id });
+    handleRpcWriteVoid('delete_agenda_item', { p_id: id });
 
 // Users
 export const addUser = async (userData: Omit<User, 'id'> & { password?: string }): Promise<User> =>
@@ -170,7 +168,7 @@ export const updateUser = async (id: string, userData: Partial<Omit<User, 'id' |
     handleRpcWrite('update_user', { p_id: id, p_data: userData });
 
 export const deleteUser = async (id: string): Promise<void> =>
-    handleRpcDelete('delete_user', { p_id: id });
+    handleRpcWriteVoid('delete_user', { p_id: id });
 
 // Campaigns
 export const addLeadCaptureCampaign = async (campaignData: LeadCaptureCampaign): Promise<LeadCaptureCampaign> =>
@@ -184,7 +182,7 @@ export const updatePhotoAlbum = async (id: number, albumData: Partial<Omit<Photo
     handleRpcWrite('update_photo_album', { p_id: id, p_data: albumData });
 
 export const deletePhotoAlbum = async (id: number): Promise<void> =>
-    handleRpcDelete('delete_photo_album', { p_id: id });
+    handleRpcWriteVoid('delete_photo_album', { p_id: id });
 
 export const updateAlbumPhotos = async (albumId: number, photos: Photo[]): Promise<PhotoAlbum> =>
     handleRpcWrite('update_album_photos', { p_id: albumId, p_photos: photos });
@@ -197,7 +195,7 @@ export const updateLibraryBook = async (id: number, bookData: Partial<Omit<Libra
     handleRpcWrite('update_library_book', { p_id: id, p_data: bookData });
 
 export const deleteLibraryBook = async (id: number): Promise<void> =>
-    handleRpcDelete('delete_library_book', { p_id: id });
+    handleRpcWriteVoid('delete_library_book', { p_id: id });
 
 // Tuition Plans
 export const addTuitionPlan = async (planData: Omit<TuitionPlan, 'id'>): Promise<TuitionPlan> =>
@@ -207,8 +205,8 @@ export const updateTuitionPlan = async (id: number, planData: Partial<Omit<Tuiti
     handleRpcWrite('update_tuition_plan', { p_id: id, p_data: planData });
 
 export const deleteTuitionPlan = async (id: number): Promise<void> =>
-    handleRpcDelete('delete_tuition_plan', { p_id: id });
+    handleRpcWriteVoid('delete_tuition_plan', { p_id: id });
 
 // School Settings
-export const updateSchoolSettings = async (settingsData: any): Promise<any> =>
-    handleRpcWrite('update_school_settings', { p_data: settingsData });
+export const updateSchoolSettings = async (settingsData: any): Promise<void> =>
+    handleRpcWriteVoid('update_school_settings', { p_data: settingsData });
