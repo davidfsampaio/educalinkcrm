@@ -19,43 +19,50 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { settings } = useSettings();
     const [currentUser, setCurrentUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true); // This is ONLY for initial session load.
+    const [isLoading, setIsLoading] = useState(true);
     const [authError, setAuthError] = useState<string | null>(null);
 
     useEffect(() => {
-        // Set loading to true once on mount. It will be set to false when the initial session is handled.
-        setIsLoading(true);
+        let isMounted = true;
 
-        const { data: authListener } = supabase.auth.onAuthStateChange(
-            async (event, session) => {
-                // On initial load, or when a user signs in, we get a session.
-                if (session) {
+        // 1. Check for an existing session when the component mounts.
+        async function getInitialSession() {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session && isMounted) {
                     const { data: profile } = await supabase
                         .from('users')
                         .select('*')
                         .eq('id', session.user.id)
                         .single();
                     
-                    // Only update the user if a profile is found.
-                    // If not found, it means a login is likely in progress for a new user,
-                    // and performLogin will handle setting the user after profile creation.
-                    // This prevents the context from incorrectly setting currentUser to null.
-                    if (profile) {
+                    if (profile && isMounted) {
                         setCurrentUser(profile as User);
                     }
-                } else {
-                    // No session means the user is logged out.
-                    setCurrentUser(null);
                 }
+            } catch (error) {
+                console.error("Error fetching initial session:", error);
+            } finally {
+                if (isMounted) {
+                    setIsLoading(false);
+                }
+            }
+        }
 
-                // The initial loading is finished once we've processed the first event (INITIAL_SESSION or SIGNED_OUT).
-                if (event === 'INITIAL_SESSION' || event === 'SIGNED_OUT') {
-                   setIsLoading(false);
+        getInitialSession();
+
+        // 2. Set up a listener ONLY for SIGNED_OUT events.
+        // SIGNED_IN is handled exclusively by the performLogin function.
+        const { data: authListener } = supabase.auth.onAuthStateChange(
+            (event, session) => {
+                if (event === 'SIGNED_OUT') {
+                    setCurrentUser(null);
                 }
             }
         );
 
         return () => {
+            isMounted = false;
             authListener.subscription.unsubscribe();
         };
     }, []);
