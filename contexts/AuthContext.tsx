@@ -1,6 +1,5 @@
-import React, { createContext, useContext, ReactNode, useState, useMemo, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { User, Permission, UserRoleName, UserStatus } from '../types';
-import { useSettings } from './SettingsContext';
 import { supabase } from '../services/supabaseClient';
 import { getUsers, deleteUser as apiDeleteUser } from '../services/apiService';
 
@@ -12,15 +11,16 @@ interface AuthContextType {
     setAuthError: (error: string | null) => void;
     signInAsStaff: (email: string, pass: string) => Promise<void>;
     signInAsParent: (email: string, pass: string) => Promise<void>;
+    setUserPermissions: (permissions: Set<Permission>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { settings } = useSettings();
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [authError, setAuthError] = useState<string | null>(null);
+    const [userPermissions, setUserPermissions] = useState<Set<Permission>>(new Set());
 
     useEffect(() => {
         let isMounted = true;
@@ -180,15 +180,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
     
-    const userPermissions = useMemo((): Set<Permission> => {
-        if (!currentUser || !settings.roles) return new Set();
-        const role = settings.roles.find(r => r.name === currentUser.role);
-        return new Set(role ? role.permissions : []);
-    }, [currentUser, settings.roles]);
-
     const hasPermission = (permission: Permission): boolean => userPermissions.has(permission);
 
-    const value = { currentUser, isLoading, hasPermission, authError, setAuthError, signInAsStaff, signInAsParent };
+    const value = { currentUser, isLoading, hasPermission, authError, setAuthError, signInAsStaff, signInAsParent, setUserPermissions };
 
     return (
         <AuthContext.Provider value={value}>

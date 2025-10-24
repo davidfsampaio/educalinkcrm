@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+
+
+// FIX: Imported 'useEffect' hook from React to resolve 'Cannot find name' error.
+import React, { useState, useEffect } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
 import Card from './common/Card';
 import { Settings, DeclarationType } from '../types';
@@ -221,12 +224,17 @@ const Settings: React.FC = () => {
     const [statusMessage, setStatusMessage] = useState('');
     const [activeTab, setActiveTab] = useState<SettingsTab>('general');
 
-    const handleSave = () => {
+    // Update local state if the global context changes (e.g., after initial load)
+    useEffect(() => {
+        setLocalSettings(settings);
+    }, [settings]);
+
+    const handleSave = async () => {
         // We separate role updates from other settings updates
-        // Tuition plans are managed separately via DataContext now.
+        // Tuition plans are managed separately via DataContext.
         const { roles, tuitionPlans, ...otherSettings } = localSettings;
-        updateSettings(otherSettings);
-        updateRoles(roles);
+        await updateSettings(otherSettings);
+        await updateRoles(roles);
 
         setStatusMessage('Configurações salvas com sucesso!');
         setTimeout(() => setStatusMessage(''), 3000);

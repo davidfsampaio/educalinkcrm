@@ -1,3 +1,4 @@
+
 import {
     Student, Invoice, Lead, Staff, Communication, AgendaItem, LibraryBook, PhotoAlbum,
     User, Expense, Revenue, LeadCaptureCampaign, Photo, StudentColumns, StudentUpdate,
@@ -53,6 +54,14 @@ export const getExpenses = async (): Promise<Expense[]> => handleRpcRead(supabas
 export const getRevenues = async (): Promise<Revenue[]> => handleRpcRead(supabase.rpc('get_revenues'), 'get_revenues');
 export const getLeadCaptureCampaigns = async (): Promise<LeadCaptureCampaign[]> => handleRpcRead(supabase.rpc('get_lead_capture_campaigns'), 'get_lead_capture_campaigns');
 export const getTuitionPlans = async (): Promise<TuitionPlan[]> => handleRpcRead(supabase.rpc('get_tuition_plans'), 'get_tuition_plans');
+export const getSchoolSettings = async (): Promise<any | null> => {
+    const { data, error } = await supabase.rpc('get_school_settings');
+    if (error) {
+        console.error(`Error in RPC 'get_school_settings':`, error);
+        throw new Error(error.message);
+    }
+    return data?.[0] ?? null;
+};
 
 
 export const getAuthenticatedUserProfile = async (): Promise<Staff | string | null> => {
@@ -199,3 +208,7 @@ export const updateTuitionPlan = async (id: number, planData: Partial<Omit<Tuiti
 
 export const deleteTuitionPlan = async (id: number): Promise<void> =>
     handleRpcDelete('delete_tuition_plan', { p_id: id });
+
+// School Settings
+export const updateSchoolSettings = async (settingsData: any): Promise<any> =>
+    handleRpcWrite('update_school_settings', { p_data: settingsData });

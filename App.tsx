@@ -3,7 +3,7 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import { View, Permission, Student, Staff as StaffType } from './types';
 import { DataProvider } from './contexts/DataContext';
-import { SettingsProvider } from './contexts/SettingsContext';
+import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AccessDenied from './components/common/AccessDenied';
 import { PWAProvider } from './contexts/PWAContext';
@@ -414,17 +414,35 @@ const AppRouter: React.FC = () => {
     return <AuthScreen />;
 };
 
+const PermissionCalculator: React.FC = () => {
+    const { currentUser, setUserPermissions } = useAuth();
+    const { settings } = useSettings();
+
+    useEffect(() => {
+        if (!currentUser || !settings.roles) {
+            setUserPermissions(new Set());
+            return;
+        }
+        const role = settings.roles.find(r => r.name === currentUser.role);
+        const permissions = new Set<Permission>(role ? role.permissions : []);
+        setUserPermissions(permissions);
+    }, [currentUser, settings.roles, setUserPermissions]);
+
+    return null; // This component doesn't render anything
+}
+
 
 const App: React.FC = () => {
   return (
     <PWAProvider>
-      <SettingsProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <SettingsProvider>
+            <PermissionCalculator />
             <Suspense fallback={<div className="flex h-screen w-screen items-center justify-center"><p>Carregando Módulo...</p></div>}>
               <AppRouter />
             </Suspense>
-        </AuthProvider>
-      </SettingsProvider>
+        </SettingsProvider>
+      </AuthProvider>
     </PWAProvider>
   );
 };
