@@ -2,7 +2,7 @@ import React, { createContext, useContext, ReactNode, useState, useMemo, useEffe
 import { User, Permission, UserRoleName, UserStatus } from '../types';
 import { useSettings } from './SettingsContext';
 import { supabase } from '../services/supabaseClient';
-import { getMyProfile, addUser } from '../services/apiService';
+import { getUsers, addUser } from '../services/apiService';
 
 interface AuthContextType {
     currentUser: User | null;
@@ -29,14 +29,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             try {
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session && isMounted) {
-                    // Busca o perfil via RPC para evitar problemas de RLS
-                    const profile = await getMyProfile();
+                    // Busca o perfil via RPC get_users para evitar problemas de RLS
+                    const allUsers = await getUsers();
+                    const profile = allUsers.find(u => u.id === session.user.id);
+                    
                     if (profile && isMounted) {
                         setCurrentUser(profile);
+                    } else if (isMounted) {
+                        // Se a sessão existir mas o perfil não, é um estado inconsistente. Deslogar.
+                        await supabase.auth.signOut();
+                        setCurrentUser(null);
                     }
                 }
             } catch (error) {
                 console.error("Error fetching initial session:", error);
+                 if (isMounted) {
+                    await supabase.auth.signOut();
+                    setCurrentUser(null);
+                 }
             } finally {
                 if (isMounted) {
                     setIsLoading(false);
@@ -49,7 +59,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { data: authListener } = supabase.auth.onAuthStateChange(
             (event, session) => {
                 if (event === 'SIGNED_OUT') {
-                    setCurrentUser(null);
+                    if (isMounted) {
+                        setCurrentUser(null);
+                    }
                 }
             }
         );
@@ -70,8 +82,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 throw new Error("Email ou senha inválidos. Verifique suas credenciais.");
             }
 
-            // Etapa 2: Buscar o perfil do usuário via RPC para evitar recursão de RLS.
-            let profile = await getMyProfile();
+            // Etapa 2: Buscar todos os perfis de usuário via RPC para evitar recursão de RLS.
+            const allUsers = await getUsers();
+            let profile = allUsers.find(u => u.id === authData.user!.id);
             
             // Etapa 3: Se não houver perfil (usuário novo), criar um via RPC.
             if (!profile) {
