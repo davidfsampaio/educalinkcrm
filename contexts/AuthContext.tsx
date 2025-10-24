@@ -2,7 +2,7 @@ import React, { createContext, useContext, ReactNode, useState, useMemo, useEffe
 import { User, Permission, UserRoleName, UserStatus } from '../types';
 import { useSettings } from './SettingsContext';
 import { supabase } from '../services/supabaseClient';
-import { getUsers, addUser } from '../services/apiService';
+import { getUsers, deleteUser as apiDeleteUser } from '../services/apiService';
 
 interface AuthContextType {
     currentUser: User | null;
@@ -75,59 +75,73 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         try {
             let authResponse;
+            let profile: User | undefined;
 
             // Etapa 1: Tentar fazer login
-            authResponse = await supabase.auth.signInWithPassword({ email, password: pass });
+            const signInResponse = await supabase.auth.signInWithPassword({ email, password: pass });
 
-            // Etapa 1.5: Lógica de Autocorreção.
-            // Se o login falhar por credenciais inválidas, pode ser um usuário cujo perfil foi criado
-            // no banco de dados, mas a conta de autenticação não. Tentamos criar a conta (signUp) como fallback.
-            if (authResponse.error && authResponse.error.message === 'Invalid login credentials') {
-                console.warn('Login failed, attempting to sign up as a fallback for existing profile...');
-                const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password: pass });
+            // Etapa 2: Se o login falhar, tentar a autocorreção
+            if (signInResponse.error) {
+                if (signInResponse.error.message === 'Invalid login credentials') {
+                    console.warn('Login failed, attempting autocorrection for existing profile...');
 
-                if (signUpError) {
-                    // Se o erro for "User already registered", significa que a conta de autenticação existe,
-                    // então a senha original estava simplesmente errada. Re-lançamos o erro original.
-                    if (signUpError.message.includes('already registered')) {
-                        throw new Error("Email ou senha inválidos. Verifique suas credenciais.");
+                    const allUsers = await getUsers();
+                    const existingProfile = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+                    if (existingProfile) {
+                        console.log('Found existing profile without auth user. Attempting recovery by recreating auth user.');
+
+                        const { id: oldId, ...profileDataToRestore } = existingProfile;
+
+                        // Primeiro, exclua o perfil conflitante da tabela public.users.
+                        await apiDeleteUser(oldId);
+
+                        // Agora, crie o usuário de autenticação. O gatilho do DB será executado e recriará o perfil.
+                        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                            email,
+                            password: pass,
+                            options: {
+                                data: {
+                                    ...profileDataToRestore
+                                }
+                            }
+                        });
+
+                        if (signUpError) {
+                            console.error("Recovery failed during signUp:", signUpError);
+                            throw signUpError; // Propaga o erro (ex: "Database error saving new user")
+                        }
+                        
+                        console.log('Recovery successful. Auth account created and profile linked.');
+                        authResponse = { data: signUpData, error: null };
+                        profile = undefined; // Força uma nova busca abaixo para obter o perfil recém-criado com o ID correto.
+                    } else {
+                        throw new Error("Email ou senha inválidos.");
                     }
-                    // Se for outro erro durante o signUp, ele é mais relevante.
-                    throw signUpError;
+                } else {
+                    throw signInResponse.error;
                 }
-                
-                // Se o signUp funcionou, o usuário foi criado e logado (assumindo que a confirmação de email está desativada).
-                // NOTA: Se a confirmação de email estiver ATIVADA no Supabase, o usuário precisará confirmar o email antes de poder logar.
-                console.log('Fallback signUp successful. User auth account created.');
-                authResponse = { data: signUpData, error: null };
+            } else {
+                authResponse = signInResponse;
             }
             
-            // Se ainda houver erro ou não houver dados do usuário, lançamos a falha.
-            if (authResponse.error || !authResponse.data.user) {
-                throw new Error(authResponse.error?.message || "Email ou senha inválidos. Verifique suas credenciais.");
+            if (!authResponse.data.user) {
+                throw new Error("Falha na autenticação. Usuário não encontrado.");
             }
-
-            const authData = authResponse.data;
-
-            // Etapa 2: Buscar o perfil do usuário via RPC para evitar recursão de RLS.
-            const allUsers = await getUsers();
-            let profile = allUsers.find(u => u.id === authData.user!.id);
             
-            // Etapa 3: Se não houver perfil (caso raro agora), criar um via RPC.
+            // Etapa 3: Garantir que temos o perfil
             if (!profile) {
-                console.warn("Perfil de usuário não encontrado, criando um novo...");
-                const defaultRole = expectedRoleType === 'staff' ? 'Secretário(a)' : 'Pai/Responsável';
-                const newProfileData = {
-                    email: authData.user.email!,
-                    name: authData.user.email?.split('@')[0] || 'Novo Usuário',
-                    role: defaultRole as UserRoleName,
-                    status: 'Ativo' as UserStatus,
-                    school_id: '123e4567-e89b-12d3-a456-426614174000', // MOCK: Default school ID.
-                    avatar_url: `https://picsum.photos/seed/${authData.user.id}/100/100`
-                };
-                const createdProfile = await addUser(newProfileData);
-                if (!createdProfile) throw new Error(`Falha ao criar o perfil do usuário.`);
-                profile = createdProfile;
+                const allUsers = await getUsers();
+                profile = allUsers.find(u => u.id === authResponse.data.user!.id);
+            }
+            
+            if (!profile) {
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                const refetchedUsers = await getUsers();
+                profile = refetchedUsers.find(u => u.id === authResponse.data.user!.id);
+                if (!profile) {
+                    throw new Error(`Falha ao carregar o perfil do usuário após o login. A sincronização pode estar atrasada. Tente novamente em alguns instantes.`);
+                }
             }
 
             // Etapa 4: Verificar se o usuário está acessando o portal correto.
@@ -140,7 +154,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
 
             // Etapa 5: Sucesso! Definir o usuário atual.
-            setCurrentUser(profile as User);
+            setCurrentUser(profile);
             
         } catch (error: any) {
             await supabase.auth.signOut();
