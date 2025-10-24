@@ -2,7 +2,7 @@ import React, { createContext, useContext, ReactNode, useState, useMemo, useEffe
 import { User, Permission, UserRoleName, UserStatus } from '../types';
 import { useSettings } from './SettingsContext';
 import { supabase } from '../services/supabaseClient';
-import { User as SupabaseUser } from '@supabase/supabase-js';
+import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 
 interface AuthContextType {
     currentUser: User | null;
@@ -23,47 +23,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [authError, setAuthError] = useState<string | null>(null);
 
     useEffect(() => {
-        setIsLoading(true);
-
-        const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-            // The listener's job is to sync state on page load (INITIAL_SESSION)
-            // or when the session is refreshed, or when the user is signed out.
-            // It should NOT handle the SIGNED_IN event that happens during an active login.
-            // The performLogin function will handle that transition to prevent a race condition.
-            if (event === 'SIGNED_IN') {
-                // By returning here, we let performLogin complete its logic,
-                // including creating a profile for a new user, before any
-                // other state changes happen.
-                return;
-            }
-
-            if (event === 'SIGNED_OUT' || !session) {
-                setCurrentUser(null);
-                setIsLoading(false);
-                return;
-            }
-            
-            // This will handle INITIAL_SESSION and TOKEN_REFRESHED
+        // On initial load, check for an existing session.
+        supabase.auth.getSession().then(async ({ data: { session } }) => {
             if (session) {
+                // If a session exists, fetch the associated user profile.
                 const { data: profile } = await supabase
                     .from('users')
                     .select('*')
                     .eq('id', session.user.id)
                     .single();
                 
-                if (profile) {
-                    setCurrentUser(profile as User);
-                } else {
-                    // If a session exists but no profile is found on refresh,
-                    // the state is inconsistent. Sign the user out.
-                    await supabase.auth.signOut();
-                    setCurrentUser(null);
-                }
+                // If the profile exists, set it as the current user.
+                // If not, currentUser remains null, and the user will see the login page.
+                setCurrentUser(profile ? (profile as User) : null);
             }
-            
+            // Once the session check is complete, we're done with initial loading.
             setIsLoading(false);
         });
 
+        // Set up a listener for auth events. We only care about SIGNED_OUT
+        // because the login flow is now handled entirely by `performLogin`.
+        const { data: authListener } = supabase.auth.onAuthStateChange(
+            (event, session) => {
+                if (event === 'SIGNED_OUT') {
+                    setCurrentUser(null);
+                }
+            }
+        );
+
+        // Cleanup the listener on component unmount.
         return () => {
             authListener.subscription.unsubscribe();
         };
@@ -71,83 +59,79 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const performLogin = async (email: string, pass: string, expectedRoleType: 'staff' | 'parent') => {
         setAuthError(null);
-        // This is the single point of truth for the loading state during a login attempt.
         setIsLoading(true);
 
         try {
+            // 1. Authenticate the user with Supabase Auth.
             const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password: pass });
-            
             if (authError || !authData.user) {
                 throw new Error("Email ou senha inválidos. Verifique suas credenciais.");
             }
 
-            // After successful auth, find or create the user profile.
-            // This happens BEFORE the listener can react.
+            // 2. Fetch the user's profile from the 'users' table.
             let { data: profile, error: profileError } = await supabase
                 .from('users')
                 .select('*')
                 .eq('id', authData.user.id)
                 .single();
             
-            // If no profile, and the error indicates "no rows found", create one.
-            if (!profile && (profileError?.code === 'PGRST116' || profileError === null)) {
-                console.warn("Perfil não encontrado, tentando criar um novo automaticamente...");
+            // 3. If no profile exists (common for new users), create one.
+            if (!profile && profileError?.code === 'PGRST116') {
+                console.warn("Perfil de usuário não encontrado, criando um novo...");
 
                 const defaultRole = expectedRoleType === 'staff'
                     ? (email === 'admin@educalink.com' ? 'Admin' : 'Secretário(a)')
                     : 'Pai/Responsável';
 
-                const defaultProfileData = {
+                const newProfileData = {
                     id: authData.user.id,
-                    email: authData.user.email,
+                    email: authData.user.email!,
                     name: authData.user.email?.split('@')[0] || 'Novo Usuário',
                     role: defaultRole as UserRoleName,
                     status: 'Ativo' as UserStatus,
-                    school_id: '123e4567-e89b-12d3-a456-426614174000', // Default school ID from mock data
+                    school_id: '123e4567-e89b-12d3-a456-426614174000', // MOCK: Default school ID. Should be dynamic in a multi-tenant app.
                     avatar_url: `https://picsum.photos/seed/${authData.user.id}/100/100`
                 };
                 
-                const { data: newProfile, error: insertError } = await supabase
+                const { data: createdProfile, error: insertError } = await supabase
                     .from('users')
-                    .insert(defaultProfileData)
+                    .insert(newProfileData)
                     .select()
                     .single();
 
-                if (insertError || !newProfile) {
-                    throw new Error("Falha ao criar o perfil do usuário automaticamente. Contate o suporte.");
+                if (insertError || !createdProfile) {
+                    throw new Error(`Falha ao criar o perfil do usuário: ${insertError?.message || 'Erro desconhecido'}`);
                 }
-                profile = newProfile;
+                profile = createdProfile;
             } else if (profileError) {
-                 throw new Error(`Acesso negado ao perfil: ${profileError.message}`);
+                 throw new Error(`Erro ao acessar o perfil: ${profileError.message}`);
             }
 
             if (!profile) {
-                // This should be an impossible state if the logic above is correct.
-                throw new Error("Perfil de usuário não encontrado. Entre em contato com o suporte.");
+                throw new Error("Perfil de usuário não pôde ser encontrado ou criado. Contate o suporte.");
             }
 
-            // Check if the user is trying to log into the correct portal.
-            const userIsParent = profile.role === 'Pai/Responsável';
+            // 4. Verify the user is logging into the correct portal (Staff vs. Parent).
+            const isParentRole = profile.role === 'Pai/Responsável';
 
-            if (expectedRoleType === 'staff' && userIsParent) {
-                throw new Error("Acesso negado. Este login é para a equipe da escola.");
+            if (expectedRoleType === 'staff' && isParentRole) {
+                throw new Error("Acesso negado. Este usuário pertence ao portal de pais/responsáveis.");
             }
             
-            if (expectedRoleType === 'parent' && !userIsParent) {
-                throw new Error("Acesso negado. Este login é exclusivo para Pais e Responsáveis.");
+            if (expectedRoleType === 'parent' && !isParentRole) {
+                throw new Error("Acesso negado. Este usuário pertence ao portal da equipe da escola.");
             }
 
-            // Now, set the user. This is the successful end of the login flow.
+            // 5. Success! Set the current user.
             setCurrentUser(profile as User);
             
         } catch (error: any) {
-            // If any part of the login fails, sign out to be safe.
-            if (error.message.includes("Acesso negado.")) {
-                await supabase.auth.signOut();
-            }
+            // On any failure, ensure the user is signed out and show an error.
+            await supabase.auth.signOut();
+            setCurrentUser(null);
             setAuthError(error.message);
         } finally {
-            // This ensures isLoading is always set to false once the login attempt is fully complete.
+            // No matter what, stop the loading indicator.
             setIsLoading(false);
         }
     };
