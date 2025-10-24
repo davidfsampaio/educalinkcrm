@@ -25,26 +25,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         let isMounted = true;
 
-        async function getInitialSession() {
+        async function checkSession() {
             try {
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session && isMounted) {
-                    // Busca o perfil via RPC get_users para evitar problemas de RLS
                     const allUsers = await getUsers();
                     const profile = allUsers.find(u => u.id === session.user.id);
                     
                     if (profile && isMounted) {
                         setCurrentUser(profile);
                     } else if (isMounted) {
-                        // Se a sessão existir mas o perfil não, é um estado inconsistente. Deslogar.
-                        await supabase.auth.signOut();
+                        // A session exists but no profile was found. This could be due to replication lag
+                        // or an inconsistent state. Instead of aggressively signing out (which causes loops on refresh),
+                        // we'll treat the user as logged out on the client side. The valid auth session remains,
+                        // allowing the login flow to potentially recover the state.
+                        console.warn("Session found but no profile. Treating user as logged out on the client.");
                         setCurrentUser(null);
                     }
                 }
             } catch (error) {
-                console.error("Error fetching initial session:", error);
+                console.error("Error checking initial session:", error);
                  if (isMounted) {
-                    await supabase.auth.signOut();
                     setCurrentUser(null);
                  }
             } finally {
@@ -54,13 +55,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
         }
 
-        getInitialSession();
+        checkSession();
 
         const { data: authListener } = supabase.auth.onAuthStateChange(
             (event, session) => {
                 if (event === 'SIGNED_OUT') {
                     if (isMounted) {
                         setCurrentUser(null);
+                        // Also clear any auth errors on logout
+                        setAuthError(null);
                     }
                 }
             }
