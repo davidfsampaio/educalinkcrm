@@ -19,39 +19,42 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { settings } = useSettings();
     const [currentUser, setCurrentUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true); // This is ONLY for initial session load.
     const [authError, setAuthError] = useState<string | null>(null);
 
     useEffect(() => {
-        // On initial load, check for an existing session.
-        supabase.auth.getSession().then(async ({ data: { session } }) => {
-            if (session) {
-                // If a session exists, fetch the associated user profile.
-                const { data: profile } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('id', session.user.id)
-                    .single();
-                
-                // If the profile exists, set it as the current user.
-                // If not, currentUser remains null, and the user will see the login page.
-                setCurrentUser(profile ? (profile as User) : null);
-            }
-            // Once the session check is complete, we're done with initial loading.
-            setIsLoading(false);
-        });
+        // Set loading to true once on mount. It will be set to false when the initial session is handled.
+        setIsLoading(true);
 
-        // Set up a listener for auth events. We only care about SIGNED_OUT
-        // because the login flow is now handled entirely by `performLogin`.
         const { data: authListener } = supabase.auth.onAuthStateChange(
-            (event, session) => {
-                if (event === 'SIGNED_OUT') {
+            async (event, session) => {
+                // On initial load, or when a user signs in, we get a session.
+                if (session) {
+                    const { data: profile } = await supabase
+                        .from('users')
+                        .select('*')
+                        .eq('id', session.user.id)
+                        .single();
+                    
+                    // Only update the user if a profile is found.
+                    // If not found, it means a login is likely in progress for a new user,
+                    // and performLogin will handle setting the user after profile creation.
+                    // This prevents the context from incorrectly setting currentUser to null.
+                    if (profile) {
+                        setCurrentUser(profile as User);
+                    }
+                } else {
+                    // No session means the user is logged out.
                     setCurrentUser(null);
+                }
+
+                // The initial loading is finished once we've processed the first event (INITIAL_SESSION or SIGNED_OUT).
+                if (event === 'INITIAL_SESSION' || event === 'SIGNED_OUT') {
+                   setIsLoading(false);
                 }
             }
         );
 
-        // Cleanup the listener on component unmount.
         return () => {
             authListener.subscription.unsubscribe();
         };
@@ -59,23 +62,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const performLogin = async (email: string, pass: string, expectedRoleType: 'staff' | 'parent') => {
         setAuthError(null);
-        setIsLoading(true);
 
         try {
-            // 1. Authenticate the user with Supabase Auth.
+            // Step 1: Sign in with Supabase Auth
             const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password: pass });
             if (authError || !authData.user) {
                 throw new Error("Email ou senha inválidos. Verifique suas credenciais.");
             }
 
-            // 2. Fetch the user's profile from the 'users' table.
+            // Step 2: Fetch the user's profile from the 'users' table.
             let { data: profile, error: profileError } = await supabase
                 .from('users')
                 .select('*')
                 .eq('id', authData.user.id)
                 .single();
             
-            // 3. If no profile exists (common for new users), create one.
+            // Step 3: If no profile exists (common for new users), create one.
             if (!profile && profileError?.code === 'PGRST116') {
                 console.warn("Perfil de usuário não encontrado, criando um novo...");
 
@@ -89,7 +91,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     name: authData.user.email?.split('@')[0] || 'Novo Usuário',
                     role: defaultRole as UserRoleName,
                     status: 'Ativo' as UserStatus,
-                    school_id: '123e4567-e89b-12d3-a456-426614174000', // MOCK: Default school ID. Should be dynamic in a multi-tenant app.
+                    school_id: '123e4567-e89b-12d3-a456-426614174000', // MOCK: Default school ID.
                     avatar_url: `https://picsum.photos/seed/${authData.user.id}/100/100`
                 };
                 
@@ -111,7 +113,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 throw new Error("Perfil de usuário não pôde ser encontrado ou criado. Contate o suporte.");
             }
 
-            // 4. Verify the user is logging into the correct portal (Staff vs. Parent).
+            // Step 4: Verify the user is logging into the correct portal (Staff vs. Parent).
             const isParentRole = profile.role === 'Pai/Responsável';
 
             if (expectedRoleType === 'staff' && isParentRole) {
@@ -122,7 +124,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 throw new Error("Acesso negado. Este usuário pertence ao portal da equipe da escola.");
             }
 
-            // 5. Success! Set the current user.
+            // Step 5: Success! Set the current user. This is the definitive action that completes the login.
             setCurrentUser(profile as User);
             
         } catch (error: any) {
@@ -130,14 +132,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             await supabase.auth.signOut();
             setCurrentUser(null);
             setAuthError(error.message);
-        } finally {
-            // No matter what, stop the loading indicator.
-            setIsLoading(false);
+            // Re-throw the error so the UI can handle its local loading state.
+            throw error;
         }
     };
 
-    const signInAsStaff = (email: string, pass: string) => performLogin(email, pass, 'staff');
-    const signInAsParent = (email: string, pass: string) => performLogin(email, pass, 'parent');
+    const signInAsStaff = async (email: string, pass: string) => {
+        try {
+            await performLogin(email, pass, 'staff');
+        } catch (error) {
+            // Error is already set in context by performLogin.
+            // We just catch it here to prevent an unhandled promise rejection in the UI form.
+            console.error("Staff login failed:", (error as Error).message);
+        }
+    };
+
+    const signInAsParent = async (email: string, pass: string) => {
+         try {
+            await performLogin(email, pass, 'parent');
+        } catch (error) {
+            console.error("Parent login failed:", (error as Error).message);
+        }
+    };
     
     const userPermissions = useMemo((): Set<Permission> => {
         if (!currentUser || !settings.roles) return new Set();
