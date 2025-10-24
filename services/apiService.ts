@@ -40,6 +40,20 @@ const handleRpcRead = async (rpcCall: Promise<{ data: any, error: any }>, rpcNam
     return data || [];
 };
 
+export const getMyProfile = async (): Promise<User | null> => {
+    // Usamos uma chamada RPC para buscar o perfil do próprio usuário.
+    // Esta é a maneira padrão de contornar políticas RLS recursivas no Supabase.
+    // A função de backend `get_my_profile` pode usar `auth.uid()` para obter o ID do usuário com segurança.
+    const { data, error } = await supabase.rpc('get_my_profile');
+    if (error) {
+        console.error("Error in RPC 'get_my_profile':", error);
+        throw new Error(error.message);
+    }
+    // RPCs que retornam uma única linha geralmente o fazem dentro de um array.
+    const profile = Array.isArray(data) ? data[0] : data;
+    return (profile as User) || null;
+};
+
 export const getStudents = async (): Promise<Student[]> => handleRpcRead(supabase.rpc('get_students'), 'get_students');
 export const getInvoices = async (): Promise<Invoice[]> => handleRpcRead(supabase.rpc('get_invoices'), 'get_invoices');
 export const getLeads = async (): Promise<Lead[]> => handleRpcRead(supabase.rpc('get_leads'), 'get_leads');

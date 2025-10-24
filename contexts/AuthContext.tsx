@@ -2,7 +2,7 @@ import React, { createContext, useContext, ReactNode, useState, useMemo, useEffe
 import { User, Permission, UserRoleName, UserStatus } from '../types';
 import { useSettings } from './SettingsContext';
 import { supabase } from '../services/supabaseClient';
-import { Session, User as SupabaseUser } from '@supabase/supabase-js';
+import { getMyProfile, addUser } from '../services/apiService';
 
 interface AuthContextType {
     currentUser: User | null;
@@ -25,19 +25,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         let isMounted = true;
 
-        // 1. Check for an existing session when the component mounts.
         async function getInitialSession() {
             try {
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session && isMounted) {
-                    const { data: profile } = await supabase
-                        .from('users')
-                        .select('*')
-                        .eq('id', session.user.id)
-                        .single();
-                    
+                    // Busca o perfil via RPC para evitar problemas de RLS
+                    const profile = await getMyProfile();
                     if (profile && isMounted) {
-                        setCurrentUser(profile as User);
+                        setCurrentUser(profile);
                     }
                 }
             } catch (error) {
@@ -51,8 +46,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         getInitialSession();
 
-        // 2. Set up a listener ONLY for SIGNED_OUT events.
-        // SIGNED_IN is handled exclusively by the performLogin function.
         const { data: authListener } = supabase.auth.onAuthStateChange(
             (event, session) => {
                 if (event === 'SIGNED_OUT') {
@@ -71,21 +64,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setAuthError(null);
 
         try {
-            // Step 1: Sign in with Supabase Auth
+            // Etapa 1: Autenticar com Supabase Auth
             const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password: pass });
             if (authError || !authData.user) {
                 throw new Error("Email ou senha inválidos. Verifique suas credenciais.");
             }
 
-            // Step 2: Fetch the user's profile from the 'users' table.
-            let { data: profile, error: profileError } = await supabase
-                .from('users')
-                .select('*')
-                .eq('id', authData.user.id)
-                .single();
+            // Etapa 2: Buscar o perfil do usuário via RPC para evitar recursão de RLS.
+            let profile = await getMyProfile();
             
-            // Step 3: If no profile exists (common for new users), create one.
-            if (!profile && profileError?.code === 'PGRST116') {
+            // Etapa 3: Se não houver perfil (usuário novo), criar um via RPC.
+            if (!profile) {
                 console.warn("Perfil de usuário não encontrado, criando um novo...");
 
                 const defaultRole = expectedRoleType === 'staff'
@@ -93,7 +82,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     : 'Pai/Responsável';
 
                 const newProfileData = {
-                    id: authData.user.id,
                     email: authData.user.email!,
                     name: authData.user.email?.split('@')[0] || 'Novo Usuário',
                     role: defaultRole as UserRoleName,
@@ -102,25 +90,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     avatar_url: `https://picsum.photos/seed/${authData.user.id}/100/100`
                 };
                 
-                const { data: createdProfile, error: insertError } = await supabase
-                    .from('users')
-                    .insert(newProfileData)
-                    .select()
-                    .single();
+                const createdProfile = await addUser(newProfileData);
 
-                if (insertError || !createdProfile) {
-                    throw new Error(`Falha ao criar o perfil do usuário: ${insertError?.message || 'Erro desconhecido'}`);
+                if (!createdProfile) {
+                    throw new Error(`Falha ao criar o perfil do usuário: Erro desconhecido`);
                 }
                 profile = createdProfile;
-            } else if (profileError) {
-                 throw new Error(`Erro ao acessar o perfil: ${profileError.message}`);
             }
 
-            if (!profile) {
-                throw new Error("Perfil de usuário não pôde ser encontrado ou criado. Contate o suporte.");
-            }
-
-            // Step 4: Verify the user is logging into the correct portal (Staff vs. Parent).
+            // Etapa 4: Verificar se o usuário está acessando o portal correto.
             const isParentRole = profile.role === 'Pai/Responsável';
 
             if (expectedRoleType === 'staff' && isParentRole) {
@@ -131,15 +109,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 throw new Error("Acesso negado. Este usuário pertence ao portal da equipe da escola.");
             }
 
-            // Step 5: Success! Set the current user. This is the definitive action that completes the login.
+            // Etapa 5: Sucesso! Definir o usuário atual.
             setCurrentUser(profile as User);
             
         } catch (error: any) {
-            // On any failure, ensure the user is signed out and show an error.
+            // Em qualquer falha, garantir o logout e exibir o erro.
             await supabase.auth.signOut();
             setCurrentUser(null);
             setAuthError(error.message);
-            // Re-throw the error so the UI can handle its local loading state.
             throw error;
         }
     };
@@ -148,8 +125,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             await performLogin(email, pass, 'staff');
         } catch (error) {
-            // Error is already set in context by performLogin.
-            // We just catch it here to prevent an unhandled promise rejection in the UI form.
             console.error("Staff login failed:", (error as Error).message);
         }
     };
