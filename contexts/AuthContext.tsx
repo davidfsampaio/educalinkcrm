@@ -35,10 +35,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     if (profile && isMounted) {
                         setCurrentUser(profile);
                     } else if (isMounted) {
-                        // A session exists but no profile was found. This could be due to replication lag
-                        // or an inconsistent state. Instead of aggressively signing out (which causes loops on refresh),
-                        // we'll treat the user as logged out on the client side. The valid auth session remains,
-                        // allowing the login flow to potentially recover the state.
                         console.warn("Session found but no profile. Treating user as logged out on the client.");
                         setCurrentUser(null);
                     }
@@ -62,7 +58,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (event === 'SIGNED_OUT') {
                     if (isMounted) {
                         setCurrentUser(null);
-                        // Also clear any auth errors on logout
                         setAuthError(null);
                     }
                 }
@@ -79,24 +74,49 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setAuthError(null);
 
         try {
-            // Etapa 1: Autenticar com Supabase Auth
-            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password: pass });
-            if (authError || !authData.user) {
-                throw new Error("Email ou senha inválidos. Verifique suas credenciais.");
+            let authResponse;
+
+            // Etapa 1: Tentar fazer login
+            authResponse = await supabase.auth.signInWithPassword({ email, password: pass });
+
+            // Etapa 1.5: Lógica de Autocorreção.
+            // Se o login falhar por credenciais inválidas, pode ser um usuário cujo perfil foi criado
+            // no banco de dados, mas a conta de autenticação não. Tentamos criar a conta (signUp) como fallback.
+            if (authResponse.error && authResponse.error.message === 'Invalid login credentials') {
+                console.warn('Login failed, attempting to sign up as a fallback for existing profile...');
+                const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password: pass });
+
+                if (signUpError) {
+                    // Se o erro for "User already registered", significa que a conta de autenticação existe,
+                    // então a senha original estava simplesmente errada. Re-lançamos o erro original.
+                    if (signUpError.message.includes('already registered')) {
+                        throw new Error("Email ou senha inválidos. Verifique suas credenciais.");
+                    }
+                    // Se for outro erro durante o signUp, ele é mais relevante.
+                    throw signUpError;
+                }
+                
+                // Se o signUp funcionou, o usuário foi criado e logado (assumindo que a confirmação de email está desativada).
+                // NOTA: Se a confirmação de email estiver ATIVADA no Supabase, o usuário precisará confirmar o email antes de poder logar.
+                console.log('Fallback signUp successful. User auth account created.');
+                authResponse = { data: signUpData, error: null };
+            }
+            
+            // Se ainda houver erro ou não houver dados do usuário, lançamos a falha.
+            if (authResponse.error || !authResponse.data.user) {
+                throw new Error(authResponse.error?.message || "Email ou senha inválidos. Verifique suas credenciais.");
             }
 
-            // Etapa 2: Buscar todos os perfis de usuário via RPC para evitar recursão de RLS.
+            const authData = authResponse.data;
+
+            // Etapa 2: Buscar o perfil do usuário via RPC para evitar recursão de RLS.
             const allUsers = await getUsers();
             let profile = allUsers.find(u => u.id === authData.user!.id);
             
-            // Etapa 3: Se não houver perfil (usuário novo), criar um via RPC.
+            // Etapa 3: Se não houver perfil (caso raro agora), criar um via RPC.
             if (!profile) {
                 console.warn("Perfil de usuário não encontrado, criando um novo...");
-
-                const defaultRole = expectedRoleType === 'staff'
-                    ? (email === 'admin@educalink.com' ? 'Admin' : 'Secretário(a)')
-                    : 'Pai/Responsável';
-
+                const defaultRole = expectedRoleType === 'staff' ? 'Secretário(a)' : 'Pai/Responsável';
                 const newProfileData = {
                     email: authData.user.email!,
                     name: authData.user.email?.split('@')[0] || 'Novo Usuário',
@@ -105,22 +125,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     school_id: '123e4567-e89b-12d3-a456-426614174000', // MOCK: Default school ID.
                     avatar_url: `https://picsum.photos/seed/${authData.user.id}/100/100`
                 };
-                
                 const createdProfile = await addUser(newProfileData);
-
-                if (!createdProfile) {
-                    throw new Error(`Falha ao criar o perfil do usuário: Erro desconhecido`);
-                }
+                if (!createdProfile) throw new Error(`Falha ao criar o perfil do usuário.`);
                 profile = createdProfile;
             }
 
             // Etapa 4: Verificar se o usuário está acessando o portal correto.
             const isParentRole = profile.role === 'Pai/Responsável';
-
             if (expectedRoleType === 'staff' && isParentRole) {
                 throw new Error("Acesso negado. Este usuário pertence ao portal de pais/responsáveis.");
             }
-            
             if (expectedRoleType === 'parent' && !isParentRole) {
                 throw new Error("Acesso negado. Este usuário pertence ao portal da equipe da escola.");
             }
@@ -129,7 +143,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setCurrentUser(profile as User);
             
         } catch (error: any) {
-            // Em qualquer falha, garantir o logout e exibir o erro.
             await supabase.auth.signOut();
             setCurrentUser(null);
             setAuthError(error.message);
