@@ -26,20 +26,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setIsLoading(true);
 
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+            // The listener's job is to sync state on page load (INITIAL_SESSION)
+            // or when the session is refreshed, or when the user is signed out.
+            // It should NOT handle the SIGNED_IN event that happens during an active login.
+            // The performLogin function will handle that transition to prevent a race condition.
+            if (event === 'SIGNED_IN') {
+                // By returning here, we let performLogin complete its logic,
+                // including creating a profile for a new user, before any
+                // other state changes happen.
+                return;
+            }
+
             if (event === 'SIGNED_OUT' || !session) {
                 setCurrentUser(null);
                 setIsLoading(false);
                 return;
             }
-
-            const { data: profile } = await supabase
-                .from('users')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
             
-            if (profile) {
-                setCurrentUser(profile as User);
+            // This will handle INITIAL_SESSION and TOKEN_REFRESHED
+            if (session) {
+                const { data: profile } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single();
+                
+                if (profile) {
+                    setCurrentUser(profile as User);
+                } else {
+                    // If a session exists but no profile is found on refresh,
+                    // the state is inconsistent. Sign the user out.
+                    await supabase.auth.signOut();
+                    setCurrentUser(null);
+                }
             }
             
             setIsLoading(false);
@@ -52,6 +71,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const performLogin = async (email: string, pass: string, expectedRoleType: 'staff' | 'parent') => {
         setAuthError(null);
+        // This is the single point of truth for the loading state during a login attempt.
         setIsLoading(true);
 
         try {
@@ -61,12 +81,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 throw new Error("Email ou senha inválidos. Verifique suas credenciais.");
             }
 
+            // After successful auth, find or create the user profile.
+            // This happens BEFORE the listener can react.
             let { data: profile, error: profileError } = await supabase
                 .from('users')
                 .select('*')
                 .eq('id', authData.user.id)
                 .single();
             
+            // If no profile, and the error indicates "no rows found", create one.
             if (!profile && (profileError?.code === 'PGRST116' || profileError === null)) {
                 console.warn("Perfil não encontrado, tentando criar um novo automaticamente...");
 
@@ -80,7 +103,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     name: authData.user.email?.split('@')[0] || 'Novo Usuário',
                     role: defaultRole as UserRoleName,
                     status: 'Ativo' as UserStatus,
-                    school_id: '123e4567-e89b-12d3-a456-426614174000', // Default school ID
+                    school_id: '123e4567-e89b-12d3-a456-426614174000', // Default school ID from mock data
                     avatar_url: `https://picsum.photos/seed/${authData.user.id}/100/100`
                 };
                 
@@ -99,9 +122,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
 
             if (!profile) {
+                // This should be an impossible state if the logic above is correct.
                 throw new Error("Perfil de usuário não encontrado. Entre em contato com o suporte.");
             }
 
+            // Check if the user is trying to log into the correct portal.
             const userIsParent = profile.role === 'Pai/Responsável';
 
             if (expectedRoleType === 'staff' && userIsParent) {
@@ -112,21 +137,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 throw new Error("Acesso negado. Este login é exclusivo para Pais e Responsáveis.");
             }
 
+            // Now, set the user. This is the successful end of the login flow.
             setCurrentUser(profile as User);
             
         } catch (error: any) {
+            // If any part of the login fails, sign out to be safe.
             if (error.message.includes("Acesso negado.")) {
                 await supabase.auth.signOut();
-                // After signing out, the onAuthStateChange listener will set currentUser to null
             }
             setAuthError(error.message);
-            // We need to set loading false here in case of an error, otherwise it gets stuck
-            setIsLoading(false);
         } finally {
-            // The listener will set loading to false on success.
-            // We only need to handle the error case here explicitly.
-            // No, the listener might race. Let's let the listener handle all loading=false states.
-            // Let's remove the finally block.
+            // This ensures isLoading is always set to false once the login attempt is fully complete.
+            setIsLoading(false);
         }
     };
 
