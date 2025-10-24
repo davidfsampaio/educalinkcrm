@@ -52,13 +52,22 @@ export const getExpenses = async (): Promise<Expense[]> => handleRpcRead(supabas
 export const getRevenues = async (): Promise<Revenue[]> => handleRpcRead(supabase.rpc('get_revenues'), 'get_revenues');
 export const getLeadCaptureCampaigns = async (): Promise<LeadCaptureCampaign[]> => handleRpcRead(supabase.rpc('get_lead_capture_campaigns'), 'get_lead_capture_campaigns');
 export const getTuitionPlans = async (): Promise<TuitionPlan[]> => handleRpcRead(supabase.rpc('get_tuition_plans'), 'get_tuition_plans');
+
 export const getSchoolSettings = async (): Promise<any | null> => {
-    const { data, error } = await supabase.rpc('get_school_settings');
+    // RLS on the 'schools' table should ensure this only returns the
+    // single school associated with the authenticated user.
+    const { data, error } = await supabase.from('schools').select('*').limit(1).single();
+
     if (error) {
-        console.error(`Error in RPC 'get_school_settings':`, error);
+        // PGRST116: "Fetched 0 rows" - this is not a critical error, just means no school record.
+        if (error.code === 'PGRST116') {
+            console.warn("Could not find a school for the current user. RLS might be preventing access or the user is not linked to a school.");
+            return null;
+        }
+        console.error("Error fetching school settings:", error);
         throw new Error(error.message);
     }
-    return data?.[0] ?? null;
+    return data;
 };
 
 
@@ -212,11 +221,13 @@ export const updateSchoolSettings = async (schoolId: string, settingsData: any):
     if (!schoolId) {
         throw new Error("ID da escola não fornecido para atualizar as configurações.");
     }
-    // Revertendo para uma chamada RPC, que é o padrão de acesso a dados neste aplicativo
-    // e a maneira correta de lidar com as políticas de segurança de linha (RLS) do Supabase.
-    // Isso pressupõe que uma função `update_school_settings` existe no backend.
-    await handleRpcWriteVoid('update_school_settings', {
-        p_school_id: schoolId,
-        p_data: settingsData
-    });
+    // Update the 'schools' table directly instead of using a non-existent table or RPC.
+    const { error } = await supabase
+        .from('schools')
+        .update(settingsData)
+        .eq('id', schoolId);
+
+    if (error) {
+        throw new Error(`Falha ao salvar as configurações: ${error.message}`);
+    }
 };
