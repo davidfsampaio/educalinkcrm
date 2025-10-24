@@ -208,5 +208,32 @@ export const deleteTuitionPlan = async (id: number): Promise<void> =>
     handleRpcWriteVoid('delete_tuition_plan', { p_id: id });
 
 // School Settings
-export const updateSchoolSettings = async (settingsData: any): Promise<void> =>
-    handleRpcWriteVoid('update_school_settings', { p_data: settingsData });
+export const updateSchoolSettings = async (settingsData: any): Promise<void> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Usuário não autenticado.");
+
+    // Busca o school_id do perfil do usuário na tabela 'users'
+    const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('school_id')
+        .eq('id', user.id)
+        .single();
+    
+    if (profileError || !userProfile) {
+        console.error('Erro ao buscar perfil do usuário:', profileError);
+        throw new Error("Não foi possível encontrar a escola do usuário para salvar as configurações.");
+    }
+
+    const { error: updateError } = await supabase
+        .from('school_settings')
+        .update(settingsData)
+        .eq('school_id', userProfile.school_id);
+
+    if (updateError) {
+        console.error('Erro ao atualizar as configurações da escola:', updateError);
+        if (updateError.code === '42P01') { // undefined_table
+            throw new Error("A tabela 'school_settings' não foi encontrada. Verifique se a tabela existe no banco de dados.");
+        }
+        throw new Error(`Falha ao salvar as configurações: ${updateError.message}`);
+    }
+};
