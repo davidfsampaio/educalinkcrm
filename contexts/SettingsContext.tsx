@@ -50,7 +50,10 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     }, [currentUser]);
 
     const updateSettings = async (newSettings: Partial<Omit<Settings, 'roles' | 'tuitionPlans'>>) => {
-        if (!currentUser?.school_id) return;
+        if (!currentUser?.school_id) {
+            alert("Erro: não foi possível identificar a escola do usuário. A sessão pode ter expirado.");
+            return;
+        }
 
         // Map from app camelCase to db snake_case for the payload
         const payload: any = {};
@@ -67,7 +70,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         if (newSettings.declarationTemplates) payload.declaration_templates = newSettings.declarationTemplates;
 
         try {
-            await api.updateSchoolSettings(payload);
+            await api.updateSchoolSettings(currentUser.school_id, payload);
             // Optimistically update local state on success
             setSettings(prev => ({
                 ...prev,
@@ -81,9 +84,12 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     };
 
     const updateRoles = async (newRoles: Role[]) => {
-        if (!currentUser?.school_id) return;
+        if (!currentUser?.school_id) {
+            alert("Erro: não foi possível identificar a escola do usuário. A sessão pode ter expirado.");
+            return;
+        }
         try {
-            await api.updateSchoolSettings({ roles: newRoles });
+            await api.updateSchoolSettings(currentUser.school_id, { roles: newRoles });
             // Optimistically update local state
             setSettings(prev => ({ ...prev, roles: newRoles }));
         } catch (error) {

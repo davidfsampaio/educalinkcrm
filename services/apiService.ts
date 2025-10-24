@@ -208,26 +208,15 @@ export const deleteTuitionPlan = async (id: number): Promise<void> =>
     handleRpcWriteVoid('delete_tuition_plan', { p_id: id });
 
 // School Settings
-export const updateSchoolSettings = async (settingsData: any): Promise<void> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Usuário não autenticado.");
-
-    // Busca o school_id do perfil do usuário na tabela 'users'
-    const { data: userProfile, error: profileError } = await supabase
-        .from('users')
-        .select('school_id')
-        .eq('id', user.id)
-        .single();
-    
-    if (profileError || !userProfile) {
-        console.error('Erro ao buscar perfil do usuário:', profileError);
-        throw new Error("Não foi possível encontrar a escola do usuário para salvar as configurações.");
+export const updateSchoolSettings = async (schoolId: string, settingsData: any): Promise<void> => {
+    if (!schoolId) {
+        throw new Error("ID da escola não fornecido para atualizar as configurações.");
     }
 
     const { error: updateError } = await supabase
         .from('school_settings')
         .update(settingsData)
-        .eq('school_id', userProfile.school_id);
+        .eq('school_id', schoolId);
 
     if (updateError) {
         console.error('Erro ao atualizar as configurações da escola:', updateError);
