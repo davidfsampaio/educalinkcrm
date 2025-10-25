@@ -59,7 +59,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setCommunications(communicationsData);
             setAgendaItems(agendaData);
             setLibraryBooks(libraryData);
-            setPhotoAlbums(albumData);
+            
+            // FIX: Sanitize album data to ensure the 'photos' property is always an array.
+            // This prevents crashes when components access properties like '.length' on a null value.
+            const sanitizedAlbums = albumData.map(album => ({
+                ...album,
+                photos: album.photos || [],
+            }));
+            setPhotoAlbums(sanitizedAlbums);
+
             setExpenses(expensesData);
             setRevenues(revenuesData);
             setLeadCaptureCampaigns(campaignsData);
@@ -576,8 +584,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const updatePhotoAlbum = async (updatedAlbum: Omit<PhotoAlbum, 'school_id' | 'photos'>) => {
         try {
             const { id, ...albumData } = updatedAlbum;
-            const updated = await api.updatePhotoAlbum(id, albumData);
-            setPhotoAlbums(prev => prev.map(a => a.id === id ? { ...a, ...updated } : a));
+            const updatedFromApi = await api.updatePhotoAlbum(id, albumData);
+            setPhotoAlbums(prev => prev.map(a => {
+                if (a.id === id) {
+                    // FIX: Preserve the existing photos array from the state.
+                    // The API response for an album metadata update might contain 'photos: null',
+                    // which would overwrite the local array and cause crashes.
+                    return { ...a, ...updatedFromApi, photos: a.photos };
+                }
+                return a;
+            }));
         } catch (error) {
             console.error("Falha ao atualizar álbum:", error);
             alert(`Erro ao atualizar álbum: ${(error as Error).message}`);
@@ -596,8 +612,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const updateAlbumPhotos = async (albumId: number, photos: Photo[]) => {
         try {
-            const updatedAlbum = await api.updateAlbumPhotos(albumId, photos);
-            setPhotoAlbums(prev => prev.map(a => a.id === albumId ? updatedAlbum : a));
+            // Persist the change to the database. We don't need to trust the return value
+            // if we update the local state manually.
+            await api.updateAlbumPhotos(albumId, photos);
+
+            // Manually update the local state to ensure consistency.
+            setPhotoAlbums(prevAlbums =>
+                prevAlbums.map(album =>
+                    album.id === albumId
+                        ? { ...album, photos: photos } // Create a new album object with the updated photos
+                        : album
+                )
+            );
         } catch (error) { 
             console.error("Falha ao atualizar fotos no álbum:", error);
             alert(`Erro ao salvar fotos: ${(error as Error).message}`);
