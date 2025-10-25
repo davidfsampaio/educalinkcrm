@@ -2,6 +2,8 @@ import React, { useRef, useState } from 'react';
 import Modal from '../common/Modal';
 import { useData } from '../../contexts/DataContext';
 import { PhotoAlbum } from '../../types';
+import { supabase } from '../../services/supabaseClient';
+import { useAuth } from '../../contexts/AuthContext';
 
 const PlusIcon: React.FC<{className?: string}> = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -18,7 +20,8 @@ interface AlbumDetailModalProps {
 }
 
 const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, album: initialAlbum }) => {
-    const { photoAlbums, addPhotoToAlbum, deletePhotoFromAlbum } = useData();
+    const { photoAlbums, addPhotosToAlbum, deletePhotoFromAlbum } = useData();
+    const { currentUser } = useAuth();
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -27,49 +30,80 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
 
     const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
-        if (!files || files.length === 0) {
+        if (!files || files.length === 0 || !currentUser?.school_id) {
+            if (!currentUser?.school_id) alert('Erro: Não foi possível identificar a escola do usuário.');
             return;
         }
 
         setIsUploading(true);
 
-        const fileToBase64 = (file: File): Promise<{ url: string; caption: string; }> => {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => resolve({ url: reader.result as string, caption: file.name });
-                reader.onerror = error => reject(error);
-            });
-        };
-
         try {
-            // Process files sequentially to avoid large single transactions that can cause timeouts.
-            for (const file of files) {
-                const photoData = await fileToBase64(file);
-                await addPhotoToAlbum(album.id, photoData);
-            }
+            // FIX: Explicitly type 'file' as 'File' to resolve TypeScript inference issue where 'file.name' was causing an error.
+            const uploadPromises = Array.from(files).map(async (file: File) => {
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+                const filePath = `${currentUser.school_id}/${album.id}/${fileName}`;
+                
+                const { error: uploadError } = await supabase.storage
+                    .from('gallery')
+                    .upload(filePath, file);
+
+                if (uploadError) {
+                    throw uploadError;
+                }
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('gallery')
+                    .getPublicUrl(filePath);
+
+                return { url: publicUrl, caption: file.name };
+            });
+
+            const newPhotosData = await Promise.all(uploadPromises);
+            await addPhotosToAlbum(album.id, newPhotosData);
+
         } catch (error) {
-            console.error("Error uploading photos:", error);
-            alert(`Ocorreu um erro ao salvar as fotos: ${(error as Error).message}`);
+            console.error("Error uploading photos to Supabase Storage:", error);
+            alert(`Ocorreu um erro ao salvar as fotos: ${(error as Error).message}. Verifique se o bucket 'gallery' e suas permissões foram criados corretamente no painel do Supabase.`);
         } finally {
             setIsUploading(false);
         }
 
-        // Reset file input to allow uploading the same file again
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
     };
     
     const handleDeletePhoto = async (photoId: number) => {
-        if (window.confirm('Tem certeza de que deseja excluir esta foto?')) {
-            try {
-                // With Base64, we only need to update the database record.
-                await deletePhotoFromAlbum(album.id, photoId);
-            } catch(error) {
-                console.error("Error deleting photo:", error);
-                alert(`Ocorreu um erro ao excluir a foto: ${(error as Error).message}`);
+        if (!window.confirm('Tem certeza de que deseja excluir esta foto?')) {
+            return;
+        }
+        
+        try {
+            const photoToDelete = album.photos.find(p => p.id === photoId);
+            if (photoToDelete?.url) {
+                // Extract file path from the public URL
+                const url = new URL(photoToDelete.url);
+                // The path is everything after '/gallery/'
+                const filePath = url.pathname.split('/gallery/')[1];
+
+                if (filePath) {
+                    const { error: removeError } = await supabase.storage
+                        .from('gallery')
+                        .remove([filePath]);
+                    
+                    if (removeError) {
+                        // Log a warning but don't block the UI. Maybe the file was already deleted.
+                        console.warn("Could not delete file from storage, but will proceed to delete DB record.", removeError);
+                    }
+                }
             }
+            // Always attempt to delete the record from the database
+            await deletePhotoFromAlbum(album.id, photoId);
+
+        } catch(error) {
+            console.error("Error deleting photo:", error);
+            alert(`Ocorreu um erro ao excluir a foto: ${(error as Error).message}`);
         }
     };
 
