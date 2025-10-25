@@ -294,6 +294,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             
             const payload: InvoiceColumns = {
                 id,
+                school_id: currentUser.school_id,
                 student_id: newInvoiceData.student_id,
                 amount: newInvoiceData.amount,
                 due_date: newInvoiceData.due_date,
@@ -301,7 +302,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 status: new Date(newInvoiceData.due_date) < new Date() ? PaymentStatus.Overdue : PaymentStatus.Pending,
             };
             const newInvoiceFromDb = await api.addInvoice(payload);
-            const newInvoiceForState: Invoice = { ...newInvoiceFromDb, school_id: currentUser.school_id, payments: [] };
+            const newInvoiceForState: Invoice = { ...newInvoiceFromDb, payments: [] };
             setInvoices(prev => [newInvoiceForState, ...prev]);
         } catch(error) {
             console.error("Falha ao adicionar fatura:", error);

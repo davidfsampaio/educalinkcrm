@@ -202,7 +202,7 @@ export interface Invoice {
     school_id: string;
 }
 
-export type InvoiceColumns = Omit<Invoice, 'school_id' | 'payments'>;
+export type InvoiceColumns = Omit<Invoice, 'payments'>;
 export type InvoiceUpdate = Partial<Omit<Invoice, 'id' | 'student_id' | 'student_name' | 'school_id'>>;
 
 
