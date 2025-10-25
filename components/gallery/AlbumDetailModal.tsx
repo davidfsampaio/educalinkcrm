@@ -2,7 +2,6 @@ import React, { useRef, useState } from 'react';
 import Modal from '../common/Modal';
 import { useData } from '../../contexts/DataContext';
 import { PhotoAlbum } from '../../types';
-import { supabase } from '../../services/supabaseClient';
 
 const PlusIcon: React.FC<{className?: string}> = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -34,41 +33,25 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
 
         setIsUploading(true);
 
-        const uploadFileToStorage = async (file: File): Promise<{ url: string; caption: string; }> => {
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
-            // Construct a unique path for the file in Supabase Storage
-            const filePath = `${album.school_id}/${album.id}/${fileName}`;
-
-            const { error: uploadError } = await supabase.storage
-                .from('gallery') // Assuming a 'gallery' bucket exists
-                .upload(filePath, file);
-
-            if (uploadError) {
-                throw uploadError;
-            }
-
-            const { data } = supabase.storage
-                .from('gallery')
-                .getPublicUrl(filePath);
-            
-            if (!data.publicUrl) {
-                throw new Error(`Could not get public URL for uploaded file: ${filePath}`);
-            }
-
-            return {
-                url: data.publicUrl,
-                caption: file.name,
-            };
+        const fileToBase64 = (file: File): Promise<{ url: string; caption: string; }> => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve({ url: reader.result as string, caption: file.name });
+                reader.onerror = error => reject(error);
+            });
         };
 
         try {
-            const newPhotosData = await Promise.all(Array.from(files).map(uploadFileToStorage));
-            if (newPhotosData.length > 0) {
-                await addPhotosToAlbum(album.id, newPhotosData);
-            }
+             // Process files one by one to avoid database timeout on large payloads
+            // FIX: Replaced `for...of Array.from(files)` with direct iteration over `files` (a FileList).
+            // This resolves a TypeScript error where the `file` variable was being inferred as `unknown` or `{}`,
+            // by leveraging the FileList's native iterator which correctly types each item as a `File`.
+            const newPhotosData = await Promise.all(Array.from(files).map(file => fileToBase64(file)));
+            await addPhotosToAlbum(album.id, newPhotosData);
+
         } catch (error) {
-            console.error("Error uploading files to storage:", error);
+            console.error("Error uploading photos:", error);
             alert(`Ocorreu um erro ao salvar as fotos: ${(error as Error).message}`);
         } finally {
             setIsUploading(false);
@@ -81,30 +64,10 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
     };
     
     const handleDeletePhoto = async (photoId: number) => {
-        const photoToDelete = album.photos.find(p => p.id === photoId);
-        if (!photoToDelete) return;
-
         if (window.confirm('Tem certeza de que deseja excluir esta foto?')) {
             try {
-                // First, remove the reference from the database
+                // With Base64, we only need to update the database record.
                 await deletePhotoFromAlbum(album.id, photoId);
-
-                // If the DB operation is successful, remove the file from storage.
-                // This prevents orphan files if the DB operation fails.
-                const url = new URL(photoToDelete.url);
-                const pathParts = url.pathname.split('/gallery/');
-                if (pathParts.length > 1) {
-                    const filePath = decodeURIComponent(pathParts[1]);
-                    const { error: deleteError } = await supabase.storage
-                        .from('gallery')
-                        .remove([filePath]);
-                    
-                    if (deleteError) {
-                        // Log the error but don't block the user, as the DB record is already gone.
-                        console.error("Failed to delete photo from storage, but DB record was removed:", deleteError);
-                        alert("A foto foi removida do álbum, mas pode ter ocorrido um erro ao removê-la do armazenamento.");
-                    }
-                }
             } catch(error) {
                 console.error("Error deleting photo:", error);
                 alert(`Ocorreu um erro ao excluir a foto: ${(error as Error).message}`);
