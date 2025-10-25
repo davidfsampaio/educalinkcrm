@@ -1,4 +1,5 @@
 
+
 import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { Settings, Role } from '../types';
 import { defaultSettings } from '../data/settingsData';
@@ -28,7 +29,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
                             ...prev,
                             schoolInfo: {
                                 name: dbSettings.name || prev.schoolInfo.name,
-                                address: dbSettings.address || prev.schoolInfo.address,
+                                address: dbSettings.endereco || prev.schoolInfo.address,
                                 phone: dbSettings.phone || prev.schoolInfo.phone,
                                 email: dbSettings.email || prev.schoolInfo.email,
                                 logoUrl: dbSettings.logo_url || prev.schoolInfo.logoUrl,
@@ -59,7 +60,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         const payload: any = {};
         if (newSettings.schoolInfo) {
             payload.name = newSettings.schoolInfo.name;
-            payload.address = newSettings.schoolInfo.address;
+            payload.endereco = newSettings.schoolInfo.address;
             payload.phone = newSettings.schoolInfo.phone;
             payload.email = newSettings.schoolInfo.email;
             payload.logo_url = newSettings.schoolInfo.logoUrl;
