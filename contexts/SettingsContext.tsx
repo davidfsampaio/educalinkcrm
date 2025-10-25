@@ -22,26 +22,25 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
                 try {
                     const dbSettings = await api.getSchoolSettings();
                     if (dbSettings) {
-                        // Map from db snake_case to app camelCase, with fallbacks to previous state
+                        // Mapeamento direto do banco de dados (snake_case) para a aplicação (camelCase)
                         setSettings(prev => ({
                             ...prev,
                             schoolInfo: {
                                 name: dbSettings.name || prev.schoolInfo.name,
-                                address: dbSettings.endereco || prev.schoolInfo.address,
-                                phone: dbSettings.telefone || dbSettings.phone || prev.schoolInfo.phone,
-                                email: dbSettings.email_contato || dbSettings.email || prev.schoolInfo.email,
+                                address: dbSettings.address || prev.schoolInfo.address,
+                                phone: dbSettings.phone || prev.schoolInfo.phone,
+                                email: dbSettings.email || prev.schoolInfo.email,
                                 logoUrl: dbSettings.logo_url || prev.schoolInfo.logoUrl,
                                 cnpj: dbSettings.cnpj || prev.schoolInfo.cnpj,
                             },
-                            classes: dbSettings.turmas || prev.classes,
+                            classes: dbSettings.classes || prev.classes,
                             staffRoles: dbSettings.staff_roles || prev.staffRoles,
                             roles: dbSettings.roles || prev.roles,
-                            declarationTemplates: dbSettings.modelos_declaracao || dbSettings.declaration_templates || prev.declarationTemplates,
+                            declarationTemplates: dbSettings.declaration_templates || prev.declarationTemplates,
                         }));
                     }
                 } catch (error) {
                     console.error("Failed to load school settings:", error);
-                    // If loading fails, we'll just stick with the default settings
                 }
             }
         };
@@ -54,23 +53,22 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
             return;
         }
 
-        // Map from app camelCase to db snake_case for the payload
+        // Mapeamento direto da aplicação (camelCase) para o banco de dados (snake_case)
         const payload: any = {};
         if (newSettings.schoolInfo) {
             payload.name = newSettings.schoolInfo.name;
-            payload.endereco = newSettings.schoolInfo.address;
-            payload.telefone = newSettings.schoolInfo.phone;
-            payload.email_contato = newSettings.schoolInfo.email;
+            payload.address = newSettings.schoolInfo.address;
+            payload.phone = newSettings.schoolInfo.phone;
+            payload.email = newSettings.schoolInfo.email;
             payload.logo_url = newSettings.schoolInfo.logoUrl;
             payload.cnpj = newSettings.schoolInfo.cnpj;
         }
-        if (newSettings.classes) payload.turmas = newSettings.classes;
+        if (newSettings.classes) payload.classes = newSettings.classes;
         if (newSettings.staffRoles) payload.staff_roles = newSettings.staffRoles;
-        if (newSettings.declarationTemplates) payload.modelos_declaracao = newSettings.declarationTemplates;
+        if (newSettings.declarationTemplates) payload.declaration_templates = newSettings.declarationTemplates;
 
         try {
             await api.updateSchoolSettings(currentUser.school_id, payload);
-            // Optimistically update local state on success
             setSettings(prev => ({
                 ...prev,
                 ...newSettings,
@@ -78,7 +76,6 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         } catch (error) {
             console.error("Failed to update settings:", error);
             alert(`Erro ao salvar configurações: ${(error as Error).message}`);
-            // In a real-world scenario, you might want to revert the state change or show a more robust error notification.
         }
     };
 
@@ -89,7 +86,6 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         }
         try {
             await api.updateSchoolSettings(currentUser.school_id, { roles: newRoles });
-            // Optimistically update local state
             setSettings(prev => ({ ...prev, roles: newRoles }));
         } catch (error) {
             console.error("Failed to update roles:", error);
