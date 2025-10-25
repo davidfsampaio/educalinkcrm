@@ -31,8 +31,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
                                 phone: dbSettings.phone || prev.schoolInfo.phone,
                                 email: dbSettings.email || prev.schoolInfo.email,
                                 logoUrl: dbSettings.logo_url || prev.schoolInfo.logoUrl,
-                                // Prioritize 'cnpj' as it's the most standard name. Fallback to 'documento'.
-                                cnpj: dbSettings.cnpj || dbSettings.documento || prev.schoolInfo.cnpj,
+                                cnpj: dbSettings.cnpj || prev.schoolInfo.cnpj, // Standardized to only use 'cnpj'
                             },
                             classes: dbSettings.turmas || prev.classes,
                             staffRoles: dbSettings.staff_roles || prev.staffRoles,
@@ -63,8 +62,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
             payload.phone = newSettings.schoolInfo.phone;
             payload.email = newSettings.schoolInfo.email;
             payload.logo_url = newSettings.schoolInfo.logoUrl;
-            // Reverted to use 'cnpj' as it's the most standard column name.
-            // The previous attempt using 'documento' failed, confirming it's not the correct name.
+            // Standardized to only use 'cnpj' for writing
             payload.cnpj = newSettings.schoolInfo.cnpj;
         }
         if (newSettings.classes) payload.turmas = newSettings.classes;
