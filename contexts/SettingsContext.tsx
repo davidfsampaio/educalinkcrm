@@ -28,10 +28,10 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
                             schoolInfo: {
                                 name: dbSettings.name || prev.schoolInfo.name,
                                 address: dbSettings.endereco || prev.schoolInfo.address,
-                                phone: dbSettings.phone || prev.schoolInfo.phone,
-                                email: dbSettings.email || prev.schoolInfo.email,
+                                phone: dbSettings.telefone || dbSettings.phone || prev.schoolInfo.phone,
+                                email: dbSettings.email_contato || dbSettings.email || prev.schoolInfo.email,
                                 logoUrl: dbSettings.logo_url || prev.schoolInfo.logoUrl,
-                                cnpj: dbSettings.cnpj || prev.schoolInfo.cnpj, // Standardized to only use 'cnpj'
+                                cnpj: dbSettings.cnpj || prev.schoolInfo.cnpj,
                             },
                             classes: dbSettings.turmas || prev.classes,
                             staffRoles: dbSettings.staff_roles || prev.staffRoles,
@@ -59,10 +59,9 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         if (newSettings.schoolInfo) {
             payload.name = newSettings.schoolInfo.name;
             payload.endereco = newSettings.schoolInfo.address;
-            payload.phone = newSettings.schoolInfo.phone;
-            payload.email = newSettings.schoolInfo.email;
+            payload.telefone = newSettings.schoolInfo.phone;
+            payload.email_contato = newSettings.schoolInfo.email;
             payload.logo_url = newSettings.schoolInfo.logoUrl;
-            // Standardized to only use 'cnpj' for writing
             payload.cnpj = newSettings.schoolInfo.cnpj;
         }
         if (newSettings.classes) payload.turmas = newSettings.classes;
