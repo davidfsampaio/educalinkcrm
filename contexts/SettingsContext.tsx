@@ -31,8 +31,8 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
                                 phone: dbSettings.phone || prev.schoolInfo.phone,
                                 email: dbSettings.email || prev.schoolInfo.email,
                                 logoUrl: dbSettings.logo_url || prev.schoolInfo.logoUrl,
-                                // Read CNPJ from 'documento' or 'cnpj' for flexibility with database schema.
-                                cnpj: dbSettings.documento || dbSettings.cnpj || prev.schoolInfo.cnpj,
+                                // Prioritize 'cnpj' as it's the most standard name. Fallback to 'documento'.
+                                cnpj: dbSettings.cnpj || dbSettings.documento || prev.schoolInfo.cnpj,
                             },
                             classes: dbSettings.turmas || prev.classes,
                             staffRoles: dbSettings.staff_roles || prev.staffRoles,
@@ -63,9 +63,9 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
             payload.phone = newSettings.schoolInfo.phone;
             payload.email = newSettings.schoolInfo.email;
             payload.logo_url = newSettings.schoolInfo.logoUrl;
-            // Map the app's 'cnpj' field to the database's 'documento' column.
-            // This aligns with other Portuguese column names like 'endereco' and 'turmas'.
-            payload.documento = newSettings.schoolInfo.cnpj;
+            // Reverted to use 'cnpj' as it's the most standard column name.
+            // The previous attempt using 'documento' failed, confirming it's not the correct name.
+            payload.cnpj = newSettings.schoolInfo.cnpj;
         }
         if (newSettings.classes) payload.turmas = newSettings.classes;
         if (newSettings.staffRoles) payload.staff_roles = newSettings.staffRoles;
