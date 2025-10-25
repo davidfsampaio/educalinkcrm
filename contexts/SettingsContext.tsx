@@ -31,7 +31,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
                                 phone: dbSettings.phone || prev.schoolInfo.phone,
                                 email: dbSettings.email || prev.schoolInfo.email,
                                 logoUrl: dbSettings.logo_url || prev.schoolInfo.logoUrl,
-                                cnpj: dbSettings.cnpj || prev.schoolInfo.cnpj,
+                                cnpj: dbSettings.documento || dbSettings.cnpj || prev.schoolInfo.cnpj,
                             },
                             classes: dbSettings.turmas || prev.classes,
                             staffRoles: dbSettings.staff_roles || prev.staffRoles,
@@ -62,7 +62,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
             payload.phone = newSettings.schoolInfo.phone;
             payload.email = newSettings.schoolInfo.email;
             payload.logo_url = newSettings.schoolInfo.logoUrl;
-            payload.cnpj = newSettings.schoolInfo.cnpj;
+            payload.documento = newSettings.schoolInfo.cnpj;
         }
         if (newSettings.classes) payload.turmas = newSettings.classes;
         if (newSettings.staffRoles) payload.staff_roles = newSettings.staffRoles;
