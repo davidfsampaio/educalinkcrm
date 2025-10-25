@@ -37,7 +37,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
                             classes: dbSettings.turmas || prev.classes,
                             staffRoles: dbSettings.staff_roles || prev.staffRoles,
                             roles: dbSettings.roles || prev.roles,
-                            declarationTemplates: dbSettings.declaration_templates || prev.declarationTemplates,
+                            declarationTemplates: dbSettings.modelos_declaracao || dbSettings.declaration_templates || prev.declarationTemplates,
                         }));
                     }
                 } catch (error) {
@@ -69,7 +69,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         }
         if (newSettings.classes) payload.turmas = newSettings.classes;
         if (newSettings.staffRoles) payload.staff_roles = newSettings.staffRoles;
-        if (newSettings.declarationTemplates) payload.declaration_templates = newSettings.declarationTemplates;
+        if (newSettings.declarationTemplates) payload.modelos_declaracao = newSettings.declarationTemplates;
 
         try {
             await api.updateSchoolSettings(currentUser.school_id, payload);
