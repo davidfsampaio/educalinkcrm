@@ -1,5 +1,3 @@
-
-
 import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { Settings, Role } from '../types';
 import { defaultSettings } from '../data/settingsData';
@@ -35,7 +33,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
                                 logoUrl: dbSettings.logo_url || prev.schoolInfo.logoUrl,
                                 cnpj: dbSettings.cnpj || prev.schoolInfo.cnpj,
                             },
-                            classes: dbSettings.classes || prev.classes,
+                            classes: dbSettings.turmas || prev.classes,
                             staffRoles: dbSettings.staff_roles || prev.staffRoles,
                             roles: dbSettings.roles || prev.roles,
                             declarationTemplates: dbSettings.declaration_templates || prev.declarationTemplates,
@@ -66,7 +64,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
             payload.logo_url = newSettings.schoolInfo.logoUrl;
             payload.cnpj = newSettings.schoolInfo.cnpj;
         }
-        if (newSettings.classes) payload.classes = newSettings.classes;
+        if (newSettings.classes) payload.turmas = newSettings.classes;
         if (newSettings.staffRoles) payload.staff_roles = newSettings.staffRoles;
         if (newSettings.declarationTemplates) payload.declaration_templates = newSettings.declarationTemplates;
 
