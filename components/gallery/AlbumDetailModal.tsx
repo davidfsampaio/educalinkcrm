@@ -18,7 +18,7 @@ interface AlbumDetailModalProps {
 }
 
 const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, album: initialAlbum }) => {
-    const { photoAlbums, addPhotosToAlbum, deletePhotoFromAlbum } = useData();
+    const { photoAlbums, addPhotoToAlbum, deletePhotoFromAlbum } = useData();
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -43,13 +43,11 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
         };
 
         try {
-             // Process files one by one to avoid database timeout on large payloads
-            // FIX: Replaced `for...of Array.from(files)` with direct iteration over `files` (a FileList).
-            // This resolves a TypeScript error where the `file` variable was being inferred as `unknown` or `{}`,
-            // by leveraging the FileList's native iterator which correctly types each item as a `File`.
-            const newPhotosData = await Promise.all(Array.from(files).map(file => fileToBase64(file)));
-            await addPhotosToAlbum(album.id, newPhotosData);
-
+            // Process files sequentially to avoid large single transactions that can cause timeouts.
+            for (const file of files) {
+                const photoData = await fileToBase64(file);
+                await addPhotoToAlbum(album.id, photoData);
+            }
         } catch (error) {
             console.error("Error uploading photos:", error);
             alert(`Ocorreu um erro ao salvar as fotos: ${(error as Error).message}`);
