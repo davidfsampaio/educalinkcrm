@@ -31,8 +31,8 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
                                 phone: dbSettings.phone || prev.schoolInfo.phone,
                                 email: dbSettings.email || prev.schoolInfo.email,
                                 logoUrl: dbSettings.logo_url || prev.schoolInfo.logoUrl,
-                                // Prioritize 'cnpj' as it's the standard, but keep 'documento' as a fallback during read.
-                                cnpj: dbSettings.cnpj || dbSettings.documento || prev.schoolInfo.cnpj,
+                                // Read CNPJ from 'documento' or 'cnpj' for flexibility with database schema.
+                                cnpj: dbSettings.documento || dbSettings.cnpj || prev.schoolInfo.cnpj,
                             },
                             classes: dbSettings.turmas || prev.classes,
                             staffRoles: dbSettings.staff_roles || prev.staffRoles,
@@ -63,11 +63,9 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
             payload.phone = newSettings.schoolInfo.phone;
             payload.email = newSettings.schoolInfo.email;
             payload.logo_url = newSettings.schoolInfo.logoUrl;
-            // The error "Could not find column 'cnpj'" persists.
-            // This change ensures the code sends 'cnpj' as the column name.
-            // If the error continues, the 'schools' table in the database needs to be checked
-            // to confirm the column for the CNPJ is named 'cnpj'.
-            payload.cnpj = newSettings.schoolInfo.cnpj;
+            // Map the app's 'cnpj' field to the database's 'documento' column.
+            // This aligns with other Portuguese column names like 'endereco' and 'turmas'.
+            payload.documento = newSettings.schoolInfo.cnpj;
         }
         if (newSettings.classes) payload.turmas = newSettings.classes;
         if (newSettings.staffRoles) payload.staff_roles = newSettings.staffRoles;
