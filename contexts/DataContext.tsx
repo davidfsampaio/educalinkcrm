@@ -10,9 +10,6 @@ import { supabase } from '../services/supabaseClient';
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-// Helper to generate a somewhat unique numeric ID for non-DB-backed items
-const generateNumericId = () => Date.now() + Math.floor(Math.random() * 1000);
-
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { currentUser } = useAuth(); // Get the currently logged-in user
     const [students, setStudents] = useState<Student[]>([]);
@@ -633,7 +630,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const addPhotoToAlbum = async (albumId: number, photoData: { url: string; caption: string }) => {
         const album = photoAlbums.find(a => a.id === albumId);
         if (!album) return;
-        const newPhoto: Photo = { id: generateNumericId(), ...photoData };
+        
+        // Find the current maximum ID to generate a new unique ID.
+        const maxId = album.photos.reduce((max, p) => Math.max(max, p.id), 0);
+        const newPhoto: Photo = { id: maxId + 1, ...photoData };
+        
         const updatedPhotos = [...album.photos, newPhoto];
         await updateAlbumPhotos(albumId, updatedPhotos);
     };
@@ -641,10 +642,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const addPhotosToAlbum = async (albumId: number, photoDataArray: { url: string; caption: string }[]) => {
         const album = photoAlbums.find(a => a.id === albumId);
         if (!album) return;
-        const newPhotos: Photo[] = photoDataArray.map(pd => ({
-            id: generateNumericId(),
+
+        // Find the current maximum ID in the album's photos to generate new unique IDs.
+        const maxId = album.photos.reduce((max, p) => Math.max(max, p.id), 0);
+
+        const newPhotos: Photo[] = photoDataArray.map((pd, index) => ({
+            id: maxId + 1 + index, // Generate sequential, unique IDs
             ...pd,
         }));
+
         const updatedPhotos = [...album.photos, ...newPhotos];
         await updateAlbumPhotos(albumId, updatedPhotos);
     };
