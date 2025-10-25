@@ -112,9 +112,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const addStudent = async (studentData: Pick<Student, 'name' | 'class' | 'parent_name' | 'parent_contact' | 'cpf' | 'address' | 'email' | 'phone' | 'tuition_plan_id'>) => {
         if (!currentUser?.school_id) return;
         try {
-            const newStudentPayload: Omit<StudentColumns, 'school_id'> & { school_id: string } = {
-                ...studentData,
+            const newStudentPayload = {
                 school_id: currentUser.school_id,
+                name: studentData.name,
+                class: studentData.class,
+                parent_name: studentData.parent_name,
+                parent_contact: studentData.parent_contact,
+                cpf: studentData.cpf,
+                address: studentData.address,
+                email: studentData.email,
+                phone: studentData.phone,
+                tuition_plan_id: studentData.tuition_plan_id,
                 status: StudentStatus.Active,
                 enrollment_date: new Date().toISOString().split('T')[0],
                 avatar_url: `https://picsum.photos/seed/student${Date.now()}/100/100`,
@@ -135,8 +143,30 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updateStudent = async (updatedStudent: Student) => {
         try {
-            const { id, school_id, ...studentUpdateData } = updatedStudent;
-            const updatedFromDb = await api.updateStudent(id, studentUpdateData);
+            const { id, school_id, grades, attendance, occurrences, documents, individual_agenda, communication_log, ...rest } = updatedStudent;
+             const studentUpdatePayload = {
+                name: rest.name,
+                class: rest.class,
+                enrollment_date: rest.enrollment_date,
+                status: rest.status,
+                parent_name: rest.parent_name,
+                parent_contact: rest.parent_contact,
+                avatar_url: rest.avatar_url,
+                cpf: rest.cpf,
+                address: rest.address,
+                email: rest.email,
+                phone: rest.phone,
+                medical_notes: rest.medical_notes,
+                tuition_plan_id: rest.tuition_plan_id,
+                // Include JSONB fields in the update payload
+                grades,
+                attendance,
+                occurrences,
+                documents,
+                individual_agenda,
+                communication_log,
+            };
+            const updatedFromDb = await api.updateStudent(id, studentUpdatePayload);
             setStudents(prev => prev.map(s => (s.id === id ? updatedFromDb : s)));
         } catch (error) {
             console.error('Falha ao atualizar aluno:', error);
@@ -187,9 +217,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         try {
+            // FIX: Removed JSONB fields ('tasks', 'required_documents', 'communication_log') from the payload.
+            // These fields are not part of the 'LeadColumns' type used for inserts and are added to the local state after the record is created.
             const newLeadPayload: LeadColumns = {
                 school_id: schoolIdToAdd,
-                ...leadData,
+                name: leadData.name,
+                parent_name: leadData.parent_name,
+                contact: leadData.contact,
+                status: leadData.status,
+                interest_date: leadData.interest_date,
+                notes: leadData.notes,
+                is_converted: leadData.is_converted,
             };
             const newLeadFromDb = await api.addLead(newLeadPayload);
             // Rehidrata para o estado local
@@ -215,8 +253,20 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const updateLead = async (updatedLead: Lead) => {
         try {
-            const { id, school_id, ...leadUpdateData } = updatedLead;
-            const updatedFromDb = await api.updateLead(id, leadUpdateData);
+            const { id, school_id, ...rest } = updatedLead;
+            const leadUpdatePayload = {
+                name: rest.name,
+                parent_name: rest.parent_name,
+                contact: rest.contact,
+                status: rest.status,
+                interest_date: rest.interest_date,
+                notes: rest.notes,
+                tasks: rest.tasks,
+                is_converted: rest.is_converted,
+                required_documents: rest.required_documents,
+                communication_log: rest.communication_log,
+            };
+            const updatedFromDb = await api.updateLead(id, leadUpdatePayload);
             setLeads(prev => prev.map(l => (l.id === id ? updatedFromDb : l)));
         } catch(error) {
             console.error("Falha ao atualizar lead:", error);
@@ -244,7 +294,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             
             const payload: InvoiceColumns = {
                 id,
-                ...newInvoiceData,
+                student_id: newInvoiceData.student_id,
+                amount: newInvoiceData.amount,
+                due_date: newInvoiceData.due_date,
                 student_name: student.name,
                 status: new Date(newInvoiceData.due_date) < new Date() ? PaymentStatus.Overdue : PaymentStatus.Pending,
             };
@@ -259,9 +311,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updateInvoice = async (updatedInvoice: Invoice) => {
         try {
-            const { id, school_id, student_id, student_name, ...invoiceUpdateData } = updatedInvoice;
-            const updatedFromDb = await api.updateInvoice(id, invoiceUpdateData);
-             const rehydratedInvoice: Invoice = { ...updatedFromDb, school_id, student_id, student_name };
+            const { id, school_id, student_id, student_name, ...rest } = updatedInvoice;
+            const invoiceUpdatePayload = {
+                amount: rest.amount,
+                due_date: rest.due_date,
+                paid_date: rest.paid_date,
+                status: rest.status,
+                payments: rest.payments,
+            };
+            const updatedFromDb = await api.updateInvoice(id, invoiceUpdatePayload);
+            const rehydratedInvoice: Invoice = { ...updatedFromDb, school_id, student_id, student_name };
             setInvoices(prev => prev.map(inv => (inv.id === id ? rehydratedInvoice : inv)));
         } catch(error) {
             console.error("Falha ao atualizar fatura:", error);
@@ -320,13 +379,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const expenseOps = createCrudOperations(setExpenses, { add: api.addExpense, update: api.updateExpense, delete: api.deleteExpense }, "despesa");
     const revenueOps = createCrudOperations(setRevenues, { add: api.addRevenue, update: api.updateRevenue, delete: api.deleteRevenue }, "receita");
     const tuitionPlanOps = createCrudOperations(setTuitionPlans, { add: api.addTuitionPlan, update: api.updateTuitionPlan, delete: api.deleteTuitionPlan }, "plano de mensalidade");
-    const libraryBookOps = createCrudOperations(setLibraryBooks, { add: api.addLibraryBook, update: api.updateLibraryBook, delete: api.deleteLibraryBook }, "livro");
 
     const addStaff = async (staffData: Pick<Staff, 'name' | 'role' | 'email' | 'phone' | 'cpf' | 'address'>) => {
         if (!currentUser?.school_id) return;
         try {
             const payload: Omit<Staff, 'id'> = {
-                ...staffData,
+                name: staffData.name,
+                role: staffData.role,
+                email: staffData.email,
+                phone: staffData.phone,
+                cpf: staffData.cpf,
+                address: staffData.address,
                 school_id: currentUser.school_id,
                 status: StaffStatus.Active,
                 hire_date: new Date().toISOString().split('T')[0],
@@ -342,8 +405,19 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const updateStaff = async (updatedStaff: Staff) => {
         try {
-            const { id, school_id, ...staffData } = updatedStaff;
-            const updated = await api.updateStaff(id, staffData);
+            const { id, school_id, ...rest } = updatedStaff;
+            const staffUpdatePayload = {
+                name: rest.name,
+                role: rest.role,
+                email: rest.email,
+                phone: rest.phone,
+                hire_date: rest.hire_date,
+                status: rest.status,
+                avatar_url: rest.avatar_url,
+                cpf: rest.cpf,
+                address: rest.address,
+            };
+            const updated = await api.updateStaff(id, staffUpdatePayload);
             setStaff(prev => prev.map(s => (s.id === id ? updated : s)));
         } catch (error) {
             console.error('Falha ao atualizar funcionário:', error);
@@ -543,6 +617,55 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const updatedPhotos = album.photos.filter(p => p.id !== photoId);
         updateAlbumPhotos(albumId, updatedPhotos);
     };
+    
+    const addLibraryBook = async (bookData: Omit<LibraryBook, 'id' | 'school_id'>) => {
+        if (!currentUser?.school_id) return;
+        try {
+            const payload = {
+                school_id: currentUser.school_id,
+                title: bookData.title,
+                author: bookData.author,
+                isbn: bookData.isbn,
+                status: bookData.status,
+                borrowed_by: bookData.borrowed_by,
+                due_date: bookData.due_date,
+            };
+            const newItem = await api.addLibraryBook(payload as Omit<LibraryBook, 'id'>);
+            if (newItem) setLibraryBooks(prev => [newItem, ...prev]);
+        } catch (error) {
+            console.error("Falha ao adicionar livro:", error);
+            alert(`Erro ao salvar livro: ${(error as Error).message}`);
+        }
+    };
+
+    const updateLibraryBook = async (updatedBook: LibraryBook) => {
+        try {
+            const { id, school_id, ...rest } = updatedBook;
+            const payload = {
+                title: rest.title,
+                author: rest.author,
+                isbn: rest.isbn,
+                status: rest.status,
+                borrowed_by: rest.borrowed_by,
+                due_date: rest.due_date,
+            };
+            const updated = await api.updateLibraryBook(id, payload);
+            if (updated) setLibraryBooks(prev => prev.map(item => (item.id === updated.id ? updated : item)));
+        } catch (error) {
+            console.error("Falha ao atualizar livro:", error);
+            alert(`Erro ao atualizar livro: ${(error as Error).message}`);
+        }
+    };
+    
+    const deleteLibraryBook = async (bookId: number) => {
+        try {
+            await api.deleteLibraryBook(bookId);
+            setLibraryBooks(prev => prev.filter(item => item.id !== bookId));
+        } catch (error) {
+            console.error("Falha ao excluir livro:", error);
+            alert(`Erro ao excluir livro: ${(error as Error).message}`);
+        }
+    };
 
 
     const value: DataContextType = {
@@ -559,7 +682,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addUser, updateUser, deleteUser,
         addLeadCaptureCampaign, 
         addPhotoAlbum, updatePhotoAlbum, deletePhotoAlbum, addPhotoToAlbum, deletePhotoFromAlbum,
-        addLibraryBook: libraryBookOps.add, updateLibraryBook: libraryBookOps.update, deleteLibraryBook: libraryBookOps.delete,
+        addLibraryBook, updateLibraryBook, deleteLibraryBook,
         addTuitionPlan: tuitionPlanOps.add, updateTuitionPlan: tuitionPlanOps.update, deleteTuitionPlan: tuitionPlanOps.delete,
     };
 
