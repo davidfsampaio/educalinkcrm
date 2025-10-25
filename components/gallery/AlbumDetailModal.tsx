@@ -1,7 +1,8 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Modal from '../common/Modal';
 import { useData } from '../../contexts/DataContext';
-import { PhotoAlbum, Photo } from '../../types';
+import { PhotoAlbum } from '../../types';
+import { supabase } from '../../services/supabaseClient';
 
 const PlusIcon: React.FC<{className?: string}> = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -19,18 +20,11 @@ interface AlbumDetailModalProps {
 
 const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, album: initialAlbum }) => {
     const { photoAlbums, addPhotosToAlbum, deletePhotoFromAlbum } = useData();
-    const [album, setAlbum] = useState(initialAlbum);
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // This effect ensures that the photos in the modal update when one is added or deleted.
-    useEffect(() => {
-        const updatedAlbum = photoAlbums.find(a => a.id === initialAlbum.id);
-        if (updatedAlbum) {
-            setAlbum(updatedAlbum);
-        }
-    }, [photoAlbums, initialAlbum.id]);
-
+    // Derive album state directly from context on each render to ensure it's always fresh.
+    const album = photoAlbums.find(a => a.id === initialAlbum.id) || initialAlbum;
 
     const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -40,32 +34,45 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
 
         setIsUploading(true);
 
-        const readAsDataURL = (file: File): Promise<{ url: string, caption: string }> => {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    resolve({
-                        url: reader.result as string,
-                        caption: file.name // Use filename as caption
-                    });
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
+        const uploadFileToStorage = async (file: File): Promise<{ url: string; caption: string; }> => {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
+            // Construct a unique path for the file in Supabase Storage
+            const filePath = `${album.school_id}/${album.id}/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('gallery') // Assuming a 'gallery' bucket exists
+                .upload(filePath, file);
+
+            if (uploadError) {
+                throw uploadError;
+            }
+
+            const { data } = supabase.storage
+                .from('gallery')
+                .getPublicUrl(filePath);
+            
+            if (!data.publicUrl) {
+                throw new Error(`Could not get public URL for uploaded file: ${filePath}`);
+            }
+
+            return {
+                url: data.publicUrl,
+                caption: file.name,
+            };
         };
 
         try {
-            const newPhotosData = await Promise.all(Array.from(files).map(readAsDataURL));
+            const newPhotosData = await Promise.all(Array.from(files).map(uploadFileToStorage));
             if (newPhotosData.length > 0) {
                 await addPhotosToAlbum(album.id, newPhotosData);
             }
         } catch (error) {
-            console.error("Error reading files:", error);
-            alert("Ocorreu um erro ao carregar as fotos.");
+            console.error("Error uploading files to storage:", error);
+            alert(`Ocorreu um erro ao salvar as fotos: ${(error as Error).message}`);
         } finally {
             setIsUploading(false);
         }
-
 
         // Reset file input to allow uploading the same file again
         if (fileInputRef.current) {
@@ -74,8 +81,34 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
     };
     
     const handleDeletePhoto = async (photoId: number) => {
+        const photoToDelete = album.photos.find(p => p.id === photoId);
+        if (!photoToDelete) return;
+
         if (window.confirm('Tem certeza de que deseja excluir esta foto?')) {
-            await deletePhotoFromAlbum(album.id, photoId);
+            try {
+                // First, remove the reference from the database
+                await deletePhotoFromAlbum(album.id, photoId);
+
+                // If the DB operation is successful, remove the file from storage.
+                // This prevents orphan files if the DB operation fails.
+                const url = new URL(photoToDelete.url);
+                const pathParts = url.pathname.split('/gallery/');
+                if (pathParts.length > 1) {
+                    const filePath = decodeURIComponent(pathParts[1]);
+                    const { error: deleteError } = await supabase.storage
+                        .from('gallery')
+                        .remove([filePath]);
+                    
+                    if (deleteError) {
+                        // Log the error but don't block the user, as the DB record is already gone.
+                        console.error("Failed to delete photo from storage, but DB record was removed:", deleteError);
+                        alert("A foto foi removida do álbum, mas pode ter ocorrido um erro ao removê-la do armazenamento.");
+                    }
+                }
+            } catch(error) {
+                console.error("Error deleting photo:", error);
+                alert(`Ocorreu um erro ao excluir a foto: ${(error as Error).message}`);
+            }
         }
     };
 
@@ -98,7 +131,7 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
                     <div className="flex items-center space-x-4">
                         {isUploading && (
                             <div className="flex items-center text-brand-text">
-                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-brand-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24">
+                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-brand-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
