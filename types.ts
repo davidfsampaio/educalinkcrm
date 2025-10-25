@@ -371,8 +371,9 @@ export interface DataContextType {
     addPhotoAlbum: (albumData: Omit<PhotoAlbum, 'id' | 'school_id' | 'photos'>) => void;
     updatePhotoAlbum: (updatedAlbum: Omit<PhotoAlbum, 'school_id' | 'photos'>) => void;
     deletePhotoAlbum: (albumId: number) => void;
-    addPhotoToAlbum: (albumId: number, photoData: { url: string; caption: string }) => void;
-    deletePhotoFromAlbum: (albumId: number, photoId: number) => void;
+    addPhotoToAlbum: (albumId: number, photoData: { url: string; caption: string }) => Promise<void>;
+    addPhotosToAlbum: (albumId: number, photoDataArray: { url: string; caption: string }[]) => Promise<void>;
+    deletePhotoFromAlbum: (albumId: number, photoId: number) => Promise<void>;
     addLibraryBook: (bookData: Omit<LibraryBook, 'id' | 'school_id'>) => void;
     updateLibraryBook: (updatedBook: LibraryBook) => void;
     deleteLibraryBook: (bookId: number) => void;

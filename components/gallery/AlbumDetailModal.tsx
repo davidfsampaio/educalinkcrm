@@ -18,8 +18,9 @@ interface AlbumDetailModalProps {
 }
 
 const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, album: initialAlbum }) => {
-    const { photoAlbums, addPhotoToAlbum, deletePhotoFromAlbum } = useData();
+    const { photoAlbums, addPhotosToAlbum, deletePhotoFromAlbum } = useData();
     const [album, setAlbum] = useState(initialAlbum);
+    const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // This effect ensures that the photos in the modal update when one is added or deleted.
@@ -31,27 +32,50 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
     }, [photoAlbums, initialAlbum.id]);
 
 
-    const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            const caption = prompt('Digite uma legenda para a foto (opcional):', file.name) || '';
-
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const url = reader.result as string;
-                addPhotoToAlbum(album.id, { url, caption });
-            };
-            reader.readAsDataURL(file);
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) {
+            return;
         }
+
+        setIsUploading(true);
+
+        const readAsDataURL = (file: File): Promise<{ url: string, caption: string }> => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    resolve({
+                        url: reader.result as string,
+                        caption: file.name // Use filename as caption
+                    });
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        };
+
+        try {
+            const newPhotosData = await Promise.all(Array.from(files).map(readAsDataURL));
+            if (newPhotosData.length > 0) {
+                await addPhotosToAlbum(album.id, newPhotosData);
+            }
+        } catch (error) {
+            console.error("Error reading files:", error);
+            alert("Ocorreu um erro ao carregar as fotos.");
+        } finally {
+            setIsUploading(false);
+        }
+
+
         // Reset file input to allow uploading the same file again
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
     };
     
-    const handleDeletePhoto = (photoId: number) => {
+    const handleDeletePhoto = async (photoId: number) => {
         if (window.confirm('Tem certeza de que deseja excluir esta foto?')) {
-            deletePhotoFromAlbum(album.id, photoId);
+            await deletePhotoFromAlbum(album.id, photoId);
         }
     };
 
@@ -64,18 +88,32 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
                     onChange={handlePhotoUpload}
                     className="hidden"
                     accept="image/*"
+                    multiple
+                    disabled={isUploading}
                 />
                  <div className="flex justify-between items-center">
                     <p className="text-brand-text-light">
                         {new Date(album.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {album.photos.length} fotos
                     </p>
-                    <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="flex items-center justify-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm"
-                    >
-                        <PlusIcon className="w-5 h-5 mr-2" />
-                        Adicionar Foto
-                    </button>
+                    <div className="flex items-center space-x-4">
+                        {isUploading && (
+                            <div className="flex items-center text-brand-text">
+                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-brand-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>Carregando...</span>
+                            </div>
+                        )}
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploading}
+                            className="flex items-center justify-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm disabled:bg-slate-400 disabled:cursor-not-allowed"
+                        >
+                            <PlusIcon className="w-5 h-5 mr-2" />
+                            {isUploading ? 'Processando...' : 'Adicionar Fotos'}
+                        </button>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto p-1">
@@ -96,10 +134,10 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
                             </div>
                         </div>
                     ))}
-                     {album.photos.length === 0 && (
+                     {album.photos.length === 0 && !isUploading && (
                         <div className="col-span-full text-center py-12 text-brand-text-light">
                             <p>Este álbum ainda não tem fotos.</p>
-                            <p>Clique em "Adicionar Foto" para começar.</p>
+                            <p>Clique em "Adicionar Fotos" para começar.</p>
                         </div>
                     )}
                 </div>

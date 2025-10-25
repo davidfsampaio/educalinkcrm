@@ -604,19 +604,30 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
     
-    const addPhotoToAlbum = (albumId: number, photoData: { url: string; caption: string }) => {
+    const addPhotoToAlbum = async (albumId: number, photoData: { url: string; caption: string }) => {
         const album = photoAlbums.find(a => a.id === albumId);
         if (!album) return;
         const newPhoto: Photo = { id: generateNumericId(), ...photoData };
         const updatedPhotos = [...album.photos, newPhoto];
-        updateAlbumPhotos(albumId, updatedPhotos);
+        await updateAlbumPhotos(albumId, updatedPhotos);
     };
 
-    const deletePhotoFromAlbum = (albumId: number, photoId: number) => {
+    const addPhotosToAlbum = async (albumId: number, photoDataArray: { url: string; caption: string }[]) => {
+        const album = photoAlbums.find(a => a.id === albumId);
+        if (!album) return;
+        const newPhotos: Photo[] = photoDataArray.map(pd => ({
+            id: generateNumericId(),
+            ...pd,
+        }));
+        const updatedPhotos = [...album.photos, ...newPhotos];
+        await updateAlbumPhotos(albumId, updatedPhotos);
+    };
+
+    const deletePhotoFromAlbum = async (albumId: number, photoId: number) => {
         const album = photoAlbums.find(a => a.id === albumId);
         if (!album) return;
         const updatedPhotos = album.photos.filter(p => p.id !== photoId);
-        updateAlbumPhotos(albumId, updatedPhotos);
+        await updateAlbumPhotos(albumId, updatedPhotos);
     };
     
     const addLibraryBook = async (bookData: Omit<LibraryBook, 'id' | 'school_id'>) => {
@@ -682,7 +693,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addAgendaItem, updateAgendaItem, deleteAgendaItem,
         addUser, updateUser, deleteUser,
         addLeadCaptureCampaign, 
-        addPhotoAlbum, updatePhotoAlbum, deletePhotoAlbum, addPhotoToAlbum, deletePhotoFromAlbum,
+        addPhotoAlbum, updatePhotoAlbum, deletePhotoAlbum, addPhotoToAlbum, addPhotosToAlbum, deletePhotoFromAlbum,
         addLibraryBook, updateLibraryBook, deleteLibraryBook,
         addTuitionPlan: tuitionPlanOps.add, updateTuitionPlan: tuitionPlanOps.update, deleteTuitionPlan: tuitionPlanOps.delete,
     };
