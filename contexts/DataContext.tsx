@@ -631,8 +631,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const album = photoAlbums.find(a => a.id === albumId);
         if (!album) return;
         
-        // Find the current maximum ID to generate a new unique ID.
-        const maxId = album.photos.reduce((max, p) => Math.max(max, p.id), 0);
+        // FIX: Generate a sequential ID instead of using a timestamp to avoid integer overflow.
+        // This is a more robust way to calculate the max ID, handling potential non-numeric values.
+        const maxId = album.photos.reduce((max, p) => Math.max(max, (Number(p.id) || 0)), 0);
         const newPhoto: Photo = { id: maxId + 1, ...photoData };
         
         const updatedPhotos = [...album.photos, newPhoto];
@@ -643,13 +644,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const album = photoAlbums.find(a => a.id === albumId);
         if (!album) return;
 
-        // Find the current maximum ID in the album's photos to generate new unique IDs.
-        const maxId = album.photos.reduce((max, p) => Math.max(max, p.id), 0);
+        // FIX: Generate sequential IDs instead of using timestamps to avoid integer overflow.
+        // This is a more robust way to calculate the max ID, handling potential non-numeric values.
+        let maxId = album.photos.reduce((max, p) => Math.max(max, (Number(p.id) || 0)), 0);
 
-        const newPhotos: Photo[] = photoDataArray.map((pd, index) => ({
-            id: maxId + 1 + index, // Generate sequential, unique IDs
-            ...pd,
-        }));
+        const newPhotos: Photo[] = photoDataArray.map((pd) => {
+            maxId++;
+            return {
+                id: maxId,
+                ...pd,
+            };
+        });
 
         const updatedPhotos = [...album.photos, ...newPhotos];
         await updateAlbumPhotos(albumId, updatedPhotos);
