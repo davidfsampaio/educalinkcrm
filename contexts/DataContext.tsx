@@ -609,15 +609,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const updateAlbumPhotos = async (albumId: number, photos: Photo[]) => {
         try {
-            // Persist the change to the database. We don't need to trust the return value
-            // if we update the local state manually.
-            await api.updateAlbumPhotos(albumId, photos);
-
-            // Manually update the local state to ensure consistency.
+            // We call the API which is expected to return the FULL updated album object
+            const updatedAlbumFromApi = await api.updateAlbumPhotos(albumId, photos);
+    
+            // Now we use this source of truth to update our state.
             setPhotoAlbums(prevAlbums =>
                 prevAlbums.map(album =>
                     album.id === albumId
-                        ? { ...album, photos: photos } // Create a new album object with the updated photos
+                        ? updatedAlbumFromApi // Replace the entire album object with the one from the DB
                         : album
                 )
             );
