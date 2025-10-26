@@ -3,7 +3,7 @@ import { CommunicationLog } from '../../../types';
 import ProtectedComponent from '../../common/ProtectedComponent';
 
 const PlusIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
 );
 
 interface ContactHistoryTabProps {
@@ -59,7 +59,7 @@ const ContactHistoryTab: React.FC<ContactHistoryTabProps> = ({ log, onAdd }) => 
                                         <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
                                             <div>
                                                 <p className="text-sm text-brand-text-dark">
-                                                    {entry.type} em <time dateTime={entry.date}>{new Date(entry.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</time>
+                                                    {entry.type} em <time dateTime={entry.date}>{new Date(entry.date).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</time>
                                                 </p>
                                                 <p className="font-medium text-brand-text-dark whitespace-pre-wrap">{entry.summary}</p>
                                             </div>
