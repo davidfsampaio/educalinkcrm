@@ -1,5 +1,5 @@
 // Define o nome e a versão do cache. Mudar a versão invalida caches antigos.
-const CACHE_NAME = 'educalink-crm-cache-v3';
+const CACHE_NAME = 'educalink-crm-cache-v4';
 
 // Lista de arquivos essenciais para o "app shell" que serão cacheados
 const APP_SHELL_URLS = [
