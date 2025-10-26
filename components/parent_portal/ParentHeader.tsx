@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { ParentView } from './ParentPortal';
+import ProtectedComponent from '../common/ProtectedComponent';
 
 interface ParentHeaderProps {
     studentName: string;
@@ -50,10 +50,27 @@ const ParentHeader: React.FC<ParentHeaderProps> = ({ studentName, onLogout, acti
                 </div>
                 <nav className="flex items-center justify-between border-t border-slate-200 py-2 overflow-x-auto">
                      <div className="flex space-x-2">
-                        <NavItem label="Início" isActive={activeView === 'dashboard'} onClick={() => setActiveView('dashboard')} />
-                        <NavItem label="Vida Acadêmica" isActive={activeView === 'academics'} onClick={() => setActiveView('academics')} />
-                        <NavItem label="Financeiro" isActive={activeView === 'financials'} onClick={() => setActiveView('financials')} />
-                        <NavItem label="Comunicados" isActive={activeView === 'communications'} onClick={() => setActiveView('communications')} />
+                        <ProtectedComponent requiredPermission='view_dashboard'>
+                            <NavItem label="Início" isActive={activeView === 'dashboard'} onClick={() => setActiveView('dashboard')} />
+                        </ProtectedComponent>
+                        <ProtectedComponent requiredPermission='view_students'>
+                            <NavItem label="Vida Acadêmica" isActive={activeView === 'academics'} onClick={() => setActiveView('academics')} />
+                        </ProtectedComponent>
+                        <ProtectedComponent requiredPermission='view_financials'>
+                            <NavItem label="Financeiro" isActive={activeView === 'financials'} onClick={() => setActiveView('financials')} />
+                        </ProtectedComponent>
+                        <ProtectedComponent requiredPermission='view_communications'>
+                            <NavItem label="Comunicados" isActive={activeView === 'communications'} onClick={() => setActiveView('communications')} />
+                        </ProtectedComponent>
+                        <ProtectedComponent requiredPermission='view_agenda'>
+                            <NavItem label="Agenda" isActive={activeView === 'agenda'} onClick={() => setActiveView('agenda')} />
+                        </ProtectedComponent>
+                        <ProtectedComponent requiredPermission='view_gallery'>
+                            <NavItem label="Mural de Fotos" isActive={activeView === 'gallery'} onClick={() => setActiveView('gallery')} />
+                        </ProtectedComponent>
+                        <ProtectedComponent requiredPermission='view_library'>
+                            <NavItem label="Biblioteca" isActive={activeView === 'library'} onClick={() => setActiveView('library')} />
+                        </ProtectedComponent>
                     </div>
                     <div className="md:hidden">
                          <button

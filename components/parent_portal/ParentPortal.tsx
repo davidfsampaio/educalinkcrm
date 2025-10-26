@@ -1,6 +1,4 @@
-
-
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { useData } from '../../contexts/DataContext';
 import ParentHeader from './ParentHeader';
 import ParentDashboard from './ParentDashboard';
@@ -9,7 +7,19 @@ import ParentFinancials from './ParentFinancials';
 import ParentCommunications from './ParentCommunications';
 import { useAuth } from '../../contexts/AuthContext';
 
-export type ParentView = 'dashboard' | 'academics' | 'financials' | 'communications';
+export type ParentView = 'dashboard' | 'academics' | 'financials' | 'communications' | 'gallery' | 'agenda' | 'library';
+
+// Lazy load components for code splitting
+const Gallery = lazy(() => import('../Gallery'));
+const Agenda = lazy(() => import('../Agenda'));
+const Library = lazy(() => import('../Library'));
+
+const LoadingFallback: React.FC = () => (
+    <div className="flex justify-center items-center h-full w-full py-20">
+        <p className="text-brand-text">Carregando...</p>
+    </div>
+);
+
 
 const ParentPortal: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     const { students, invoices, communications, agendaItems, loading } = useData();
@@ -54,6 +64,12 @@ const ParentPortal: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                 return <ParentFinancials invoices={studentInvoices} studentName={student.name} />;
             case 'communications':
                 return <ParentCommunications communications={communications} />;
+            case 'gallery':
+                return <Gallery />;
+            case 'agenda':
+                return <Agenda />;
+            case 'library':
+                return <Library />;
             default:
                 return <ParentDashboard student={student} invoices={studentInvoices} agendaItems={agendaItems} />;
         }
@@ -63,7 +79,9 @@ const ParentPortal: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         <div className="min-h-screen bg-slate-100 font-sans">
             <ParentHeader studentName={student.name} onLogout={onLogout} activeView={activeView} setActiveView={setActiveView} />
             <main className="container mx-auto p-4 sm:p-6 lg:p-8">
-                {renderView()}
+                <Suspense fallback={<LoadingFallback />}>
+                    {renderView()}
+                </Suspense>
             </main>
         </div>
     );

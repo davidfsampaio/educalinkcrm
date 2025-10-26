@@ -119,6 +119,14 @@ export const initialRoles: Role[] = [
     },
     {
         name: 'Pai/Responsável',
-        permissions: [] // Parent portal access is determined by role, not specific permissions in this app version
+        permissions: [
+            'view_dashboard',
+            'view_students',
+            'view_financials',
+            'view_communications',
+            'view_agenda',
+            'view_gallery',
+            'view_library',
+        ]
     }
 ];

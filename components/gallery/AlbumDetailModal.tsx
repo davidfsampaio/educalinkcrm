@@ -4,6 +4,7 @@ import { useData } from '../../contexts/DataContext';
 import { PhotoAlbum } from '../../types';
 import { supabase } from '../../services/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
+import ProtectedComponent from '../common/ProtectedComponent';
 
 const PlusIcon: React.FC<{className?: string}> = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -133,14 +134,16 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
                                 <span>Carregando...</span>
                             </div>
                         )}
-                        <button
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={isUploading}
-                            className="flex items-center justify-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm disabled:bg-slate-400 disabled:cursor-not-allowed"
-                        >
-                            <PlusIcon className="w-5 h-5 mr-2" />
-                            {isUploading ? 'Processando...' : 'Adicionar Fotos'}
-                        </button>
+                        <ProtectedComponent requiredPermission='manage_gallery'>
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isUploading}
+                                className="flex items-center justify-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm disabled:bg-slate-400 disabled:cursor-not-allowed"
+                            >
+                                <PlusIcon className="w-5 h-5 mr-2" />
+                                {isUploading ? 'Processando...' : 'Adicionar Fotos'}
+                            </button>
+                        </ProtectedComponent>
                     </div>
                 </div>
 
@@ -149,13 +152,15 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
                         <div key={photo.id} className="group relative rounded-lg overflow-hidden border">
                             <img src={photo.url} alt={photo.caption} className="h-48 w-full object-cover" />
                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex flex-col justify-between p-2">
-                                <button
-                                    onClick={() => handleDeletePhoto(photo.id)}
-                                    className="absolute top-2 right-2 bg-red-600/80 text-white p-1 rounded-full hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Excluir foto"
-                                >
-                                    <XIcon className="w-4 h-4" />
-                                </button>
+                                <ProtectedComponent requiredPermission='manage_gallery'>
+                                    <button
+                                        onClick={() => handleDeletePhoto(photo.id)}
+                                        className="absolute top-2 right-2 bg-red-600/80 text-white p-1 rounded-full hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Excluir foto"
+                                    >
+                                        <XIcon className="w-4 h-4" />
+                                    </button>
+                                </ProtectedComponent>
                                 <p className="text-white text-xs font-semibold self-end w-full bg-black/50 p-2 rounded-md translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
                                     {photo.caption}
                                 </p>
