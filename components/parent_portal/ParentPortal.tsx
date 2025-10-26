@@ -1,31 +1,13 @@
-import React, { useState, lazy, Suspense } from 'react';
+import React, { Suspense } from 'react';
 import { useData } from '../../contexts/DataContext';
 import ParentHeader from './ParentHeader';
 import ParentDashboard from './ParentDashboard';
-import ParentAcademics from './ParentAcademics';
-import ParentFinancials from './ParentFinancials';
-import ParentCommunications from './ParentCommunications';
 import { useAuth } from '../../contexts/AuthContext';
 import NotificationToggle from './NotificationToggle';
-
-export type ParentView = 'dashboard' | 'academics' | 'financials' | 'communications' | 'gallery' | 'agenda' | 'library';
-
-// Lazy load components for code splitting
-const Gallery = lazy(() => import('../Gallery'));
-const Agenda = lazy(() => import('../Agenda'));
-const Library = lazy(() => import('../Library'));
-
-const LoadingFallback: React.FC = () => (
-    <div className="flex justify-center items-center h-full w-full py-20">
-        <p className="text-brand-text">Carregando...</p>
-    </div>
-);
-
 
 const ParentPortal: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     const { students, invoices, communications, agendaItems, loading } = useData();
     const { currentUser } = useAuth();
-    const [activeView, setActiveView] = useState<ParentView>('dashboard');
 
     if (loading) {
         return <div className="flex h-screen w-screen items-center justify-center"><p>Carregando portal...</p></div>;
@@ -55,35 +37,17 @@ const ParentPortal: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     // Filter data specifically for the logged-in parent's child
     const studentInvoices = invoices.filter(inv => inv.student_id === student.id);
     
-    const renderView = () => {
-        switch(activeView) {
-            case 'dashboard':
-                return <ParentDashboard student={student} invoices={studentInvoices} agendaItems={agendaItems} />;
-            case 'academics':
-                return <ParentAcademics student={student} />;
-            case 'financials':
-                return <ParentFinancials invoices={studentInvoices} studentName={student.name} />;
-            case 'communications':
-                return <ParentCommunications communications={communications} student={student} />;
-            case 'gallery':
-                return <Gallery />;
-            case 'agenda':
-                return <Agenda />;
-            case 'library':
-                return <Library />;
-            default:
-                return <ParentDashboard student={student} invoices={studentInvoices} agendaItems={agendaItems} />;
-        }
-    };
-    
     return (
         <div className="min-h-screen bg-slate-100 font-sans">
-            <ParentHeader studentName={student.name} onLogout={onLogout} activeView={activeView} setActiveView={setActiveView} />
+            <ParentHeader studentName={student.name} onLogout={onLogout} />
             <main className="container mx-auto p-4 sm:p-6 lg:p-8">
                 <NotificationToggle />
-                <Suspense fallback={<LoadingFallback />}>
-                    {renderView()}
-                </Suspense>
+                <ParentDashboard 
+                    student={student} 
+                    invoices={studentInvoices} 
+                    communications={communications} 
+                    agendaItems={agendaItems} 
+                />
             </main>
         </div>
     );
