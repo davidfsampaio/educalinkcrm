@@ -55,6 +55,7 @@ const navIcons = {
     gallery: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>,
     declarations: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M12 15-4 7"/><path d="m12 15 8-8"/><path d="M12 8v12"/></svg>,
     users: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 21a8 8 0 0 1 10.43-7.62"/><circle cx="10" cy="8" r="4"/><circle cx="18" cy="18" r="3"/><path d="m19.5 14.5-.42.42"/><path d="m16.5 21.5-.42-.42"/><path d="m21.5 16.5-.42.42"/><path d="m14.5 19.5-.42-.42"/><path d="m19.5 21.5.42-.42"/><path d="m16.5 14.5.42.42"/><path d="m14.5 16.5.42-.42"/><path d="m21.5 19.5.42.42"/></svg>,
+    ai_tools: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3L9.5 8.5L4 11L9.5 13.5L12 19L14.5 13.5L20 11L14.5 8.5L12 3Z" /><path d="M5 21L6 17" /><path d="M19 21L18 17" /><path d="M3 12L7 11" /><path d="M21 12L17 11" /></svg>,
 }
 
 const SidebarContent: React.FC<{ activeView: View, onNavItemClick: (view: View) => void }> = ({ activeView, onNavItemClick }) => (
@@ -97,6 +98,9 @@ const SidebarContent: React.FC<{ activeView: View, onNavItemClick: (view: View) 
           </ProtectedComponent>
           <ProtectedComponent requiredPermission='view_reports'>
               <NavItem icon={navIcons.reports} label="Relatórios" isActive={activeView === 'reports'} onClick={() => onNavItemClick('reports')} />
+          </ProtectedComponent>
+          <ProtectedComponent requiredPermission='use_ai_tools'>
+              <NavItem icon={navIcons.ai_tools} label="Ferramentas IA" isActive={activeView === 'ai_tools'} onClick={() => onNavItemClick('ai_tools')} />
           </ProtectedComponent>
       </ul>
     </nav>

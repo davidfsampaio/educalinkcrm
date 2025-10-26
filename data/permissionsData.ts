@@ -53,6 +53,7 @@ export const allPermissions: { name: Permission, label: string, module: string }
   { name: 'view_settings', label: 'Ver Configurações', module: 'Admin' },
   { name: 'manage_settings', label: 'Gerenciar Configurações', module: 'Admin' },
   { name: 'manage_permissions', label: 'Gerenciar Permissões', module: 'Admin' },
+  { name: 'use_ai_tools', label: 'Usar Ferramentas de IA', module: 'IA' },
 ];
 
 
@@ -99,6 +100,7 @@ export const initialRoles: Role[] = [
             'view_library',
             'manage_library',
             'view_reports',
+            'use_ai_tools',
         ]
     },
     {
@@ -115,6 +117,7 @@ export const initialRoles: Role[] = [
             'view_gallery',
             'view_library',
             'view_reports',
+            'use_ai_tools',
         ]
     },
     {

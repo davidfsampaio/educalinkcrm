@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 
-export type View = 'dashboard' | 'students' | 'staff' | 'financials' | 'leads' | 'agenda' | 'communications' | 'settings' | 'reports' | 'library' | 'gallery' | 'declarations' | 'users';
+export type View = 'dashboard' | 'students' | 'staff' | 'financials' | 'leads' | 'agenda' | 'communications' | 'settings' | 'reports' | 'library' | 'gallery' | 'declarations' | 'users' | 'ai_tools';
 
 export type StudentDetailTab = 'details' | 'grades' | 'attendance' | 'occurrences' | 'individualAgenda' | 'documents' | 'contactHistory' | 'declarations';
 
@@ -434,7 +434,8 @@ export type Permission =
   'manage_users' |
   'view_settings' |
   'manage_settings' |
-  'manage_permissions';
+  'manage_permissions' |
+  'use_ai_tools';
 
 export interface Role {
     name: UserRoleName;

@@ -27,6 +27,7 @@ const viewTitles: Record<View, string> = {
     gallery: 'Mural de Fotos',
     declarations: 'Central de Declarações',
     users: 'Gestão de Usuários',
+    ai_tools: 'Ferramentas de Inteligência Artificial',
 };
 
 const InstallPWABtn: React.FC<{ onInstall: () => void }> = ({ onInstall }) => (

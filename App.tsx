@@ -1,4 +1,5 @@
 
+
 import React, { useState, lazy, Suspense, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -24,6 +25,7 @@ const Library = lazy(() => import('./components/Library'));
 const Gallery = lazy(() => import('./components/Gallery'));
 const Declarations = lazy(() => import('./components/Declarations'));
 const Users = lazy(() => import('./components/Users'));
+const AITools = lazy(() => import('./components/AITools'));
 const ParentPortal = lazy(() => import('./components/parent_portal/ParentPortal'));
 const PublicLeadCapturePage = lazy(() => import('./components/PublicLeadCapturePage'));
 
@@ -42,6 +44,7 @@ const viewPermissions: Record<View, Permission> = {
   reports: 'view_reports',
   users: 'view_users',
   settings: 'view_settings',
+  ai_tools: 'use_ai_tools',
 };
 
 const LoadingFallback: React.FC = () => (
@@ -132,6 +135,7 @@ const MainApp: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
       case 'gallery': return <Gallery />;
       case 'declarations': return <Declarations />;
       case 'users': return <Users />;
+      case 'ai_tools': return <AITools />;
       default: return <Dashboard />;
     }
   };
