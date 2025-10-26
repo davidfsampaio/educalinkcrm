@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Student, Staff } from '../types';
 import NotificationPanel from './common/NotificationPanel';
@@ -11,6 +9,7 @@ interface HeaderProps {
     currentView: View;
     onMenuClick: () => void;
     onSearchSelect: (item: Student | Staff) => void;
+    onNotificationSelect: (item: any, view: View, subView?: string) => void;
     onLogout: () => void;
 }
 
@@ -49,7 +48,7 @@ const OfflineIndicator: React.FC = () => (
 );
 
 
-const Header: React.FC<HeaderProps> = ({ currentView, onMenuClick, onSearchSelect, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ currentView, onMenuClick, onSearchSelect, onNotificationSelect, onLogout }) => {
     const title = viewTitles[currentView];
     const [isNotificationsOpen, setNotificationsOpen] = useState(false);
     const [hasUnread, setHasUnread] = useState(true);
@@ -113,6 +112,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onMenuClick, onSearchSelec
                         isOpen={isNotificationsOpen} 
                         onClose={() => setNotificationsOpen(false)} 
                         setHasUnread={setHasUnread}
+                        onNotificationSelect={onNotificationSelect}
                     />
                 </div>
                 <div className="relative" ref={userMenuRef}>

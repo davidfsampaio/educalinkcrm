@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useData } from '../contexts/DataContext';
 import { Lead, LeadStatus } from '../types';
@@ -8,11 +9,13 @@ import ProtectedComponent from './common/ProtectedComponent';
 import LeadCaptureLinksModal from './leads/LeadCaptureLinksModal';
 
 const PlusIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    // FIX: Corrected typo in viewBox attribute.
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
 );
 
 const LinkIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"/></svg>
+    // FIX: Corrected typo in viewBox attribute.
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"/></svg>
 );
 
 const LeadCard: React.FC<{ lead: Lead; onClick: () => void }> = ({ lead, onClick }) => (
@@ -41,20 +44,26 @@ const LeadsColumn: React.FC<{ title: string; leads: Lead[]; onLeadClick: (lead: 
 
 interface LeadsProps {
     initialAction?: string | null; // New prop for PWA shortcuts
+    initialLead?: Lead | null;
 }
 
-const Leads: React.FC<LeadsProps> = ({ initialAction }) => {
+const Leads: React.FC<LeadsProps> = ({ initialAction, initialLead }) => {
     const { leads, addLead, updateLead, deleteLead } = useData();
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [isLinkManagerOpen, setLinkManagerOpen] = useState(false);
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
-    // Handle PWA shortcut action
     useEffect(() => {
         if (initialAction === 'new_lead') {
             setAddModalOpen(true);
         }
-    }, [initialAction]);
+        if (initialLead) {
+            const leadToSelect = leads.find(l => l.id === initialLead.id);
+            if (leadToSelect) {
+                setSelectedLead(leadToSelect);
+            }
+        }
+    }, [initialAction, initialLead, leads]);
 
     const handleLeadClick = (lead: Lead) => {
         setSelectedLead(lead);

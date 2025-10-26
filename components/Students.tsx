@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useData } from '../contexts/DataContext';
 import Card from './common/Card';
-import { Student, StudentStatus, TuitionPlan } from '../types';
+import { Student, StudentStatus, TuitionPlan, StudentDetailTab } from '../types';
 import StudentDetailModal from './students/StudentDetailModal';
 import AddStudentModal from './students/AddStudentModal'; // Import the new modal
 import EditStudentModal from './students/EditStudentModal'; // Import the edit modal
@@ -9,15 +10,17 @@ import ProtectedComponent from './common/ProtectedComponent';
 import { useSettings } from '../contexts/SettingsContext';
 
 const PlusIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    // FIX: Corrected typo in viewBox attribute.
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
 );
 
 interface StudentsProps {
     initialStudent?: Student | null;
     initialAction?: string | null; // New prop for PWA shortcuts
+    initialSubView?: string | null;
 }
 
-const Students: React.FC<StudentsProps> = ({ initialStudent, initialAction }) => {
+const Students: React.FC<StudentsProps> = ({ initialStudent, initialAction, initialSubView }) => {
     const { students, tuitionPlans, addStudent, updateStudent, deleteStudent, loading } = useData();
     const { settings } = useSettings();
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -177,6 +180,7 @@ const Students: React.FC<StudentsProps> = ({ initialStudent, initialAction }) =>
                     onEdit={handleOpenEditModal}
                     onUpdateStudent={handleUpdateStudent}
                     onDelete={handleDeleteStudent}
+                    initialTab={initialStudent ? (initialSubView as StudentDetailTab) : null}
                 />
             )}
         </>

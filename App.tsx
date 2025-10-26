@@ -1,7 +1,8 @@
+
 import React, { useState, lazy, Suspense, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import { View, Permission, Student, Staff as StaffType } from './types';
+import { View, Permission, Student, Staff as StaffType, StudentDetailTab, Lead, Invoice } from './types';
 import { DataProvider } from './contexts/DataContext';
 import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -52,7 +53,8 @@ const LoadingFallback: React.FC = () => (
 
 const MainApp: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const [activeView, setActiveView] = useState<View>('dashboard');
-  const [initialSelectedItem, setInitialSelectedItem] = useState<Student | StaffType | null>(null);
+  const [initialItem, setInitialItem] = useState<any | null>(null);
+  const [initialSubView, setInitialSubView] = useState<string | null>(null);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const { hasPermission } = useAuth();
   const [initialAction, setInitialAction] = useState<string | null>(null);
@@ -76,22 +78,32 @@ const MainApp: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   }, []);
 
   const handleSearchSelect = (item: Student | StaffType) => {
-    // Check if the item is a Student or Staff using a unique property
-    if ('parent_name' in item) { // This is a simple way to differentiate Student
+    if ('parent_name' in item) {
       setActiveView('students');
     } else {
       setActiveView('staff');
     }
-    setInitialSelectedItem(item);
+    setInitialItem(item);
+  };
+
+  const handleNotificationSelect = (item: any, view: View, subView?: string) => {
+      setActiveView(view);
+      setInitialItem(item);
+      if (subView) {
+          setInitialSubView(subView);
+      }
   };
 
   useEffect(() => {
-    if (initialSelectedItem) {
+    if (initialItem || initialSubView) {
       // Clear the item after a short delay so the child component can process it
-      const timer = setTimeout(() => setInitialSelectedItem(null), 100);
+      const timer = setTimeout(() => {
+        setInitialItem(null);
+        setInitialSubView(null);
+      }, 100);
       return () => clearTimeout(timer);
     }
-  }, [initialSelectedItem]);
+  }, [initialItem, initialSubView]);
 
 
   const renderView = () => {
@@ -100,15 +112,18 @@ const MainApp: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         return <AccessDenied />;
     }
 
-    const isStudent = initialSelectedItem && 'parent_name' in initialSelectedItem;
-    const isStaff = initialSelectedItem && !('parent_name' in initialSelectedItem);
+    const isStudent = initialItem && 'parent_name' in initialItem && !('interest_date' in initialItem);
+    const isStaff = initialItem && 'hire_date' in initialItem;
+    const isLead = initialItem && 'interest_date' in initialItem;
+    const isInvoice = initialItem && 'due_date' in initialItem;
+
 
     switch (activeView) {
       case 'dashboard': return <Dashboard />;
-      case 'students': return <Students initialStudent={isStudent ? initialSelectedItem as Student : null} initialAction={initialAction} />;
-      case 'staff': return <Staff initialStaff={isStaff ? initialSelectedItem as StaffType : null} />;
-      case 'financials': return <Financials />;
-      case 'leads': return <Leads initialAction={initialAction} />;
+      case 'students': return <Students initialStudent={isStudent ? initialItem as Student : null} initialAction={initialAction} initialSubView={initialSubView} />;
+      case 'staff': return <Staff initialStaff={isStaff ? initialItem as StaffType : null} />;
+      case 'financials': return <Financials initialInvoice={isInvoice ? initialItem as Invoice : null} />;
+      case 'leads': return <Leads initialAction={initialAction} initialLead={isLead ? initialItem as Lead : null} />;
       case 'agenda': return <Agenda />;
       case 'communications': return <Communications />;
       case 'settings': return <Settings />;
@@ -130,7 +145,7 @@ const MainApp: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         setIsOpen={setSidebarOpen}
       />
       <div className="flex-1 flex flex-col min-w-0"> {/* Added min-w-0 to prevent content overflow */}
-        <Header currentView={activeView} onMenuClick={() => setSidebarOpen(true)} onSearchSelect={handleSearchSelect} onLogout={onLogout} />
+        <Header currentView={activeView} onMenuClick={() => setSidebarOpen(true)} onSearchSelect={handleSearchSelect} onNotificationSelect={handleNotificationSelect} onLogout={onLogout} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 p-4 md:p-6">
           <Suspense fallback={<LoadingFallback />}>
             {renderView()}
@@ -142,6 +157,7 @@ const MainApp: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
 }
 
 const SchoolIcon: React.FC<{className?: string}> = ({ className }) => (
+    // FIX: Corrected typo in viewBox attribute.
     <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14 22v-4a2 2 0 1 0-4 0v4" />
         <path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2" />
