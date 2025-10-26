@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { useData } from '../../contexts/DataContext';
-import { PhotoAlbum } from '../../types';
+import { Photo, PhotoAlbum } from '../../types';
 import { supabase } from '../../services/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
 import ProtectedComponent from '../common/ProtectedComponent';
@@ -11,6 +11,12 @@ const PlusIcon: React.FC<{className?: string}> = ({ className }) => (
 );
 const XIcon: React.FC<{className?: string}> = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+);
+const DownloadIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+);
+const BackArrowIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
 );
 
 
@@ -31,6 +37,7 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
     const [isSaving, setIsSaving] = useState(false);
     const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [viewingPhoto, setViewingPhoto] = useState<Photo | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Derive album state directly from context on each render to ensure it's always fresh.
@@ -101,6 +108,7 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
         setPendingPhotos([]);
         setIsSaving(false);
         setSuccessMessage(null);
+        setViewingPhoto(null);
         onClose();
     };
 
@@ -129,122 +137,159 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
         }
     };
 
+    const handleDownload = async (photoUrl: string, filename: string) => {
+        try {
+            const response = await fetch(photoUrl);
+            if (!response.ok) throw new Error('A resposta da rede não foi boa.');
+            const blob = await response.blob();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename || 'foto.jpg';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        } catch (error) {
+            console.error('Falha no download da imagem:', error);
+            alert('Não foi possível baixar a imagem. Tente novamente.');
+        }
+    };
+
     return (
-        <Modal isOpen={isOpen} onClose={handleCloseModal} title={album.title} size="5xl">
-            <div className="space-y-4">
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                    className="hidden"
-                    accept="image/*"
-                    multiple
-                    disabled={isSaving}
-                />
-                <div className="flex justify-between items-center">
-                    <p className="text-brand-text-light">
-                        {new Date(album.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {album.photos.length} fotos salvas
-                    </p>
-                    <ProtectedComponent requiredPermission='manage_gallery'>
-                        <button
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={isSaving}
-                            className="flex items-center justify-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm disabled:bg-slate-400 disabled:cursor-not-allowed"
-                        >
-                            <PlusIcon className="w-5 h-5 mr-2" />
-                            Adicionar Fotos
+        <Modal isOpen={isOpen} onClose={handleCloseModal} title={viewingPhoto ? viewingPhoto.caption : album.title} size="5xl">
+            {viewingPhoto ? (
+                // Single Photo Viewer
+                <div>
+                    <div className="flex justify-between items-center mb-4">
+                        <button onClick={() => setViewingPhoto(null)} className="flex items-center text-brand-primary font-bold py-2 px-4 rounded-lg hover:bg-sky-100 transition-colors duration-300">
+                            <BackArrowIcon className="w-5 h-5 mr-2" />
+                            Voltar para o álbum
                         </button>
-                    </ProtectedComponent>
+                        <button onClick={() => handleDownload(viewingPhoto.url, viewingPhoto.caption)} className="flex items-center bg-brand-secondary text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-500 transition-colors duration-300 shadow-sm">
+                            <DownloadIcon className="w-5 h-5 mr-2" />
+                            Baixar Foto
+                        </button>
+                    </div>
+                    <div className="bg-slate-800 p-2 rounded-lg flex justify-center items-center min-h-[70vh]">
+                        <img src={viewingPhoto.url} alt={viewingPhoto.caption} className="max-w-full max-h-[70vh] object-contain rounded" />
+                    </div>
                 </div>
-
-                {successMessage && (
-                    <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-3 rounded-md" role="alert">
-                        <p className="font-semibold">{successMessage}</p>
+            ) : (
+                // Album Grid Viewer
+                <div className="space-y-4">
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileSelect}
+                        className="hidden"
+                        accept="image/*"
+                        multiple
+                        disabled={isSaving}
+                    />
+                    <div className="flex justify-between items-center">
+                        <p className="text-brand-text-light">
+                            {new Date(album.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - {album.photos.length} fotos salvas
+                        </p>
+                        <ProtectedComponent requiredPermission='manage_gallery'>
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isSaving}
+                                className="flex items-center justify-center bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors duration-300 shadow-sm disabled:bg-slate-400 disabled:cursor-not-allowed"
+                            >
+                                <PlusIcon className="w-5 h-5 mr-2" />
+                                Adicionar Fotos
+                            </button>
+                        </ProtectedComponent>
                     </div>
-                )}
-                
-                {pendingPhotos.length > 0 && (
-                    <div className="p-3 bg-sky-100 border-y border-sky-200 flex justify-between items-center rounded-lg">
-                        <span className="text-sm font-semibold text-sky-800">
-                            {pendingPhotos.length} {pendingPhotos.length === 1 ? 'foto nova para salvar.' : 'fotos novas para salvar.'}
-                        </span>
-                        <div className="flex items-center space-x-3">
-                            <button 
-                                onClick={() => {
-                                    pendingPhotos.forEach(({ previewUrl }) => URL.revokeObjectURL(previewUrl));
-                                    setPendingPhotos([]);
-                                }}
-                                disabled={isSaving}
-                                className="text-sm font-medium text-gray-700 hover:underline disabled:text-gray-400"
-                            >
-                                Cancelar
-                            </button>
-                            <button 
-                                onClick={handleSaveChanges}
-                                disabled={isSaving}
-                                className="flex items-center bg-brand-secondary text-white font-bold py-2 px-3 rounded-lg hover:bg-teal-500 transition-colors shadow-sm text-sm disabled:bg-slate-400"
-                            >
-                                {isSaving && (
-                                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                )}
-                                {isSaving ? 'Salvando...' : 'Salvar Fotos'}
-                            </button>
+
+                    {successMessage && (
+                        <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-3 rounded-md" role="alert">
+                            <p className="font-semibold">{successMessage}</p>
                         </div>
-                    </div>
-                )}
-
-
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto p-1">
-                    {/* Pending Photos */}
-                    {pendingPhotos.map(photo => (
-                        <div key={photo.previewUrl} className="group relative rounded-lg overflow-hidden border-2 border-dashed border-sky-400">
-                            <img src={photo.previewUrl} alt={photo.file.name} className="h-48 w-full object-cover opacity-80" />
-                            <div className="absolute inset-0 bg-black bg-opacity-20 flex flex-col justify-between p-2">
-                                <button
-                                    onClick={() => handleRemovePendingPhoto(photo.previewUrl)}
-                                    className="absolute top-2 right-2 bg-red-600/80 text-white p-1 rounded-full hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Remover foto"
+                    )}
+                    
+                    {pendingPhotos.length > 0 && (
+                        <div className="p-3 bg-sky-100 border-y border-sky-200 flex justify-between items-center rounded-lg">
+                            <span className="text-sm font-semibold text-sky-800">
+                                {pendingPhotos.length} {pendingPhotos.length === 1 ? 'foto nova para salvar.' : 'fotos novas para salvar.'}
+                            </span>
+                            <div className="flex items-center space-x-3">
+                                <button 
+                                    onClick={() => {
+                                        pendingPhotos.forEach(({ previewUrl }) => URL.revokeObjectURL(previewUrl));
+                                        setPendingPhotos([]);
+                                    }}
+                                    disabled={isSaving}
+                                    className="text-sm font-medium text-gray-700 hover:underline disabled:text-gray-400"
                                 >
-                                    <XIcon className="w-4 h-4" />
+                                    Cancelar
                                 </button>
-                                <p className="text-white text-xs font-semibold self-end w-full bg-black/50 p-2 rounded-md truncate">
-                                    {photo.file.name}
-                                </p>
+                                <button 
+                                    onClick={handleSaveChanges}
+                                    disabled={isSaving}
+                                    className="flex items-center bg-brand-secondary text-white font-bold py-2 px-3 rounded-lg hover:bg-teal-500 transition-colors shadow-sm text-sm disabled:bg-slate-400"
+                                >
+                                    {isSaving && (
+                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    )}
+                                    {isSaving ? 'Salvando...' : 'Salvar Fotos'}
+                                </button>
                             </div>
                         </div>
-                    ))}
+                    )}
 
-                    {/* Saved Photos */}
-                    {album.photos.map(photo => (
-                        <div key={photo.id} className="group relative rounded-lg overflow-hidden border">
-                            <img src={photo.url} alt={photo.caption} className="h-48 w-full object-cover" />
-                             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex flex-col justify-between p-2">
-                                <ProtectedComponent requiredPermission='manage_gallery'>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto p-1">
+                        {/* Pending Photos */}
+                        {pendingPhotos.map(photo => (
+                            <div key={photo.previewUrl} className="group relative rounded-lg overflow-hidden border-2 border-dashed border-sky-400">
+                                <img src={photo.previewUrl} alt={photo.file.name} className="h-48 w-full object-cover opacity-80" />
+                                <div className="absolute inset-0 bg-black bg-opacity-20 flex flex-col justify-between p-2">
                                     <button
-                                        onClick={() => handleDeletePhoto(photo.id)}
+                                        onClick={() => handleRemovePendingPhoto(photo.previewUrl)}
                                         className="absolute top-2 right-2 bg-red-600/80 text-white p-1 rounded-full hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Excluir foto"
+                                        title="Remover foto"
                                     >
                                         <XIcon className="w-4 h-4" />
                                     </button>
-                                </ProtectedComponent>
-                                <p className="text-white text-xs font-semibold self-end w-full bg-black/50 p-2 rounded-md translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 truncate">
-                                    {photo.caption}
-                                </p>
+                                    <p className="text-white text-xs font-semibold self-end w-full bg-black/50 p-2 rounded-md truncate">
+                                        {photo.file.name}
+                                    </p>
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                     {album.photos.length === 0 && pendingPhotos.length === 0 && (
-                        <div className="col-span-full text-center py-12 text-brand-text-light">
-                            <p>Este álbum ainda não tem fotos.</p>
-                            <p>Clique em "Adicionar Fotos" para começar.</p>
-                        </div>
-                    )}
+                        ))}
+
+                        {/* Saved Photos */}
+                        {album.photos.map(photo => (
+                            <div key={photo.id} onClick={() => setViewingPhoto(photo)} className="group relative rounded-lg overflow-hidden border cursor-pointer">
+                                <img src={photo.url} alt={photo.caption} className="h-48 w-full object-cover" />
+                                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex flex-col justify-between p-2">
+                                    <ProtectedComponent requiredPermission='manage_gallery'>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleDeletePhoto(photo.id); }}
+                                            className="absolute top-2 right-2 bg-red-600/80 text-white p-1 rounded-full hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            title="Excluir foto"
+                                        >
+                                            <XIcon className="w-4 h-4" />
+                                        </button>
+                                    </ProtectedComponent>
+                                    <p className="text-white text-xs font-semibold self-end w-full bg-black/50 p-2 rounded-md translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 truncate">
+                                        {photo.caption}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                        {album.photos.length === 0 && pendingPhotos.length === 0 && (
+                            <div className="col-span-full text-center py-12 text-brand-text-light">
+                                <p>Este álbum ainda não tem fotos.</p>
+                                <p>Clique em "Adicionar Fotos" para começar.</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
+            )}
         </Modal>
     );
 };
