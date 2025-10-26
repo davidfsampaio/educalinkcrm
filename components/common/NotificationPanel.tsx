@@ -1,11 +1,10 @@
-
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useData } from '../../contexts/DataContext';
 import { PaymentStatus, View, StudentDetailTab } from '../../types';
 
 interface Notification {
     id: string;
-    type: 'lead' | 'invoice' | 'event' | 'message';
+    type: 'lead' | 'invoice' | 'event' | 'message' | 'request';
     title: string;
     description: string;
     time: string; // ISO date string
@@ -55,7 +54,12 @@ function formatTimeAgo(dateString: string): string {
     return "agora mesmo";
 }
 
-const getIconForType = (type: 'lead' | 'invoice' | 'event' | 'message') => {
+const FileTextIcon: React.FC<{className?: string}> = ({ className }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+);
+
+
+const getIconForType = (type: 'lead' | 'invoice' | 'event' | 'message' | 'request') => {
     switch (type) {
         case 'lead':
             // FIX: Corrected typo in viewBox attribute.
@@ -69,6 +73,8 @@ const getIconForType = (type: 'lead' | 'invoice' | 'event' | 'message') => {
         case 'message':
             // FIX: Corrected typo in viewBox attribute.
             return <svg className="w-6 h-6 text-green-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>;
+        case 'request':
+            return <FileTextIcon className="w-6 h-6 text-indigo-500" />;
         default: return null;
     }
 };
@@ -122,15 +128,28 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
             }
         });
         
-        // New Parent Messages (last 7 days)
+        // New Parent Messages & Declaration Requests (last 7 days)
         students.forEach(student => {
             student.communication_log.forEach(log => {
-                if (log.type === 'Mensagem do Portal' && new Date(log.date) > sevenDaysAgo) {
-                    generated.push({
-                        id: `msg-${log.id}`, type: 'message', title: 'Mensagem de Responsável',
-                        description: `De ${student.parent_name} (aluno(a): ${student.name}).`, time: log.date,
-                        view: 'students', item: student, subView: 'contactHistory',
-                    });
+                const logDate = new Date(log.date);
+                if (logDate > sevenDaysAgo) {
+                    if (log.type === 'Mensagem do Portal') {
+                        generated.push({
+                            id: `msg-${log.id}`, type: 'message', title: 'Mensagem de Responsável',
+                            description: `De ${student.parent_name} (aluno(a): ${student.name}).`, time: log.date,
+                            view: 'students', item: student, subView: 'contactHistory',
+                        });
+                    } else if (log.type === 'Sistema' && log.summary.startsWith('[SOLICITAÇÃO]')) {
+                        generated.push({
+                            id: `req-${log.id}`, type: 'request',
+                            title: 'Solicitação de Declaração',
+                            description: `${student.parent_name} solicitou um documento para ${student.name}.`,
+                            time: log.date,
+                            view: 'students', 
+                            item: student,
+                            subView: 'declarations',
+                        });
+                    }
                 }
             });
         });
