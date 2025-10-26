@@ -647,17 +647,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         try {
             const updatedAlbumFromApi = await api.updateAlbumPhotos(albumId, updatedPhotos);
-            
             setPhotoAlbums(prevAlbums =>
-                prevAlbums.map(a => {
-                    if (a.id === albumId) {
-                        // Use metadata from the API, but trust our client-side photo list 
-                        // that we know we just sent to be persisted. This prevents UI flicker 
-                        // or data loss if the API response is inconsistent.
-                        return { ...updatedAlbumFromApi, photos: updatedPhotos };
-                    }
-                    return a;
-                })
+                prevAlbums.map(a => (a.id === albumId ? updatedAlbumFromApi : a))
             );
         } catch (error) {
             console.error("Falha ao adicionar fotos ao álbum:", error);
@@ -674,14 +665,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         try {
             const updatedAlbumFromApi = await api.updateAlbumPhotos(albumId, updatedPhotos);
-
             setPhotoAlbums(prevAlbums =>
-                prevAlbums.map(a => {
-                    if (a.id === albumId) {
-                        return { ...updatedAlbumFromApi, photos: updatedPhotos };
-                    }
-                    return a;
-                })
+                prevAlbums.map(a => (a.id === albumId ? updatedAlbumFromApi : a))
             );
         } catch (error) {
             console.error("Falha ao excluir foto do álbum:", error);
