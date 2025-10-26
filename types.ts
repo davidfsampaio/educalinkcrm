@@ -150,7 +150,7 @@ export interface Document {
 export interface CommunicationLog {
     id: number;
     date: string;
-    type: 'Ligação' | 'Email' | 'Reunião' | 'Sistema';
+    type: 'Ligação' | 'Email' | 'Reunião' | 'Sistema' | 'Mensagem do Portal';
     summary: string;
 }
 

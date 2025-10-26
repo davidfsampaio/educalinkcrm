@@ -63,7 +63,7 @@ const ParentPortal: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
             case 'financials':
                 return <ParentFinancials invoices={studentInvoices} studentName={student.name} />;
             case 'communications':
-                return <ParentCommunications communications={communications} />;
+                return <ParentCommunications communications={communications} student={student} />;
             case 'gallery':
                 return <Gallery />;
             case 'agenda':
