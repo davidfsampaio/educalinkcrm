@@ -606,70 +606,66 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             alert(`Erro ao excluir álbum: ${(error as Error).message}`);
         }
     };
-    
-    const updateAlbumPhotos = async (albumId: number, photos: Photo[]) => {
-        try {
-            // Call the API to persist the data. We can use its response to update metadata.
-            const updatedAlbumMetadata = await api.updateAlbumPhotos(albumId, photos);
-    
-            // Update local state by merging old data, new metadata, and the new photos array
-            // This is safer than replacing the whole object, in case the API response is incomplete.
-            setPhotoAlbums(prevAlbums =>
-                prevAlbums.map(album => {
-                    if (album.id === albumId) {
-                        return { 
-                            ...album, // Keep existing data as a base
-                            ...updatedAlbumMetadata, // Overwrite with new metadata
-                            photos: photos, // Explicitly set the photos array
-                        };
-                    }
-                    return album;
-                })
-            );
-        } catch (error) { 
-            console.error("Falha ao atualizar fotos no álbum:", error);
-            alert(`Erro ao salvar fotos: ${(error as Error).message}`);
-        }
-    };
-    
+
     const addPhotoToAlbum = async (albumId: number, photoData: { url: string; caption: string }) => {
         const album = photoAlbums.find(a => a.id === albumId);
         if (!album) return;
-        
-        // FIX: Generate a sequential ID instead of using a timestamp to avoid integer overflow.
-        // This is a more robust way to calculate the max ID, handling potential non-numeric values.
+
         const maxId = album.photos.reduce((max, p) => Math.max(max, (Number(p.id) || 0)), 0);
         const newPhoto: Photo = { id: maxId + 1, ...photoData };
         
         const updatedPhotos = [...album.photos, newPhoto];
-        await updateAlbumPhotos(albumId, updatedPhotos);
+
+        try {
+            await api.updateAlbumPhotos(albumId, updatedPhotos);
+            setPhotoAlbums(prevAlbums =>
+                prevAlbums.map(a => (a.id === albumId ? { ...a, photos: updatedPhotos } : a))
+            );
+        } catch (error) {
+            console.error("Falha ao adicionar foto ao álbum:", error);
+            alert(`Erro ao salvar foto: ${(error as Error).message}`);
+        }
     };
 
     const addPhotosToAlbum = async (albumId: number, photoDataArray: { url: string; caption: string }[]) => {
         const album = photoAlbums.find(a => a.id === albumId);
         if (!album) return;
 
-        // FIX: Generate sequential IDs instead of using timestamps to avoid integer overflow.
-        // This is a more robust way to calculate the max ID, handling potential non-numeric values.
         let maxId = album.photos.reduce((max, p) => Math.max(max, (Number(p.id) || 0)), 0);
 
         const newPhotos: Photo[] = photoDataArray.map((pd) => {
             maxId++;
-            return {
-                id: maxId,
-                ...pd,
-            };
+            return { id: maxId, ...pd };
         });
 
         const updatedPhotos = [...album.photos, ...newPhotos];
-        await updateAlbumPhotos(albumId, updatedPhotos);
+        
+        try {
+            await api.updateAlbumPhotos(albumId, updatedPhotos);
+            setPhotoAlbums(prevAlbums =>
+                prevAlbums.map(a => (a.id === albumId ? { ...a, photos: updatedPhotos } : a))
+            );
+        } catch (error) {
+            console.error("Falha ao adicionar fotos ao álbum:", error);
+            alert(`Erro ao salvar fotos: ${(error as Error).message}`);
+        }
     };
 
     const deletePhotoFromAlbum = async (albumId: number, photoId: number) => {
         const album = photoAlbums.find(a => a.id === albumId);
         if (!album) return;
+
         const updatedPhotos = album.photos.filter(p => p.id !== photoId);
-        await updateAlbumPhotos(albumId, updatedPhotos);
+
+        try {
+            await api.updateAlbumPhotos(albumId, updatedPhotos);
+            setPhotoAlbums(prevAlbums =>
+                prevAlbums.map(a => (a.id === albumId ? { ...a, photos: updatedPhotos } : a))
+            );
+        } catch (error) {
+            console.error("Falha ao excluir foto do álbum:", error);
+            alert(`Erro ao excluir foto: ${(error as Error).message}`);
+        }
     };
     
     const addLibraryBook = async (bookData: Omit<LibraryBook, 'id' | 'school_id'>) => {
