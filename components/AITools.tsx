@@ -1,6 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Card from './common/Card';
-import { generateText } from '../services/geminiService';
+import { generateText } from '../../services/geminiService';
+
+// FIX: Corrected the global window.aistudio type definition to use a named interface `AIStudio` to resolve type conflicts.
+declare global {
+    interface AIStudio {
+        hasSelectedApiKey: () => Promise<boolean>;
+        openSelectKey: () => Promise<void>;
+    }
+    interface Window {
+        aistudio?: AIStudio;
+    }
+}
 
 // Icons
 const SparklesIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -20,24 +31,36 @@ const LoadingSpinner: React.FC = () => (
     </div>
 );
 
+interface AIToolProps {
+    onApiKeyError: () => void;
+}
+
 // Tool 1: Communication Generator
-const CommunicationGenerator: React.FC = () => {
+const CommunicationGenerator: React.FC<AIToolProps> = ({ onApiKeyError }) => {
     const [topic, setTopic] = useState('Festa Junina da escola');
     const [tone, setTone] = useState('Amigável');
     const [result, setResult] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [error, setError] = useState('');
 
     const handleGenerate = async () => {
         setIsLoading(true);
         setResult('');
+        setError('');
         const prompt = `Você é um assistente de comunicação para uma escola. Sua tarefa é escrever um comunicado claro e profissional para os pais dos alunos em Português do Brasil.
         - Tópico: "${topic}"
         - Tom: ${tone}
         
         Escreva o comunicado abaixo:`;
         const generated = await generateText(prompt);
-        setResult(generated);
+        if (generated === 'API_KEY_INVALID') {
+            onApiKeyError();
+        } else if (generated.startsWith('Erro') || generated.startsWith('O Serviço')) {
+            setError(generated);
+        } else {
+            setResult(generated);
+        }
         setIsLoading(false);
     };
 
@@ -67,6 +90,7 @@ const CommunicationGenerator: React.FC = () => {
                 <button onClick={handleGenerate} disabled={isLoading} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-primary hover:bg-sky-600 disabled:bg-slate-400">
                     {isLoading ? <LoadingSpinner /> : 'Gerar Texto'}
                 </button>
+                {error && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</p>}
                 {result && (
                     <div className="pt-4 border-t">
                         <div className="flex justify-between items-center">
@@ -84,25 +108,33 @@ const CommunicationGenerator: React.FC = () => {
 };
 
 // Tool 2: Sentiment Analysis
-const SentimentAnalysis: React.FC = () => {
+const SentimentAnalysis: React.FC<AIToolProps> = ({ onApiKeyError }) => {
     const [text, setText] = useState('Estou um pouco preocupado com o desenvolvimento do meu filho na matemática. Ele parece estar com dificuldades. Podemos conversar?');
     const [result, setResult] = useState<{ sentiment?: string; summary?: string } | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const handleAnalyze = async () => {
         setIsLoading(true);
         setResult(null);
+        setError('');
         const prompt = `Analise o sentimento da seguinte mensagem de um pai/mãe de aluno e resuma os pontos principais. Responda em formato JSON com as chaves "sentiment" (pode ser "Positivo", "Negativo", ou "Neutro") e "summary".
         Mensagem: "${text}"`;
         const generated = await generateText(prompt);
+        if (generated === 'API_KEY_INVALID') {
+            onApiKeyError();
+            setIsLoading(false);
+            return;
+        }
+
         try {
-            // Gemini might return markdown JSON block, clean it
             const jsonString = generated.replace(/```json\n?|\n?```/g, '');
             const parsed = JSON.parse(jsonString);
             setResult(parsed);
         } catch (e) {
-            console.error("Failed to parse sentiment analysis JSON:", e);
-            setResult({ sentiment: 'Erro', summary: 'Não foi possível analisar a resposta da IA.' });
+            console.error("Failed to parse sentiment analysis JSON:", e, "Raw response:", generated);
+            setError('Não foi possível analisar a resposta da IA.');
+            setResult(null);
         }
         setIsLoading(false);
     };
@@ -111,7 +143,6 @@ const SentimentAnalysis: React.FC = () => {
         'Positivo': 'bg-green-100 text-green-800',
         'Negativo': 'bg-red-100 text-red-800',
         'Neutro': 'bg-yellow-100 text-yellow-800',
-        'Erro': 'bg-gray-100 text-gray-800'
     };
 
     return (
@@ -125,10 +156,11 @@ const SentimentAnalysis: React.FC = () => {
                 <button onClick={handleAnalyze} disabled={isLoading} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-primary hover:bg-sky-600 disabled:bg-slate-400">
                     {isLoading ? <LoadingSpinner /> : 'Analisar Mensagem'}
                 </button>
+                 {error && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</p>}
                 {result && (
                     <div className="pt-4 border-t space-y-2">
                         <h4 className="text-md font-semibold">Resultado:</h4>
-                        <p><strong>Sentimento:</strong> <span className={`px-2 py-1 rounded-full text-sm font-semibold ${sentimentClasses[result.sentiment || 'Erro']}`}>{result.sentiment || 'N/A'}</span></p>
+                        <p><strong>Sentimento:</strong> <span className={`px-2 py-1 rounded-full text-sm font-semibold ${sentimentClasses[result.sentiment || ''] || 'bg-gray-100 text-gray-800'}`}>{result.sentiment || 'N/A'}</span></p>
                         <p><strong>Resumo:</strong></p>
                         <p className="p-2 bg-slate-50 border rounded-md">{result.summary || 'N/A'}</p>
                     </div>
@@ -139,15 +171,17 @@ const SentimentAnalysis: React.FC = () => {
 };
 
 // Tool 3: Activity Brainstormer
-const ActivityBrainstormer: React.FC = () => {
+const ActivityBrainstormer: React.FC<AIToolProps> = ({ onApiKeyError }) => {
     const [age, setAge] = useState('3-4 anos');
     const [theme, setTheme] = useState('Natureza');
     const [result, setResult] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const handleGenerate = async () => {
         setIsLoading(true);
         setResult('');
+        setError('');
         const prompt = `Gere 3 ideias de atividades educacionais para crianças de ${age} com o tema "${theme}".
         Para cada atividade, inclua:
         - Nome da Atividade
@@ -156,7 +190,13 @@ const ActivityBrainstormer: React.FC = () => {
         
         Formate a resposta de forma clara e organizada.`;
         const generated = await generateText(prompt);
-        setResult(generated);
+         if (generated === 'API_KEY_INVALID') {
+            onApiKeyError();
+        } else if (generated.startsWith('Erro') || generated.startsWith('O Serviço')) {
+            setError(generated);
+        } else {
+            setResult(generated);
+        }
         setIsLoading(false);
     };
 
@@ -182,6 +222,7 @@ const ActivityBrainstormer: React.FC = () => {
                 <button onClick={handleGenerate} disabled={isLoading} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-primary hover:bg-sky-600 disabled:bg-slate-400">
                     {isLoading ? <LoadingSpinner /> : 'Gerar Ideias'}
                 </button>
+                 {error && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</p>}
                 {result && (
                     <div className="pt-4 border-t">
                         <h4 className="text-md font-semibold">Ideias Geradas:</h4>
@@ -193,8 +234,63 @@ const ActivityBrainstormer: React.FC = () => {
     );
 };
 
-
 const AITools: React.FC = () => {
+    const [apiKeyReady, setApiKeyReady] = useState(false);
+    const [checkingApiKey, setCheckingApiKey] = useState(true);
+
+    useEffect(() => {
+        const checkKey = async () => {
+            if (window.aistudio) {
+                const hasKey = await window.aistudio.hasSelectedApiKey();
+                setApiKeyReady(hasKey);
+            }
+            setCheckingApiKey(false);
+        };
+        checkKey();
+    }, []);
+
+    const handleActivateAI = async () => {
+        if (window.aistudio) {
+            await window.aistudio.openSelectKey();
+            setApiKeyReady(true);
+        }
+    };
+    
+    const handleApiKeyError = () => {
+        setApiKeyReady(false);
+        alert("Sua chave de API parece inválida ou foi revogada. Por favor, selecione uma chave de API válida para continuar.");
+        if (window.aistudio) {
+            window.aistudio.openSelectKey().then(() => {
+                // Optimistic update after user closes dialog
+                setApiKeyReady(true);
+            });
+        }
+    }
+
+    if (checkingApiKey) {
+        return (
+            <div className="flex justify-center items-center h-full">
+                <p className="text-brand-text">Verificando configuração da IA...</p>
+            </div>
+        );
+    }
+
+    if (!apiKeyReady) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <Card className="text-center max-w-lg mx-auto">
+                    <SparklesIcon className="w-12 h-12 text-brand-primary mx-auto mb-4" />
+                    <h2 className="text-2xl font-bold text-brand-text-dark">Ativar Recursos de IA</h2>
+                    <p className="mt-2 text-brand-text">Para usar as ferramentas de Inteligência Artificial, você precisa selecionar uma chave de API do Google AI Studio.</p>
+                    <p className="mt-2 text-sm text-slate-500">Isso é necessário para autorizar o uso dos modelos de IA. <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="underline text-brand-primary">Saiba mais sobre faturamento.</a></p>
+                    <button onClick={handleActivateAI} className="mt-6 bg-brand-primary text-white font-bold py-3 px-6 rounded-lg hover:bg-sky-600 transition-colors">
+                        Ativar IA
+                    </button>
+                </Card>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6">
             <div className="text-center">
@@ -203,10 +299,10 @@ const AITools: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                <CommunicationGenerator />
+                <CommunicationGenerator onApiKeyError={handleApiKeyError} />
                 <div className="space-y-6">
-                    <SentimentAnalysis />
-                    <ActivityBrainstormer />
+                    <SentimentAnalysis onApiKeyError={handleApiKeyError} />
+                    <ActivityBrainstormer onApiKeyError={handleApiKeyError} />
                 </div>
             </div>
         </div>
