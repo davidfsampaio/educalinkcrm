@@ -223,7 +223,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         try {
             // FIX: Removed JSONB fields ('tasks', 'required_documents', 'communication_log') from the payload.
-            // These fields are not part of the 'LeadColumns' type used for inserts and are added to the local state after the record is created.
+            // These fields are not part of the 'LeadColumns' type for inserts and are added to the local state after the record is created.
             const newLeadPayload: LeadColumns = {
                 school_id: schoolIdToAdd,
                 name: leadData.name,
@@ -611,19 +611,21 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const album = photoAlbums.find(a => a.id === albumId);
         if (!album) return;
 
-        const maxId = album.photos.reduce((max, p) => Math.max(max, (Number(p.id) || 0)), 0);
+        let maxId = album.photos.reduce((max, p) => Math.max(max, (Number(p.id) || 0)), 0);
+        if (!isFinite(maxId)) maxId = 0; // Sanity check for non-numeric IDs
         const newPhoto: Photo = { id: maxId + 1, ...photoData };
         
         const updatedPhotos = [...album.photos, newPhoto];
 
         try {
-            await api.updateAlbumPhotos(albumId, updatedPhotos);
+            const updatedAlbumFromApi = await api.updateAlbumPhotos(albumId, updatedPhotos);
             setPhotoAlbums(prevAlbums =>
-                prevAlbums.map(a => (a.id === albumId ? { ...a, photos: updatedPhotos } : a))
+                prevAlbums.map(a => (a.id === albumId ? updatedAlbumFromApi : a))
             );
         } catch (error) {
             console.error("Falha ao adicionar foto ao álbum:", error);
             alert(`Erro ao salvar foto: ${(error as Error).message}`);
+            throw error;
         }
     };
 
@@ -631,8 +633,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const album = photoAlbums.find(a => a.id === albumId);
         if (!album) return;
 
-        let maxId = album.photos.reduce((max, p) => Math.max(max, (Number(p.id) || 0)), 0);
-
+        let maxId = album.photos.reduce((max, p) => {
+            const numId = Number(p.id);
+            return isNaN(numId) ? max : Math.max(max, numId);
+        }, 0);
+        
         const newPhotos: Photo[] = photoDataArray.map((pd) => {
             maxId++;
             return { id: maxId, ...pd };
@@ -641,13 +646,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const updatedPhotos = [...album.photos, ...newPhotos];
         
         try {
-            await api.updateAlbumPhotos(albumId, updatedPhotos);
+            // Pessimistic Update: Wait for the API to confirm and return the saved data.
+            const updatedAlbumFromApi = await api.updateAlbumPhotos(albumId, updatedPhotos);
+            
+            // Now, update the state with the confirmed data from the server.
             setPhotoAlbums(prevAlbums =>
-                prevAlbums.map(a => (a.id === albumId ? { ...a, photos: updatedPhotos } : a))
+                prevAlbums.map(a => (a.id === albumId ? updatedAlbumFromApi : a))
             );
         } catch (error) {
             console.error("Falha ao adicionar fotos ao álbum:", error);
             alert(`Erro ao salvar fotos: ${(error as Error).message}`);
+            // Re-throw the error so the calling component knows the operation failed.
+            throw error;
         }
     };
 
@@ -658,13 +668,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const updatedPhotos = album.photos.filter(p => p.id !== photoId);
 
         try {
-            await api.updateAlbumPhotos(albumId, updatedPhotos);
+            // Pessimistic Update: Wait for the API response.
+            const updatedAlbumFromApi = await api.updateAlbumPhotos(albumId, updatedPhotos);
+            
+            // Update state with the confirmed data.
             setPhotoAlbums(prevAlbums =>
-                prevAlbums.map(a => (a.id === albumId ? { ...a, photos: updatedPhotos } : a))
+                prevAlbums.map(a => (a.id === albumId ? updatedAlbumFromApi : a))
             );
         } catch (error) {
             console.error("Falha ao excluir foto do álbum:", error);
             alert(`Erro ao excluir foto: ${(error as Error).message}`);
+            throw error;
         }
     };
     
