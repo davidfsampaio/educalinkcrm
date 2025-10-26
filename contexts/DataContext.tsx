@@ -609,16 +609,22 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const updateAlbumPhotos = async (albumId: number, photos: Photo[]) => {
         try {
-            // We call the API which is expected to return the FULL updated album object
-            const updatedAlbumFromApi = await api.updateAlbumPhotos(albumId, photos);
+            // Call the API to persist the data. We can use its response to update metadata.
+            const updatedAlbumMetadata = await api.updateAlbumPhotos(albumId, photos);
     
-            // Now we use this source of truth to update our state.
+            // Update local state by merging old data, new metadata, and the new photos array
+            // This is safer than replacing the whole object, in case the API response is incomplete.
             setPhotoAlbums(prevAlbums =>
-                prevAlbums.map(album =>
-                    album.id === albumId
-                        ? updatedAlbumFromApi // Replace the entire album object with the one from the DB
-                        : album
-                )
+                prevAlbums.map(album => {
+                    if (album.id === albumId) {
+                        return { 
+                            ...album, // Keep existing data as a base
+                            ...updatedAlbumMetadata, // Overwrite with new metadata
+                            photos: photos, // Explicitly set the photos array
+                        };
+                    }
+                    return album;
+                })
             );
         } catch (error) { 
             console.error("Falha ao atualizar fotos no álbum:", error);
