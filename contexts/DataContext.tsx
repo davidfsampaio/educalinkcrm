@@ -646,17 +646,22 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const updatedPhotos = [...album.photos, ...newPhotos];
         
         try {
-            // Pessimistic Update: Wait for the API to confirm and return the saved data.
             const updatedAlbumFromApi = await api.updateAlbumPhotos(albumId, updatedPhotos);
             
-            // Now, update the state with the confirmed data from the server.
             setPhotoAlbums(prevAlbums =>
-                prevAlbums.map(a => (a.id === albumId ? updatedAlbumFromApi : a))
+                prevAlbums.map(a => {
+                    if (a.id === albumId) {
+                        // Use metadata from the API, but trust our client-side photo list 
+                        // that we know we just sent to be persisted. This prevents UI flicker 
+                        // or data loss if the API response is inconsistent.
+                        return { ...updatedAlbumFromApi, photos: updatedPhotos };
+                    }
+                    return a;
+                })
             );
         } catch (error) {
             console.error("Falha ao adicionar fotos ao álbum:", error);
             alert(`Erro ao salvar fotos: ${(error as Error).message}`);
-            // Re-throw the error so the calling component knows the operation failed.
             throw error;
         }
     };
@@ -668,12 +673,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const updatedPhotos = album.photos.filter(p => p.id !== photoId);
 
         try {
-            // Pessimistic Update: Wait for the API response.
             const updatedAlbumFromApi = await api.updateAlbumPhotos(albumId, updatedPhotos);
-            
-            // Update state with the confirmed data.
+
             setPhotoAlbums(prevAlbums =>
-                prevAlbums.map(a => (a.id === albumId ? updatedAlbumFromApi : a))
+                prevAlbums.map(a => {
+                    if (a.id === albumId) {
+                        return { ...updatedAlbumFromApi, photos: updatedPhotos };
+                    }
+                    return a;
+                })
             );
         } catch (error) {
             console.error("Falha ao excluir foto do álbum:", error);

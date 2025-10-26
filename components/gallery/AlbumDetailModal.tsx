@@ -30,6 +30,7 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
     const { currentUser } = useAuth();
     const [isSaving, setIsSaving] = useState(false);
     const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Derive album state directly from context on each render to ensure it's always fresh.
@@ -39,7 +40,6 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
-        // FIX: Explicitly typed the 'file' parameter in the map function to resolve a type inference issue where it was being treated as 'unknown'.
         const newPendingPhotos: PendingPhoto[] = Array.from(files).map((file: File) => ({
             file,
             previewUrl: URL.createObjectURL(file),
@@ -66,6 +66,7 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
         if (pendingPhotos.length === 0 || !currentUser?.school_id) return;
         
         setIsSaving(true);
+        setSuccessMessage(null);
         try {
             const uploadPromises = pendingPhotos.map(async ({ file }) => {
                 const fileExt = file.name.split('.').pop();
@@ -84,9 +85,11 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
             
             pendingPhotos.forEach(({ previewUrl }) => URL.revokeObjectURL(previewUrl));
             setPendingPhotos([]);
+            setSuccessMessage(`${newPhotosData.length} foto(s) foram adicionada(s) ao álbum com sucesso!`);
+            setTimeout(() => setSuccessMessage(null), 3000);
         } catch (error) {
             console.error("Error uploading photos:", error);
-            alert(`Ocorreu um erro ao salvar as fotos: ${(error as Error).message}.`);
+            alert(`Ocorreu um erro ao salvar as fotos: ${(error as Error).message}. Verifique se o bucket 'gallery' e suas permissões foram criados corretamente no painel do Supabase.`);
         } finally {
             setIsSaving(false);
         }
@@ -97,6 +100,7 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
         pendingPhotos.forEach(({ previewUrl }) => URL.revokeObjectURL(previewUrl));
         setPendingPhotos([]);
         setIsSaving(false);
+        setSuccessMessage(null);
         onClose();
     };
 
@@ -104,7 +108,7 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
         if (!window.confirm('Tem certeza de que deseja excluir esta foto?')) {
             return;
         }
-        
+        setSuccessMessage(null);
         try {
             const photoToDelete = album.photos.find(p => p.id === photoId);
             if (photoToDelete?.url) {
@@ -117,6 +121,8 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
                 }
             }
             await deletePhotoFromAlbum(album.id, photoId);
+            setSuccessMessage('Foto excluída com sucesso!');
+            setTimeout(() => setSuccessMessage(null), 3000);
         } catch(error) {
             console.error("Error deleting photo:", error);
             alert(`Ocorreu um erro ao excluir a foto: ${(error as Error).message}`);
@@ -150,6 +156,12 @@ const AlbumDetailModal: React.FC<AlbumDetailModalProps> = ({ isOpen, onClose, al
                         </button>
                     </ProtectedComponent>
                 </div>
+
+                {successMessage && (
+                    <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-3 rounded-md" role="alert">
+                        <p className="font-semibold">{successMessage}</p>
+                    </div>
+                )}
                 
                 {pendingPhotos.length > 0 && (
                     <div className="p-3 bg-sky-100 border-y border-sky-200 flex justify-between items-center rounded-lg">
