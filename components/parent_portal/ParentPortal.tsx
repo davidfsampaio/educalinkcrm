@@ -6,6 +6,7 @@ import ParentAcademics from './ParentAcademics';
 import ParentFinancials from './ParentFinancials';
 import ParentCommunications from './ParentCommunications';
 import { useAuth } from '../../contexts/AuthContext';
+import NotificationToggle from './NotificationToggle';
 
 export type ParentView = 'dashboard' | 'academics' | 'financials' | 'communications' | 'gallery' | 'agenda' | 'library';
 
@@ -79,6 +80,7 @@ const ParentPortal: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         <div className="min-h-screen bg-slate-100 font-sans">
             <ParentHeader studentName={student.name} onLogout={onLogout} activeView={activeView} setActiveView={setActiveView} />
             <main className="container mx-auto p-4 sm:p-6 lg:p-8">
+                <NotificationToggle />
                 <Suspense fallback={<LoadingFallback />}>
                     {renderView()}
                 </Suspense>

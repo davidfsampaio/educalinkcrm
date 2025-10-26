@@ -231,3 +231,21 @@ export const updateSchoolSettings = async (schoolId: string, settingsData: any):
         throw new Error(`Falha ao salvar as configurações: ${error.message}`);
     }
 };
+
+// Push Notifications
+export const savePushSubscription = async (subscription: PushSubscription, userId: string): Promise<void> => {
+    const { endpoint, keys } = subscription.toJSON();
+
+    const { error } = await supabase
+        .from('push_subscriptions')
+        .upsert({
+            endpoint: endpoint,
+            keys: keys,
+            user_id: userId,
+        }, { onConflict: 'endpoint' });
+
+    if (error) {
+        console.error('Error saving push subscription:', error);
+        throw new Error(error.message);
+    }
+};

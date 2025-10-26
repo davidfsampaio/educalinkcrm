@@ -78,3 +78,39 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+
+// Listener para notificações PUSH
+self.addEventListener('push', (event) => {
+  console.log('[Service Worker] Push Received.');
+  console.log(`[Service Worker] Push had this data: "${event.data.text()}"`);
+
+  let data = {};
+  try {
+    data = event.data.json();
+  } catch (e) {
+    data = { title: 'Nova Notificação', body: event.data.text() };
+  }
+
+  const { title, body, icon, badge } = data;
+
+  const options = {
+    body: body,
+    icon: icon || '/icon.svg',
+    badge: badge || '/icon.svg',
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+
+// Listener para o clique na notificação
+self.addEventListener('notificationclick', (event) => {
+  console.log('[Service Worker] Notification click Received.');
+
+  event.notification.close();
+
+  event.waitUntil(
+    clients.openWindow('/')
+  );
+});
