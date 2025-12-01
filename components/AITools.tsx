@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Card from './common/Card';
-import { generateText } from '../../services/geminiService';
+import { generateText } from '../services/geminiService';
 
 // FIX: Corrected the global window.aistudio type definition to use a named interface `AIStudio` to resolve type conflicts.
 declare global {
