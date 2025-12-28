@@ -1,7 +1,5 @@
 
-
 declare global {
-  // FIX: Moved AIStudio interface inside declare global to resolve type conflict with other files.
   interface AIStudio {
     hasSelectedApiKey: () => Promise<boolean>;
     openSelectKey: () => Promise<void>;
@@ -12,9 +10,9 @@ declare global {
 }
 
 import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
-import { User, Permission, UserRoleName, UserStatus } from '../types';
+import { User, Permission } from '../types';
 import { supabase } from '../services/supabaseClient';
-import { getUsers } from '../services/apiService';
+import { getUserById } from '../services/apiService';
 
 interface AuthContextType {
     currentUser: User | null;
@@ -40,23 +38,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         async function checkSession() {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                // Tenta recuperar a sessão atual
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                
+                if (sessionError) throw sessionError;
+
                 if (session && isMounted) {
-                    const allUsers = await getUsers();
-                    const profile = allUsers.find(u => u.id === session.user.id);
-                    
-                    if (profile && isMounted) {
-                        setCurrentUser(profile);
-                    } else if (isMounted) {
-                        setCurrentUser(null);
+                    try {
+                        // Busca apenas o perfil do usuário logado
+                        const profile = await getUserById(session.user.id);
+                        if (isMounted) setCurrentUser(profile);
+                    } catch (profileError) {
+                        console.error("Erro ao carregar perfil do usuário:", profileError);
+                        if (isMounted) setCurrentUser(null);
                     }
+                } else if (isMounted) {
+                    setCurrentUser(null);
                 }
             } catch (error) {
-                console.error("Error checking initial session:", error);
+                console.error("Erro geral na verificação de sessão:", error);
                  if (isMounted) {
                     setCurrentUser(null);
                  }
             } finally {
+                // IMPORTANTE: Garantir que o loading pare de qualquer forma
                 if (isMounted) {
                     setIsLoading(false);
                 }
@@ -74,13 +79,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     }
                 } else if (event === 'SIGNED_IN' && session) {
                     try {
-                        const allUsers = await getUsers();
-                        const profile = allUsers.find(u => u.id === session.user.id);
+                        const profile = await getUserById(session.user.id);
                         if (profile && isMounted) {
                             setCurrentUser(profile);
                         }
                     } catch (e) {
-                        console.error("Error loading profile after sign in", e);
+                        console.error("Erro ao recarregar perfil após login:", e);
                     }
                 }
             }
@@ -100,7 +104,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
 
             if (error) {
-                // Tradução de erros comuns do Supabase Auth
                 let errorMessage = error.message;
                 if (error.message === 'Invalid login credentials') {
                     errorMessage = 'Email ou senha incorretos. Verifique suas credenciais.';
@@ -114,17 +117,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 throw new Error("Falha na autenticação. Usuário não encontrado.");
             }
             
-            const allUsers = await getUsers();
-            let profile = allUsers.find(u => u.id === data.user!.id);
+            // Busca o perfil recém logado
+            let profile: User | null = null;
+            try {
+                profile = await getUserById(data.user.id);
+            } catch (e) {
+                // Se falhar, aguarda um pouco (caso o trigger de criação do perfil no DB demore)
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                profile = await getUserById(data.user.id);
+            }
             
             if (!profile) {
-                // Pequeno atraso para o trigger do DB criar o perfil se necessário
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                const refetchedUsers = await getUsers();
-                profile = refetchedUsers.find(u => u.id === data.user!.id);
-                if (!profile) {
-                    throw new Error(`Perfil não encontrado. Certifique-se de que sua conta está ativa.`);
-                }
+                throw new Error(`Perfil não encontrado para o usuário ${data.user.id}.`);
             }
 
             const isParentRole = profile.role === 'Pai/Responsável';
@@ -140,7 +144,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setCurrentUser(profile);
             
         } catch (error: any) {
-            // FIX: Garantir que a mensagem seja sempre uma string para evitar [object Object]
             const message = typeof error === 'string' ? error : (error.message || "Erro desconhecido ao tentar fazer login.");
             setAuthError(message);
             throw error;

@@ -16,6 +16,24 @@ const handleResponse = <T>(response: { data: T | null; error: any }) => {
     return response.data as T;
 };
 
+// --- Users ---
+export const getUsers = async () => 
+    handleResponse<User[]>(await supabase.from('users').select('*'));
+
+export const getUserById = async (id: string) => 
+    handleResponse<User>(await supabase.from('users').select('*').eq('id', id).single());
+
+export const addUser = async (data: any) => 
+    handleResponse<User>(await supabase.from('users').insert(data).select().single());
+
+export const updateUser = async (id: string, data: any) => 
+    handleResponse<User>(await supabase.from('users').update(data).eq('id', id).select().single());
+
+export const deleteUser = async (id: string) => {
+    const { error } = await supabase.from('users').delete().eq('id', id);
+    if (error) throw new Error(error.message);
+};
+
 // --- Students ---
 export const getStudents = async () => 
     handleResponse<Student[]>(await supabase.from('students').select('*').order('name'));
@@ -73,21 +91,6 @@ export const updateStaff = async (id: number, data: any) =>
 
 export const deleteStaff = async (id: number) => {
     const { error } = await supabase.from('staff').delete().eq('id', id);
-    if (error) throw new Error(error.message);
-};
-
-// --- Users ---
-export const getUsers = async () => 
-    handleResponse<User[]>(await supabase.from('users').select('*'));
-
-export const addUser = async (data: any) => 
-    handleResponse<User>(await supabase.from('users').insert(data).select().single());
-
-export const updateUser = async (id: string, data: any) => 
-    handleResponse<User>(await supabase.from('users').update(data).eq('id', id).select().single());
-
-export const deleteUser = async (id: string) => {
-    const { error } = await supabase.from('users').delete().eq('id', id);
     if (error) throw new Error(error.message);
 };
 
