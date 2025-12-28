@@ -9,7 +9,7 @@ declare global {
   }
 }
 
-import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode, useState, useEffect, useCallback } from 'react';
 import { User, Permission } from '../types';
 import { supabase } from '../services/supabaseClient';
 import { getUserById } from '../services/apiService';
@@ -33,75 +33,54 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [authError, setAuthError] = useState<string | null>(null);
     const [userPermissions, setUserPermissions] = useState<Set<Permission>>(new Set());
 
+    // Função centralizada para carregar perfil
+    const loadProfile = useCallback(async (userId: string) => {
+        try {
+            const profile = await getUserById(userId);
+            setCurrentUser(profile);
+            return profile;
+        } catch (error) {
+            console.error("Erro ao carregar perfil:", error);
+            setCurrentUser(null);
+            return null;
+        }
+    }, []);
+
     useEffect(() => {
         let isMounted = true;
 
-        async function checkSession() {
-            // Timeout de segurança: se o Supabase não responder em 6 segundos, liberamos a tela
-            const timeoutId = setTimeout(() => {
-                if (isMounted && isLoading) {
-                    console.warn("Session check timed out. Proceeding as guest.");
-                    setIsLoading(false);
-                }
-            }, 6000);
-
-            try {
-                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-                
-                if (sessionError) throw sessionError;
-
-                if (session && isMounted) {
-                    try {
-                        // Busca otimizada: busca APENAS o perfil do usuário logado
-                        const profile = await getUserById(session.user.id);
-                        if (isMounted) setCurrentUser(profile);
-                    } catch (profileError) {
-                        console.error("Erro ao carregar perfil:", profileError);
-                        if (isMounted) setCurrentUser(null);
-                    }
-                } else if (isMounted) {
-                    setCurrentUser(null);
-                }
-            } catch (error) {
-                console.error("Erro geral na verificação de sessão:", error);
-                 if (isMounted) {
-                    setCurrentUser(null);
-                 }
-            } finally {
-                if (isMounted) {
-                    clearTimeout(timeoutId);
-                    setIsLoading(false);
-                }
-            }
-        }
-
-        checkSession();
-
+        // Listener reativo do Supabase é mais confiável que getSession manual no início
         const { data: authListener } = supabase.auth.onAuthStateChange(
             async (event, session) => {
+                if (!isMounted) return;
+
                 if (event === 'SIGNED_OUT') {
-                    if (isMounted) {
-                        setCurrentUser(null);
-                        setAuthError(null);
-                    }
-                } else if (event === 'SIGNED_IN' && session) {
-                    try {
-                        const profile = await getUserById(session.user.id);
-                        if (profile && isMounted) {
-                            setCurrentUser(profile);
-                        }
-                    } catch (e) {
-                        console.error("Erro ao recarregar perfil após login:", e);
-                    }
+                    setCurrentUser(null);
+                    setAuthError(null);
+                    setIsLoading(false);
+                } else if (session?.user) {
+                    await loadProfile(session.user.id);
+                    setIsLoading(false);
+                } else {
+                    setIsLoading(false);
                 }
             }
         );
 
+        // Timeout Hard de 5 segundos: Se nada acontecer, destrava a tela de qualquer forma
+        const failsafe = setTimeout(() => {
+            if (isMounted && isLoading) {
+                console.warn("Auth failsafe triggered. Forcing loading to false.");
+                setIsLoading(false);
+            }
+        }, 5000);
+
         return () => {
             isMounted = false;
             authListener.subscription.unsubscribe();
+            clearTimeout(failsafe);
         };
-    }, []);
+    }, [isLoading, loadProfile]);
 
     const performLogin = async (email: string, pass: string, expectedRoleType: 'staff' | 'parent') => {
         setAuthError(null);
@@ -114,76 +93,53 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 let errorMessage = error.message;
                 if (error.message === 'Invalid login credentials') {
                     errorMessage = 'Email ou senha incorretos. Verifique suas credenciais.';
-                } else if (error.message.includes('Email not confirmed')) {
-                    errorMessage = 'Por favor, confirme seu email antes de acessar.';
                 }
                 throw new Error(errorMessage);
             }
             
-            if (!data.user) {
-                throw new Error("Falha na autenticação. Usuário não encontrado.");
-            }
+            if (!data.user) throw new Error("Usuário não encontrado.");
             
-            let profile: User | null = null;
-            try {
-                profile = await getUserById(data.user.id);
-            } catch (e) {
-                // Atraso curto caso o trigger do banco esteja processando a criação do perfil
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                profile = await getUserById(data.user.id);
-            }
+            const profile = await loadProfile(data.user.id);
             
             if (!profile) {
-                throw new Error(`Perfil não encontrado para o usuário ${data.user.id}.`);
+                // Pequena espera para triggers de banco de dados
+                await new Promise(r => setTimeout(r, 1000));
+                const retryProfile = await loadProfile(data.user.id);
+                if (!retryProfile) throw new Error(`Perfil não criado no banco de dados.`);
             }
 
-            const isParentRole = profile.role === 'Pai/Responsável';
-            if (expectedRoleType === 'staff' && isParentRole) {
+            // Verificação de tipos de portal
+            const isParent = profile?.role === 'Pai/Responsável';
+            if (expectedRoleType === 'staff' && isParent) {
                 await supabase.auth.signOut();
-                throw new Error("Acesso negado. Utilize o portal de pais/responsáveis.");
+                throw new Error("Acesso negado. Este é o portal da equipe.");
             }
-            if (expectedRoleType === 'parent' && !isParentRole) {
+            if (expectedRoleType === 'parent' && !isParent) {
                 await supabase.auth.signOut();
-                throw new Error("Acesso negado. Utilize o portal da equipe da escola.");
+                throw new Error("Acesso negado. Este é o portal de pais.");
             }
 
-            setCurrentUser(profile);
-            
         } catch (error: any) {
-            const message = typeof error === 'string' ? error : (error.message || "Erro desconhecido ao tentar fazer login.");
-            setAuthError(message);
+            setAuthError(error.message || "Erro ao autenticar.");
             throw error;
         } finally {
             setIsLoading(false);
         }
     };
 
-    const signInAsStaff = async (email: string, pass: string) => {
-        await performLogin(email, pass, 'staff');
-    };
-
-    const signInAsParent = async (email: string, pass: string) => {
-        await performLogin(email, pass, 'parent');
-    };
+    const signInAsStaff = async (email: string, pass: string) => performLogin(email, pass, 'staff');
+    const signInAsParent = async (email: string, pass: string) => performLogin(email, pass, 'parent');
     
     const hasPermission = (permission: Permission): boolean => {
         if (currentUser?.role === 'Admin') return true;
         return userPermissions.has(permission);
     };
 
-    const value = { 
-        currentUser, 
-        isLoading, 
-        hasPermission, 
-        authError, 
-        setAuthError, 
-        signInAsStaff, 
-        signInAsParent, 
-        setUserPermissions 
-    };
-
     return (
-        <AuthContext.Provider value={value}>
+        <AuthContext.Provider value={{ 
+            currentUser, isLoading, hasPermission, authError, setAuthError, 
+            signInAsStaff, signInAsParent, setUserPermissions 
+        }}>
             {children}
         </AuthContext.Provider>
     );
@@ -191,8 +147,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
-    if (context === undefined) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
+    if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');
     return context;
 };

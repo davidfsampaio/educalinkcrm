@@ -1,5 +1,4 @@
 
-
 import React, { useState, lazy, Suspense, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -11,7 +10,7 @@ import AccessDenied from './components/common/AccessDenied';
 import { PWAProvider } from './contexts/PWAContext';
 import { supabase } from './services/supabaseClient';
 
-// Lazy load components for code splitting
+// Lazy load components
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const Students = lazy(() => import('./components/Students'));
 const Financials = lazy(() => import('./components/Financials'));
@@ -48,8 +47,9 @@ const viewPermissions: Record<View, Permission> = {
 };
 
 const LoadingFallback: React.FC = () => (
-    <div className="flex justify-center items-center h-full w-full">
-        <p className="text-brand-text">Carregando...</p>
+    <div className="flex justify-center items-center h-full w-full py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
+        <p className="ml-3 text-brand-text">Carregando...</p>
     </div>
 );
 
@@ -62,7 +62,6 @@ const MainApp: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const { hasPermission } = useAuth();
   const [initialAction, setInitialAction] = useState<string | null>(null);
 
-  // Handle PWA shortcut actions
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const action = params.get('action');
@@ -75,7 +74,6 @@ const MainApp: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
             setActiveView('leads');
             setInitialAction('new_lead');
         }
-        // Clean up the URL
         window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
@@ -92,14 +90,11 @@ const MainApp: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const handleNotificationSelect = (item: any, view: View, subView?: string) => {
       setActiveView(view);
       setInitialItem(item);
-      if (subView) {
-          setInitialSubView(subView);
-      }
+      if (subView) setInitialSubView(subView);
   };
 
   useEffect(() => {
     if (initialItem || initialSubView) {
-      // Clear the item after a short delay so the child component can process it
       const timer = setTimeout(() => {
         setInitialItem(null);
         setInitialSubView(null);
@@ -111,9 +106,7 @@ const MainApp: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
 
   const renderView = () => {
     const requiredPermission = viewPermissions[activeView];
-    if (!hasPermission(requiredPermission)) {
-        return <AccessDenied />;
-    }
+    if (!hasPermission(requiredPermission)) return <AccessDenied />;
 
     const isStudent = initialItem && 'parent_name' in initialItem && !('interest_date' in initialItem);
     const isStaff = initialItem && 'hire_date' in initialItem;
@@ -148,7 +141,7 @@ const MainApp: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         isOpen={isSidebarOpen}
         setIsOpen={setSidebarOpen}
       />
-      <div className="flex-1 flex flex-col min-w-0"> {/* Added min-w-0 to prevent content overflow */}
+      <div className="flex-1 flex flex-col min-w-0">
         <Header currentView={activeView} onMenuClick={() => setSidebarOpen(true)} onSearchSelect={handleSearchSelect} onNotificationSelect={handleNotificationSelect} onLogout={onLogout} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 p-4 md:p-6">
           <Suspense fallback={<LoadingFallback />}>
@@ -161,7 +154,6 @@ const MainApp: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
 }
 
 const SchoolIcon: React.FC<{className?: string}> = ({ className }) => (
-    // FIX: Corrected typo in viewBox attribute.
     <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14 22v-4a2 2 0 1 0-4 0v4" />
         <path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2" />
@@ -177,278 +169,126 @@ const SchoolIcon: React.FC<{className?: string}> = ({ className }) => (
 );
 
 
-const InitialSelectionScreen: React.FC<{ onSelect: (type: 'staff' | 'parent') => void }> = ({ onSelect }) => {
-  return (
+const InitialSelectionScreen: React.FC<{ onSelect: (type: 'staff' | 'parent') => void }> = ({ onSelect }) => (
     <div className="w-full max-w-md p-6 sm:p-8 space-y-8 bg-white rounded-2xl shadow-xl text-center">
         <div className="flex flex-col items-center">
             <SchoolIcon className="h-16 w-16 text-brand-primary" />
-            <h1 className="text-3xl font-bold mt-4 text-brand-text-dark">Bem-vindo ao EducaLink CRM</h1>
+            <h1 className="text-3xl font-bold mt-4 text-brand-text-dark">EducaLink CRM</h1>
             <p className="mt-2 text-brand-text">Selecione seu perfil de acesso</p>
         </div>
         <div className="space-y-4 pt-4">
-            <button
-                onClick={() => onSelect('staff')}
-                className="w-full py-3 px-4 font-semibold rounded-lg text-white bg-brand-primary hover:bg-sky-600 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1"
-            >
-                Acessar como Equipe da Escola
+            <button onClick={() => onSelect('staff')} className="w-full py-3 px-4 font-semibold rounded-lg text-white bg-brand-primary hover:bg-sky-600 transition-all duration-300 shadow-md transform hover:-translate-y-1">
+                Equipe da Escola
             </button>
-            <button
-                onClick={() => onSelect('parent')}
-                className="w-full py-3 px-4 font-semibold rounded-lg text-brand-text-dark bg-slate-200 hover:bg-slate-300 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1"
-            >
-                Acessar como Pai/Responsável
+            <button onClick={() => onSelect('parent')} className="w-full py-3 px-4 font-semibold rounded-lg text-brand-text-dark bg-slate-200 hover:bg-slate-300 transition-all duration-300 shadow-md transform hover:-translate-y-1">
+                Pai / Responsável
             </button>
-        </div>
-         <div className="pt-6 text-center text-slate-400 text-sm">
-            <p>&copy; 2024 EducaLink CRM</p>
         </div>
     </div>
-  );
-};
-
-const StaffLoginScreen: React.FC<{ onBack: () => void; authError: string | null; setAuthError: (error: string | null) => void; }> = ({ onBack, authError, setAuthError }) => {
-    const { signInAsStaff } = useAuth();
-    const [email, setEmail] = useState('admin@educalink.com');
-    const [password, setPassword] = useState('admin123');
-    const [isLoading, setIsLoading] = useState(false);
-
-    const handleLogin = async () => {
-        setIsLoading(true);
-        setAuthError(null);
-        await signInAsStaff(email, password);
-        // The AuthContext now handles the global loading state and sets the error
-        setIsLoading(false);
-    };
-    
-    const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (authError) setAuthError(null);
-        setter(e.target.value);
-    }
-
-    return (
-        <div className="w-full max-w-md p-6 sm:p-8 space-y-6 bg-white rounded-2xl shadow-xl">
-            <div className="flex flex-col items-center text-center">
-                <SchoolIcon className="h-12 w-12 text-brand-primary" />
-                <h2 className="text-2xl font-bold mt-3 text-brand-text-dark">Login da Equipe</h2>
-            </div>
-            {authError && <p className="text-sm text-center text-red-600 bg-red-50 p-3 rounded-md">{authError}</p>}
-            <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-4">
-                <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-                    <input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={handleInputChange(setEmail)}
-                        required
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
-                        placeholder="admin@educalink.com"
-                    />
-                </div>
-                 <div>
-                    <label htmlFor="password"className="block text-sm font-medium text-gray-700">Senha</label>
-                    <input
-                        id="password"
-                        type="password"
-                        value={password}
-                        onChange={handleInputChange(setPassword)}
-                        required
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
-                        placeholder="admin123"
-                    />
-                </div>
-                 <div className="pt-2">
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full py-3 px-4 font-semibold rounded-lg text-white bg-brand-primary hover:bg-sky-600 transition-all duration-300 disabled:bg-slate-400"
-                    >
-                        {isLoading ? 'Entrando...' : 'Entrar'}
-                    </button>
-                </div>
-            </form>
-            <div className="text-center">
-                <button onClick={onBack} className="text-sm font-medium text-brand-primary hover:underline">
-                    &larr; Voltar para a seleção de perfil
-                </button>
-            </div>
-        </div>
-    );
-};
-
-const ParentLoginScreen: React.FC<{ onBack: () => void; authError: string | null; setAuthError: (error: string | null) => void; }> = ({ onBack, authError, setAuthError }) => {
-    const { signInAsParent } = useAuth();
-    const [email, setEmail] = useState('ana.silva@email.com');
-    const [password, setPassword] = useState('senha123'); // Example password
-    const [isLoading, setIsLoading] = useState(false);
-
-    const handleLogin = async () => {
-        setIsLoading(true);
-        setAuthError(null);
-        await signInAsParent(email, password);
-        setIsLoading(false);
-    };
-
-    const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (authError) setAuthError(null);
-        setter(e.target.value);
-    }
-
-    return (
-        <div className="w-full max-w-md p-6 sm:p-8 space-y-6 bg-white rounded-2xl shadow-xl">
-            <div className="flex flex-col items-center text-center">
-                <SchoolIcon className="h-12 w-12 text-brand-primary" />
-                <h2 className="text-2xl font-bold mt-3 text-brand-text-dark">Portal do Responsável</h2>
-            </div>
-            {authError && <p className="text-sm text-center text-red-600 bg-red-50 p-3 rounded-md">{authError}</p>}
-            <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-4">
-                <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-                    <input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={handleInputChange(setEmail)}
-                        required
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
-                        placeholder="responsavel@email.com"
-                    />
-                </div>
-                 <div>
-                    <label htmlFor="password"className="block text-sm font-medium text-gray-700">Senha</label>
-                    <input
-                        id="password"
-                        type="password"
-                        value={password}
-                        onChange={handleInputChange(setPassword)}
-                        required
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
-                        placeholder="********"
-                    />
-                </div>
-                 <div className="pt-2">
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full py-3 px-4 font-semibold rounded-lg text-white bg-brand-primary hover:bg-sky-600 transition-all duration-300 disabled:bg-slate-400"
-                    >
-                        {isLoading ? 'Entrando...' : 'Entrar'}
-                    </button>
-                </div>
-            </form>
-            <div className="text-center">
-                <button onClick={onBack} className="text-sm font-medium text-brand-primary hover:underline">
-                    &larr; Voltar para a seleção de perfil
-                </button>
-            </div>
-        </div>
-    );
-};
+);
 
 const AuthScreen: React.FC = () => {
     const [view, setView] = useState<'initial' | 'staff_login' | 'parent_login'>('initial');
     const { authError, setAuthError } = useAuth();
 
-    const handleSelect = (type: 'staff' | 'parent') => {
-        if (authError) setAuthError(null);
-        if (type === 'staff') {
-            setView('staff_login');
-        } else {
-            setView('parent_login');
-        }
-    };
-    
-    const handleBackToInitial = () => {
-        if (authError) setAuthError(null);
-        setView('initial');
-    }
-
     return (
         <div className="flex items-center justify-center h-screen bg-slate-100 p-4">
-            {view === 'initial' && <InitialSelectionScreen onSelect={handleSelect} />}
-            {view === 'staff_login' && <StaffLoginScreen onBack={handleBackToInitial} authError={authError} setAuthError={setAuthError} />}
-            {view === 'parent_login' && <ParentLoginScreen onBack={handleBackToInitial} authError={authError} setAuthError={setAuthError} />}
+            {view === 'initial' && <InitialSelectionScreen onSelect={(t) => t === 'staff' ? setView('staff_login') : setView('parent_login')} />}
+            {view === 'staff_login' && <StaffLoginScreen onBack={() => setView('initial')} authError={authError} setAuthError={setAuthError} />}
+            {view === 'parent_login' && <ParentLoginScreen onBack={() => setView('initial')} authError={authError} setAuthError={setAuthError} />}
         </div>
     );
 };
 
 
+const StaffLoginScreen = lazy(() => Promise.resolve({ default: ({ onBack, authError, setAuthError }: any) => {
+    const { signInAsStaff } = useAuth();
+    const [email, setEmail] = useState('admin@educalink.com');
+    const [pass, setPass] = useState('admin123');
+    const [load, setLoad] = useState(false);
+    return (
+        <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl space-y-6">
+            <h2 className="text-2xl font-bold text-center">Login da Equipe</h2>
+            {authError && <div className="p-3 bg-red-50 text-red-600 text-sm rounded">{authError}</div>}
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded" placeholder="E-mail" />
+            <input type="password" value={pass} onChange={e => setPass(e.target.value)} className="w-full p-2 border rounded" placeholder="Senha" />
+            <button disabled={load} onClick={async () => { setLoad(true); try { await signInAsStaff(email, pass); } catch(e){} setLoad(false); }} className="w-full py-3 bg-brand-primary text-white rounded-lg">{load ? 'Entrando...' : 'Entrar'}</button>
+            <button onClick={onBack} className="w-full text-sm text-brand-primary">Voltar</button>
+        </div>
+    );
+}}));
+
+const ParentLoginScreen = lazy(() => Promise.resolve({ default: ({ onBack, authError, setAuthError }: any) => {
+    const { signInAsParent } = useAuth();
+    const [email, setEmail] = useState('ana.silva@email.com');
+    const [pass, setPass] = useState('senha123');
+    const [load, setLoad] = useState(false);
+    return (
+        <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl space-y-6">
+            <h2 className="text-2xl font-bold text-center">Portal do Responsável</h2>
+            {authError && <div className="p-3 bg-red-50 text-red-600 text-sm rounded">{authError}</div>}
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded" placeholder="E-mail" />
+            <input type="password" value={pass} onChange={e => setPass(e.target.value)} className="w-full p-2 border rounded" placeholder="Senha" />
+            <button disabled={load} onClick={async () => { setLoad(true); try { await signInAsParent(email, pass); } catch(e){} setLoad(false); }} className="w-full py-3 bg-brand-primary text-white rounded-lg">{load ? 'Entrando...' : 'Entrar'}</button>
+            <button onClick={onBack} className="w-full text-sm text-brand-primary">Voltar</button>
+        </div>
+    );
+}}));
+
 const AppRouter: React.FC = () => {
     const { currentUser, isLoading } = useAuth();
     const [page, setPage] = useState<'crm' | 'capture' | null>(null);
+    const [failsafeActive, setFailsafeActive] = useState(false);
 
     useEffect(() => {
         const handleRouting = () => {
-            if (window.location.hash.startsWith('#/capture/')) {
-                setPage('capture');
-            } else {
-                setPage('crm');
-            }
+            if (window.location.hash.startsWith('#/capture/')) setPage('capture');
+            else setPage('crm');
         };
-
         handleRouting();
         window.addEventListener('hashchange', handleRouting);
-        return () => window.removeEventListener('hashchange', handleRouting);
+        
+        // Failsafe de UI: Se após 4 segundos ainda estiver "verificando", permite tentar o login
+        const timer = setTimeout(() => setFailsafeActive(true), 4000);
+        
+        return () => {
+            window.removeEventListener('hashchange', handleRouting);
+            clearTimeout(timer);
+        }
     }, []);
 
-    const handleLogout = async () => {
-        await supabase.auth.signOut();
-    };
-
-    if (isLoading || page === null) {
+    if ((isLoading && !failsafeActive) || page === null) {
         return (
-            <div className="flex h-screen w-screen items-center justify-center">
-                <p>Verificando sessão...</p>
+            <div className="flex flex-col h-screen w-screen items-center justify-center bg-slate-50">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-brand-primary mb-4"></div>
+                <p className="text-slate-600 font-medium animate-pulse">Verificando sessão segura...</p>
             </div>
         );
     }
 
-    if (page === 'capture') {
-        return (
-            <DataProvider>
-                <PublicLeadCapturePage />
-            </DataProvider>
-        );
-    }
-    
-    if (!currentUser) {
-        return <AuthScreen />;
-    }
+    if (page === 'capture') return <DataProvider><PublicLeadCapturePage /></DataProvider>;
+    if (!currentUser) return <AuthScreen />;
 
-    if (currentUser) {
-        if (currentUser.role === 'Pai/Responsável') {
-            return (
-                <DataProvider>
-                    <ParentPortal onLogout={handleLogout} />
-                </DataProvider>
-            );
-        }
-
-        return (
-            <DataProvider>
-                <MainApp onLogout={handleLogout} />
-            </DataProvider>
-        );
-    }
-    
-    return <AuthScreen />;
+    return (
+        <DataProvider>
+            {currentUser.role === 'Pai/Responsável' ? (
+                <ParentPortal onLogout={() => supabase.auth.signOut()} />
+            ) : (
+                <MainApp onLogout={() => supabase.auth.signOut()} />
+            )}
+        </DataProvider>
+    );
 };
 
 const PermissionCalculator: React.FC = () => {
     const { currentUser, setUserPermissions } = useAuth();
     const { settings } = useSettings();
-
     useEffect(() => {
-        if (!currentUser || !settings.roles) {
-            setUserPermissions(new Set());
-            return;
-        }
+        if (!currentUser || !settings.roles) return;
         const role = settings.roles.find(r => r.name === currentUser.role);
-        const permissions = new Set<Permission>(role ? role.permissions : []);
-        setUserPermissions(permissions);
+        setUserPermissions(new Set<Permission>(role ? role.permissions : []));
     }, [currentUser, settings.roles, setUserPermissions]);
-
-    return null; // This component doesn't render anything
+    return null;
 }
 
 
@@ -458,7 +298,7 @@ const App: React.FC = () => {
       <AuthProvider>
         <SettingsProvider>
             <PermissionCalculator />
-            <Suspense fallback={<div className="flex h-screen w-screen items-center justify-center"><p>Carregando Módulo...</p></div>}>
+            <Suspense fallback={<div className="flex h-screen w-screen items-center justify-center"><p>Carregando...</p></div>}>
               <AppRouter />
             </Suspense>
         </SettingsProvider>

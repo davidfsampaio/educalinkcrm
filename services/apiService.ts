@@ -224,6 +224,14 @@ export const addLeadCaptureCampaign = async (data: any) =>
     handleResponse<LeadCaptureCampaign>(await supabase.from('lead_capture_campaigns').insert(data).select().single());
 
 export const savePushSubscription = async (subscription: any, userId: string) => {
-    const { error } = await supabase.from('users').update({ push_subscription: subscription }).eq('id', userId);
-    if (error) throw new Error(error.message);
+    // FIX: Utilizando a tabela dedicada 'push_subscriptions' identificada no dashboard do usuário.
+    const { error } = await supabase.from('push_subscriptions').upsert({ 
+        user_id: userId, 
+        subscription: subscription,
+        updated_at: new Date().toISOString()
+    });
+    if (error) {
+        console.error("Falha ao salvar inscrição de push:", error);
+        throw new Error(error.message);
+    }
 };
