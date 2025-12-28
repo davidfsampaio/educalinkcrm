@@ -5,13 +5,12 @@ import {
     User, Expense, Revenue, LeadCaptureCampaign, Photo, TuitionPlan, StudentColumns, LeadColumns, InvoiceColumns, PhotoAlbumColumns
 } from '../types';
 
-// Helper para lidar com respostas do Supabase
+// Helper centralizado para tratar respostas e evitar erros de sintaxe SQL por objetos malformados
 const handleResponse = <T>(response: { data: T | null; error: any }) => {
     if (response.error) {
-        // Loga o erro original para depuração
-        console.error("Supabase API Error:", response.error);
-        // Lança apenas a mensagem ou uma string para evitar [object Object] no frontend
-        throw new Error(response.error.message || "Erro desconhecido na base de dados.");
+        console.error("Supabase API Error Details:", response.error);
+        // Retorna apenas a mensagem para evitar o erro [object Object]
+        throw new Error(typeof response.error === 'string' ? response.error : (response.error.message || "Erro na base de dados."));
     }
     return response.data as T;
 };
@@ -20,8 +19,11 @@ const handleResponse = <T>(response: { data: T | null; error: any }) => {
 export const getUsers = async () => 
     handleResponse<User[]>(await supabase.from('users').select('*'));
 
-export const getUserById = async (id: string) => 
-    handleResponse<User>(await supabase.from('users').select('*').eq('id', id).single());
+// FIX: Busca por ID único é muito mais rápida e segura do que filtrar um array de todos os usuários
+export const getUserById = async (userId: string) => {
+    if (!userId || typeof userId !== 'string') throw new Error("ID de usuário inválido.");
+    return handleResponse<User>(await supabase.from('users').select('*').eq('id', userId).single());
+};
 
 export const addUser = async (data: any) => 
     handleResponse<User>(await supabase.from('users').insert(data).select().single());

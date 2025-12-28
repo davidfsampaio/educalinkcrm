@@ -37,19 +37,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         let isMounted = true;
 
         async function checkSession() {
+            // Timeout de segurança: se o Supabase não responder em 6 segundos, liberamos a tela
+            const timeoutId = setTimeout(() => {
+                if (isMounted && isLoading) {
+                    console.warn("Session check timed out. Proceeding as guest.");
+                    setIsLoading(false);
+                }
+            }, 6000);
+
             try {
-                // Tenta recuperar a sessão atual
                 const { data: { session }, error: sessionError } = await supabase.auth.getSession();
                 
                 if (sessionError) throw sessionError;
 
                 if (session && isMounted) {
                     try {
-                        // Busca apenas o perfil do usuário logado
+                        // Busca otimizada: busca APENAS o perfil do usuário logado
                         const profile = await getUserById(session.user.id);
                         if (isMounted) setCurrentUser(profile);
                     } catch (profileError) {
-                        console.error("Erro ao carregar perfil do usuário:", profileError);
+                        console.error("Erro ao carregar perfil:", profileError);
                         if (isMounted) setCurrentUser(null);
                     }
                 } else if (isMounted) {
@@ -61,8 +68,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     setCurrentUser(null);
                  }
             } finally {
-                // IMPORTANTE: Garantir que o loading pare de qualquer forma
                 if (isMounted) {
+                    clearTimeout(timeoutId);
                     setIsLoading(false);
                 }
             }
@@ -117,12 +124,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 throw new Error("Falha na autenticação. Usuário não encontrado.");
             }
             
-            // Busca o perfil recém logado
             let profile: User | null = null;
             try {
                 profile = await getUserById(data.user.id);
             } catch (e) {
-                // Se falhar, aguarda um pouco (caso o trigger de criação do perfil no DB demore)
+                // Atraso curto caso o trigger do banco esteja processando a criação do perfil
                 await new Promise(resolve => setTimeout(resolve, 1500));
                 profile = await getUserById(data.user.id);
             }
