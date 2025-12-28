@@ -7,7 +7,12 @@ import {
 
 // Helper para lidar com respostas do Supabase
 const handleResponse = <T>(response: { data: T | null; error: any }) => {
-    if (response.error) throw response.error;
+    if (response.error) {
+        // Loga o erro original para depuração
+        console.error("Supabase API Error:", response.error);
+        // Lança apenas a mensagem ou uma string para evitar [object Object] no frontend
+        throw new Error(response.error.message || "Erro desconhecido na base de dados.");
+    }
     return response.data as T;
 };
 
@@ -23,7 +28,7 @@ export const updateStudent = async (id: number, data: any) =>
 
 export const deleteStudent = async (id: number) => {
     const { error } = await supabase.from('students').delete().eq('id', id);
-    if (error) throw error;
+    if (error) throw new Error(error.message);
 };
 
 // --- Invoices ---
@@ -38,7 +43,7 @@ export const updateInvoice = async (id: string, data: any) =>
 
 export const deleteInvoice = async (id: string) => {
     const { error } = await supabase.from('invoices').delete().eq('id', id);
-    if (error) throw error;
+    if (error) throw new Error(error.message);
 };
 
 // --- Leads ---
@@ -53,7 +58,7 @@ export const updateLead = async (id: number, data: any) =>
 
 export const deleteLead = async (id: number) => {
     const { error } = await supabase.from('leads').delete().eq('id', id);
-    if (error) throw error;
+    if (error) throw new Error(error.message);
 };
 
 // --- Staff ---
@@ -68,7 +73,7 @@ export const updateStaff = async (id: number, data: any) =>
 
 export const deleteStaff = async (id: number) => {
     const { error } = await supabase.from('staff').delete().eq('id', id);
-    if (error) throw error;
+    if (error) throw new Error(error.message);
 };
 
 // --- Users ---
@@ -83,7 +88,7 @@ export const updateUser = async (id: string, data: any) =>
 
 export const deleteUser = async (id: string) => {
     const { error } = await supabase.from('users').delete().eq('id', id);
-    if (error) throw error;
+    if (error) throw new Error(error.message);
 };
 
 // --- Communications ---
@@ -98,7 +103,7 @@ export const updateCommunication = async (id: number, data: any) =>
 
 export const deleteCommunication = async (id: number) => {
     const { error } = await supabase.from('communications').delete().eq('id', id);
-    if (error) throw error;
+    if (error) throw new Error(error.message);
 };
 
 // --- Agenda ---
@@ -113,7 +118,7 @@ export const updateAgendaItem = async (id: number, data: any) =>
 
 export const deleteAgendaItem = async (id: number) => {
     const { error } = await supabase.from('agenda_items').delete().eq('id', id);
-    if (error) throw error;
+    if (error) throw new Error(error.message);
 };
 
 // --- Library ---
@@ -128,7 +133,7 @@ export const updateLibraryBook = async (id: number, data: any) =>
 
 export const deleteLibraryBook = async (id: number) => {
     const { error } = await supabase.from('library_books').delete().eq('id', id);
-    if (error) throw error;
+    if (error) throw new Error(error.message);
 };
 
 // --- Gallery ---
@@ -143,7 +148,7 @@ export const updatePhotoAlbum = async (id: number, data: any) =>
 
 export const deletePhotoAlbum = async (id: number) => {
     const { error } = await supabase.from('photo_albums').delete().eq('id', id);
-    if (error) throw error;
+    if (error) throw new Error(error.message);
 };
 
 export const updateAlbumPhotos = async (albumId: number, photos: Photo[]) => 
@@ -161,7 +166,7 @@ export const updateExpense = async (id: number, data: any) =>
 
 export const deleteExpense = async (id: number) => {
     const { error } = await supabase.from('expenses').delete().eq('id', id);
-    if (error) throw error;
+    if (error) throw new Error(error.message);
 };
 
 export const getRevenues = async () => 
@@ -175,7 +180,7 @@ export const updateRevenue = async (id: number, data: any) =>
 
 export const deleteRevenue = async (id: number) => {
     const { error } = await supabase.from('revenues').delete().eq('id', id);
-    if (error) throw error;
+    if (error) throw new Error(error.message);
 };
 
 // --- Tuition Plans ---
@@ -190,19 +195,21 @@ export const updateTuitionPlan = async (id: number, data: any) =>
 
 export const deleteTuitionPlan = async (id: number) => {
     const { error } = await supabase.from('tuition_plans').delete().eq('id', id);
-    if (error) throw error;
+    if (error) throw new Error(error.message);
 };
 
 // --- Settings & Marketing ---
 export const getSchoolSettings = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
-    return handleResponse<any>(await supabase.from('schools').select('*').eq('id', user.user_metadata.school_id || '').single());
+    const schoolId = user.user_metadata?.school_id;
+    if (!schoolId) return null;
+    return handleResponse<any>(await supabase.from('schools').select('*').eq('id', schoolId).single());
 };
 
 export const updateSchoolSettings = async (id: string, settings: any) => {
     const { error } = await supabase.from('schools').update(settings).eq('id', id);
-    if (error) throw error;
+    if (error) throw new Error(error.message);
 };
 
 export const getLeadCaptureCampaigns = async () => 
@@ -213,5 +220,5 @@ export const addLeadCaptureCampaign = async (data: any) =>
 
 export const savePushSubscription = async (subscription: any, userId: string) => {
     const { error } = await supabase.from('users').update({ push_subscription: subscription }).eq('id', userId);
-    if (error) throw error;
+    if (error) throw new Error(error.message);
 };
