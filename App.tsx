@@ -205,10 +205,26 @@ const StaffLoginScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         }
     };
 
+    const handleEmergencyLogout = async () => {
+        await supabase.auth.signOut();
+        setAuthError(null);
+        window.location.reload();
+    };
+
     return (
         <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl space-y-6 animate-in fade-in zoom-in duration-300">
             <h2 className="text-2xl font-bold text-center text-brand-text-dark">Login da Equipe</h2>
-            {authError && <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">{authError}</div>}
+            {authError && (
+                <div className="p-4 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 space-y-2">
+                    <p className="font-semibold">{authError}</p>
+                    <button 
+                        onClick={handleEmergencyLogout}
+                        className="w-full mt-2 py-1 text-xs font-bold underline uppercase hover:text-red-800 text-center"
+                    >
+                        Sair desta conta e tentar outro e-mail
+                    </button>
+                </div>
+            )}
             <div className="space-y-4">
                 <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">E-mail</label>
@@ -249,7 +265,12 @@ const ParentLoginScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     return (
         <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl space-y-6 animate-in fade-in zoom-in duration-300">
             <h2 className="text-2xl font-bold text-center text-brand-text-dark">Portal do Responsável</h2>
-            {authError && <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">{authError}</div>}
+            {authError && (
+                <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex flex-col items-center">
+                    <p>{authError}</p>
+                    <button onClick={() => supabase.auth.signOut().then(() => window.location.reload())} className="mt-2 text-xs font-bold underline">SAIR E TENTAR OUTRO</button>
+                </div>
+            )}
             <div className="space-y-4">
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-3 border rounded-lg" placeholder="E-mail do responsável" />
                 <input type="password" value={pass} onKeyDown={e => e.key === 'Enter' && handleLogin()} onChange={e => setPass(e.target.value)} className="w-full p-3 border rounded-lg" placeholder="Senha" />
@@ -275,7 +296,7 @@ const AuthScreen: React.FC = () => {
 };
 
 const AppRouter: React.FC = () => {
-    const { currentUser, isLoading } = useAuth();
+    const { currentUser, isLoading, authError } = useAuth();
     const [page, setPage] = useState<'crm' | 'capture' | null>(null);
 
     useEffect(() => {
@@ -288,8 +309,8 @@ const AppRouter: React.FC = () => {
         return () => window.removeEventListener('hashchange', handleRouting);
     }, []);
 
-    // Só mostramos o spinner global se NÃO estivermos na página de captura pública
-    if (page === null || (isLoading && page === 'crm' && !currentUser)) {
+    // Se estiver carregando, mas não temos erro ainda e nem usuário, mostramos o spinner
+    if (page === null || (isLoading && !currentUser && !authError)) {
         return (
             <div className="flex flex-col h-screen w-screen items-center justify-center bg-slate-50">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-brand-primary mb-4"></div>
@@ -299,6 +320,8 @@ const AppRouter: React.FC = () => {
     }
 
     if (page === 'capture') return <DataProvider><PublicLeadCapturePage /></DataProvider>;
+    
+    // Se não há usuário logado NO BANCO DE DADOS, vamos para tela de login (mesmo que logado no Auth)
     if (!currentUser) return <AuthScreen />;
 
     return (

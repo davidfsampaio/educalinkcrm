@@ -34,48 +34,57 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [userPermissions, setUserPermissions] = useState<Set<Permission>>(new Set());
     const isAuthenticating = useRef(false);
 
-    // Função centralizada para carregar perfil com timeout de 8 segundos
     const loadProfile = useCallback(async (userId: string) => {
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error("O banco de dados demorou muito a responder. Verifique se o projeto Supabase está ativo.")), 8000)
-        );
-
         try {
+            console.log(`[Auth] Buscando perfil: ${userId}`);
+            // Timeout de 10 segundos para busca no banco público
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout ao conectar com o banco de dados.")), 10000));
             const profile = await Promise.race([getUserById(userId), timeoutPromise]) as User | null;
-            setCurrentUser(profile);
-            return profile;
+            
+            if (profile) {
+                setCurrentUser(profile);
+                setAuthError(null);
+            } else {
+                // Usuário autenticado no Supabase mas sem registro na tabela public.users
+                setCurrentUser(null);
+                const { data } = await supabase.auth.getUser();
+                setAuthError(`Seu e-mail (${data.user?.email}) está autenticado, mas não existe um registro correspondente na tabela de 'users' da escola.`);
+            }
         } catch (error) {
-            console.error("Erro ao carregar perfil:", error);
+            console.error("[Auth] Erro ao carregar perfil:", error);
+            setAuthError("Erro de conexão com o banco de dados.");
             setCurrentUser(null);
-            throw error;
         }
     }, []);
 
     useEffect(() => {
         let isMounted = true;
 
+        // Monitorar estado da sessão
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (!isMounted) return;
+            if (session) {
+                loadProfile(session.user.id).finally(() => setIsLoading(false));
+            } else {
+                setIsLoading(false);
+            }
+        });
+
         const { data: authListener } = supabase.auth.onAuthStateChange(
             async (event, session) => {
                 if (!isMounted) return;
-                
-                // Se já estivermos no meio de um performLogin, deixamos ele gerenciar o estado
-                if (isAuthenticating.current) return;
+                console.log(`[Auth] Evento: ${event}`);
 
                 if (event === 'SIGNED_OUT') {
                     setCurrentUser(null);
                     setAuthError(null);
                     setIsLoading(false);
-                } else if (session?.user) {
-                    setIsLoading(true);
-                    try {
+                } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                    if (session?.user && !currentUser) {
+                        setIsLoading(true);
                         await loadProfile(session.user.id);
-                    } catch (e) {
-                        setAuthError((e as Error).message);
-                    } finally {
                         setIsLoading(false);
                     }
-                } else {
-                    setIsLoading(false);
                 }
             }
         );
@@ -84,7 +93,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             isMounted = false;
             authListener.subscription.unsubscribe();
         };
-    }, [loadProfile]);
+    }, [loadProfile, currentUser]);
 
     const performLogin = async (email: string, pass: string, expectedRoleType: 'staff' | 'parent') => {
         setAuthError(null);
@@ -93,55 +102,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         try {
             const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-
-            if (error) {
-                let errorMessage = error.message;
-                if (error.message === 'Invalid login credentials') {
-                    errorMessage = 'Email ou senha incorretos.';
-                }
-                throw new Error(errorMessage);
-            }
+            if (error) throw error;
+            if (!data.user) throw new Error("Falha na autenticação.");
             
-            if (!data.user) throw new Error("Usuário não encontrado no sistema de autenticação.");
-            
-            // Tenta carregar o perfil
-            let profile = await loadProfile(data.user.id);
-            
-            // Pequena espera e re-tentativa caso haja delay em triggers do banco
-            if (!profile) {
-                await new Promise(r => setTimeout(r, 1500));
-                profile = await loadProfile(data.user.id);
-            }
-
-            if (!profile) {
-                throw new Error(`Seu e-mail (${email}) está autenticado, mas não existe um registro correspondente na tabela de 'users' da escola.`);
-            }
-
-            // Verificação de portal
-            const isParent = profile?.role === 'Pai/Responsável';
-            if (expectedRoleType === 'staff' && isParent) {
-                await supabase.auth.signOut();
-                throw new Error("Este e-mail pertence a um Responsável. Use o portal de Pais.");
-            }
-            if (expectedRoleType === 'parent' && !isParent) {
-                await supabase.auth.signOut();
-                throw new Error("Este e-mail pertence à Equipe. Use o portal da Escola.");
-            }
-
+            await loadProfile(data.user.id);
         } catch (error: any) {
-            setAuthError(error.message || "Erro inesperado ao autenticar.");
-            setIsLoading(false);
+            setAuthError(error.message || "Erro ao fazer login.");
             throw error;
         } finally {
             isAuthenticating.current = false;
-            // Só paramos o loading global se não houve erro, ou o AppRouter vai unmountar o login
-            // Na verdade, se houve erro, setIsLoading(false) é essencial para o login voltar a aparecer
             setIsLoading(false);
         }
     };
 
-    const signInAsStaff = async (email: string, pass: string) => performLogin(email, pass, 'staff');
-    const signInAsParent = async (email: string, pass: string) => performLogin(email, pass, 'parent');
+    const signInAsStaff = (email: string, pass: string) => performLogin(email, pass, 'staff');
+    const signInAsParent = (email: string, pass: string) => performLogin(email, pass, 'parent');
     
     const hasPermission = (permission: Permission): boolean => {
         if (currentUser?.role === 'Admin') return true;

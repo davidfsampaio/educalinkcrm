@@ -8,7 +8,7 @@ import {
 // Helper centralizado para tratar respostas e evitar erros de sintaxe SQL
 const handleResponse = <T>(response: { data: T | null; error: any }) => {
     if (response.error) {
-        // Se for erro de "não encontrado" (PGRST116), retornamos null em vez de travar
+        // Retornamos null para erros de "não encontrado" (PGRST116) em vez de lançar exceção
         if (response.error.code === 'PGRST116') return null;
         
         console.error("Supabase API Error:", response.error);
@@ -24,7 +24,8 @@ export const getUsers = async () =>
 export const getUserById = async (userId: string) => {
     if (!userId) return null;
     try {
-        const response = await supabase.from('users').select('*').eq('id', userId).single();
+        // Usamos maybeSingle para não gerar erro caso o perfil ainda não exista na tabela users
+        const response = await supabase.from('users').select('*').eq('id', userId).maybeSingle();
         return handleResponse<User>(response);
     } catch (e) {
         console.error("Erro ao buscar usuário por ID:", e);
@@ -216,7 +217,7 @@ export const getSchoolSettings = async () => {
     if (!user) return null;
     const schoolId = user.user_metadata?.school_id;
     if (!schoolId) return null;
-    return handleResponse<any>(await supabase.from('schools').select('*').eq('id', schoolId).single());
+    return handleResponse<any>(await supabase.from('schools').select('*').eq('id', schoolId).maybeSingle());
 };
 
 export const updateSchoolSettings = async (id: string, settings: any) => {
