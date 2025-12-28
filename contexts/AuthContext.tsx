@@ -109,12 +109,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
                         if (signUpError) {
                             console.error("Recovery failed during signUp:", signUpError);
-                            throw signUpError; // Propaga o erro (ex: "Database error saving new user")
+                            throw signUpError; 
                         }
                         
                         console.log('Recovery successful. Auth account created and profile linked.');
                         authResponse = { data: signUpData, error: null };
-                        profile = undefined; // Força uma nova busca abaixo para obter o perfil recém-criado com o ID correto.
+                        profile = undefined; 
                     } else {
                         throw new Error("Email ou senha inválidos.");
                     }
@@ -159,7 +159,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } catch (error: any) {
             await supabase.auth.signOut();
             setCurrentUser(null);
-            setAuthError(error.message);
+            
+            // Tratamento específico para erro de rede 'Failed to fetch'
+            let errorMessage = error.message;
+            if (errorMessage === 'Failed to fetch') {
+                errorMessage = 'Erro de conexão: Não foi possível alcançar o servidor. Verifique sua internet ou se o projeto Supabase está ativo e não pausado.';
+            }
+            
+            setAuthError(errorMessage);
             throw error;
         }
     };

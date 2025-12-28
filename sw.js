@@ -1,10 +1,10 @@
 // Define o nome e a versão do cache. Mudar a versão invalida caches antigos.
-const CACHE_NAME = 'educalink-crm-cache-v4';
+const CACHE_NAME = 'educalink-crm-cache-v5';
 
 // Lista de arquivos essenciais para o "app shell" que serão cacheados
 const APP_SHELL_URLS = [
   '/index.html',
-  '/index.tsx', // Add main script to shell
+  '/index.tsx',
   '/icon.svg',
   '/manifest.json',
 ];
@@ -44,30 +44,31 @@ self.addEventListener('activate', (event) => {
 // Evento de fetch: intercepta as requisições de rede
 self.addEventListener('fetch', (event) => {
   // Estratégia para requisições de navegação (abrir o app, F5, etc.)
-  // Sempre serve o `index.html` do cache para garantir que o app carregue.
-  // Isso contorna o problema do servidor que não serve o arquivo HTML corretamente.
   if (event.request.mode === 'navigate') {
     event.respondWith(
       caches.match('/index.html').then(response => {
-        // Se o index.html estiver no cache, retorna ele. Senão (caso muito raro após a instalação), busca na rede.
         return response || fetch(event.request);
       })
     );
     return;
   }
 
-  // Estratégia para todos os outros recursos (JS, imagens, fontes, etc.)
-  // "Cache first": serve do cache se disponível, senão busca na rede e armazena para a próxima vez.
+  // IMPORTANTE: Só tenta cachear requisições GET. 
+  // O Cache API não suporta métodos como POST, PUT ou DELETE. 
+  // Tentar usar cache.put com esses métodos causa erro 'Failed to fetch'.
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  // Estratégia para recursos estáticos: "Cache first"
   event.respondWith(
     caches.match(event.request).then((response) => {
-      // Se tivermos uma resposta no cache, retorna ela.
       if (response) {
         return response;
       }
-      // Se não, busca na rede.
       return fetch(event.request).then((fetchResponse) => {
-        // Se a resposta da rede for válida, clona, armazena no cache e retorna.
-        if (fetchResponse && fetchResponse.ok) {
+        // Só armazena em cache se a resposta for válida e da mesma origem ou recursos permitidos
+        if (fetchResponse && fetchResponse.ok && event.request.method === 'GET') {
           const responseToCache = fetchResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
@@ -83,8 +84,7 @@ self.addEventListener('fetch', (event) => {
 // Listener para notificações PUSH
 self.addEventListener('push', (event) => {
   console.log('[Service Worker] Push Received.');
-  console.log(`[Service Worker] Push had this data: "${event.data.text()}"`);
-
+  
   let data = {};
   try {
     data = event.data.json();
@@ -95,21 +95,18 @@ self.addEventListener('push', (event) => {
   const { title, body, icon, badge } = data;
 
   const options = {
-    body: body,
+    body: body || 'Você tem uma nova atualização no EducaLink.',
     icon: icon || '/icon.svg',
     badge: badge || '/icon.svg',
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(self.registration.showNotification(title || 'EducaLink CRM', options));
 });
 
 
 // Listener para o clique na notificação
 self.addEventListener('notificationclick', (event) => {
-  console.log('[Service Worker] Notification click Received.');
-
   event.notification.close();
-
   event.waitUntil(
     clients.openWindow('/')
   );
