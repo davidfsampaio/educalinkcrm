@@ -1,7 +1,8 @@
+
 import { GoogleGenAI } from "@google/genai";
 
 export const generateText = async (prompt: string): Promise<string> => {
-  // A new GoogleGenAI instance is created for each call to ensure the most up-to-date API key is used.
+  // FIX: Using process.env.API_KEY directly for initialization as per guidelines.
   const apiKey = process.env.API_KEY;
 
   if (!apiKey) {
@@ -10,13 +11,16 @@ export const generateText = async (prompt: string): Promise<string> => {
     return errorMessage;
   }
 
-  const ai = new GoogleGenAI({ apiKey });
+  // FIX: Always use a new client instance with current process.env.API_KEY.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
+    // FIX: Updated model name to 'gemini-3-flash-preview' for basic text tasks.
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
     });
+    // FIX: Accessing .text property directly (not calling it as a method).
     return response.text;
   } catch (error) {
     console.error("Erro ao gerar texto com Gemini:", error);

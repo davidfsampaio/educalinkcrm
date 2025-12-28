@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { User, Permission, UserRoleName, UserStatus } from '../types';
 import { supabase } from '../services/supabaseClient';
@@ -54,11 +55,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         checkSession();
 
         const { data: authListener } = supabase.auth.onAuthStateChange(
-            (event, session) => {
+            async (event, session) => {
                 if (event === 'SIGNED_OUT') {
                     if (isMounted) {
                         setCurrentUser(null);
                         setAuthError(null);
+                    }
+                } else if (event === 'SIGNED_IN' && session) {
+                    const allUsers = await getUsers();
+                    const profile = allUsers.find(u => u.id === session.user.id);
+                    if (profile && isMounted) {
+                        setCurrentUser(profile);
                     }
                 }
             }
@@ -72,124 +79,73 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const performLogin = async (email: string, pass: string, expectedRoleType: 'staff' | 'parent') => {
         setAuthError(null);
+        setIsLoading(true);
 
         try {
-            let authResponse;
-            let profile: User | undefined;
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
 
-            // Etapa 1: Tentar fazer login
-            const signInResponse = await supabase.auth.signInWithPassword({ email, password: pass });
-
-            // Etapa 2: Se o login falhar, tentar a autocorreção
-            if (signInResponse.error) {
-                if (signInResponse.error.message === 'Invalid login credentials') {
-                    console.warn('Login failed, attempting autocorrection for existing profile...');
-
-                    const allUsers = await getUsers();
-                    const existingProfile = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-
-                    if (existingProfile) {
-                        console.log('Found existing profile without auth user. Attempting recovery by recreating auth user.');
-
-                        const { id: oldId, ...profileDataToRestore } = existingProfile;
-
-                        // Primeiro, exclua o perfil conflitante da tabela public.users.
-                        await apiDeleteUser(oldId);
-
-                        // Agora, crie o usuário de autenticação. O gatilho do DB será executado e recriará o perfil.
-                        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-                            email,
-                            password: pass,
-                            options: {
-                                data: {
-                                    ...profileDataToRestore
-                                }
-                            }
-                        });
-
-                        if (signUpError) {
-                            console.error("Recovery failed during signUp:", signUpError);
-                            throw signUpError; 
-                        }
-                        
-                        console.log('Recovery successful. Auth account created and profile linked.');
-                        authResponse = { data: signUpData, error: null };
-                        profile = undefined; 
-                    } else {
-                        throw new Error("Email ou senha inválidos.");
-                    }
-                } else {
-                    throw signInResponse.error;
-                }
-            } else {
-                authResponse = signInResponse;
-            }
+            if (error) throw error;
             
-            if (!authResponse.data.user) {
+            if (!data.user) {
                 throw new Error("Falha na autenticação. Usuário não encontrado.");
             }
             
-            // Etapa 3: Garantir que temos o perfil
-            if (!profile) {
-                const allUsers = await getUsers();
-                profile = allUsers.find(u => u.id === authResponse.data.user!.id);
-            }
+            const allUsers = await getUsers();
+            let profile = allUsers.find(u => u.id === data.user!.id);
             
             if (!profile) {
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                // Pequeno atraso para o trigger do DB criar o perfil
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 const refetchedUsers = await getUsers();
-                profile = refetchedUsers.find(u => u.id === authResponse.data.user!.id);
+                profile = refetchedUsers.find(u => u.id === data.user!.id);
                 if (!profile) {
-                    throw new Error(`Falha ao carregar o perfil do usuário após o login. A sincronização pode estar atrasada. Tente novamente em alguns instantes.`);
+                    throw new Error(`Falha ao carregar o perfil do usuário. Tente novamente em alguns instantes.`);
                 }
             }
 
-            // Etapa 4: Verificar se o usuário está acessando o portal correto.
             const isParentRole = profile.role === 'Pai/Responsável';
             if (expectedRoleType === 'staff' && isParentRole) {
+                await supabase.auth.signOut();
                 throw new Error("Acesso negado. Este usuário pertence ao portal de pais/responsáveis.");
             }
             if (expectedRoleType === 'parent' && !isParentRole) {
+                await supabase.auth.signOut();
                 throw new Error("Acesso negado. Este usuário pertence ao portal da equipe da escola.");
             }
 
-            // Etapa 5: Sucesso! Definir o usuário atual.
             setCurrentUser(profile);
             
         } catch (error: any) {
-            await supabase.auth.signOut();
-            setCurrentUser(null);
-            
-            // Tratamento específico para erro de rede 'Failed to fetch'
-            let errorMessage = error.message;
-            if (errorMessage === 'Failed to fetch') {
-                errorMessage = 'Erro de conexão: Não foi possível alcançar o servidor. Verifique sua internet ou se o projeto Supabase está ativo e não pausado.';
-            }
-            
-            setAuthError(errorMessage);
+            setAuthError(error.message);
             throw error;
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const signInAsStaff = async (email: string, pass: string) => {
-        try {
-            await performLogin(email, pass, 'staff');
-        } catch (error) {
-            console.error("Staff login failed:", (error as Error).message);
-        }
+        await performLogin(email, pass, 'staff');
     };
 
     const signInAsParent = async (email: string, pass: string) => {
-         try {
-            await performLogin(email, pass, 'parent');
-        } catch (error) {
-            console.error("Parent login failed:", (error as Error).message);
-        }
+        await performLogin(email, pass, 'parent');
     };
     
-    const hasPermission = (permission: Permission): boolean => userPermissions.has(permission);
+    const hasPermission = (permission: Permission): boolean => {
+        if (currentUser?.role === 'Admin') return true;
+        return userPermissions.has(permission);
+    };
 
-    const value = { currentUser, isLoading, hasPermission, authError, setAuthError, signInAsStaff, signInAsParent, setUserPermissions };
+    const value = { 
+        currentUser, 
+        isLoading, 
+        hasPermission, 
+        authError, 
+        setAuthError, 
+        signInAsStaff, 
+        signInAsParent, 
+        setUserPermissions 
+    };
 
     return (
         <AuthContext.Provider value={value}>
