@@ -187,58 +187,96 @@ const InitialSelectionScreen: React.FC<{ onSelect: (type: 'staff' | 'parent') =>
     </div>
 );
 
-const AuthScreen: React.FC = () => {
-    const [view, setView] = useState<'initial' | 'staff_login' | 'parent_login'>('initial');
-    const { authError, setAuthError } = useAuth();
+const StaffLoginScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+    const { signInAsStaff, authError, setAuthError } = useAuth();
+    const [email, setEmail] = useState('david.fsampaio@gmail.com');
+    const [pass, setPass] = useState('');
+    const [localLoading, setLocalLoading] = useState(false);
+
+    const handleLogin = async () => {
+        if (!pass) { setAuthError('Por favor, digite sua senha.'); return; }
+        setLocalLoading(true);
+        try {
+            await signInAsStaff(email, pass);
+        } catch(e) {
+            // Erro já é tratado no AuthContext e exibido via authError
+        } finally {
+            setLocalLoading(false);
+        }
+    };
 
     return (
-        <div className="flex items-center justify-center h-screen bg-slate-100 p-4">
-            {view === 'initial' && <InitialSelectionScreen onSelect={(t) => t === 'staff' ? setView('staff_login') : setView('parent_login')} />}
-            {view === 'staff_login' && <StaffLoginScreen onBack={() => setView('initial')} authError={authError} setAuthError={setAuthError} />}
-            {view === 'parent_login' && <ParentLoginScreen onBack={() => setView('initial')} authError={authError} setAuthError={setAuthError} />}
+        <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl space-y-6 animate-in fade-in zoom-in duration-300">
+            <h2 className="text-2xl font-bold text-center text-brand-text-dark">Login da Equipe</h2>
+            {authError && <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">{authError}</div>}
+            <div className="space-y-4">
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">E-mail</label>
+                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none" placeholder="seu@email.com" />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Senha</label>
+                    <input type="password" value={pass} onKeyDown={e => e.key === 'Enter' && handleLogin()} onChange={e => setPass(e.target.value)} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none" placeholder="••••••••" />
+                </div>
+            </div>
+            <button 
+                disabled={localLoading} 
+                onClick={handleLogin} 
+                className="w-full py-3 bg-brand-primary text-white rounded-lg font-bold hover:bg-sky-600 transition-colors disabled:bg-slate-400"
+            >
+                {localLoading ? 'Autenticando...' : 'Entrar'}
+            </button>
+            <button onClick={onBack} className="w-full text-sm text-slate-500 hover:text-brand-primary">Voltar</button>
         </div>
     );
 };
 
+const ParentLoginScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+    const { signInAsParent, authError, setAuthError } = useAuth();
+    const [email, setEmail] = useState('');
+    const [pass, setPass] = useState('');
+    const [localLoading, setLocalLoading] = useState(false);
 
-const StaffLoginScreen = lazy(() => Promise.resolve({ default: ({ onBack, authError, setAuthError }: any) => {
-    const { signInAsStaff } = useAuth();
-    const [email, setEmail] = useState('admin@educalink.com');
-    const [pass, setPass] = useState('admin123');
-    const [load, setLoad] = useState(false);
+    const handleLogin = async () => {
+        if (!email || !pass) { setAuthError('Preencha e-mail e senha.'); return; }
+        setLocalLoading(true);
+        try {
+            await signInAsParent(email, pass);
+        } catch(e) {}
+        finally { setLocalLoading(false); }
+    };
+
     return (
-        <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl space-y-6">
-            <h2 className="text-2xl font-bold text-center">Login da Equipe</h2>
-            {authError && <div className="p-3 bg-red-50 text-red-600 text-sm rounded">{authError}</div>}
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded" placeholder="E-mail" />
-            <input type="password" value={pass} onChange={e => setPass(e.target.value)} className="w-full p-2 border rounded" placeholder="Senha" />
-            <button disabled={load} onClick={async () => { setLoad(true); try { await signInAsStaff(email, pass); } catch(e){} setLoad(false); }} className="w-full py-3 bg-brand-primary text-white rounded-lg">{load ? 'Entrando...' : 'Entrar'}</button>
-            <button onClick={onBack} className="w-full text-sm text-brand-primary">Voltar</button>
+        <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl space-y-6 animate-in fade-in zoom-in duration-300">
+            <h2 className="text-2xl font-bold text-center text-brand-text-dark">Portal do Responsável</h2>
+            {authError && <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">{authError}</div>}
+            <div className="space-y-4">
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-3 border rounded-lg" placeholder="E-mail do responsável" />
+                <input type="password" value={pass} onKeyDown={e => e.key === 'Enter' && handleLogin()} onChange={e => setPass(e.target.value)} className="w-full p-3 border rounded-lg" placeholder="Senha" />
+            </div>
+            <button disabled={localLoading} onClick={handleLogin} className="w-full py-3 bg-brand-primary text-white rounded-lg font-bold hover:bg-sky-600 transition-colors disabled:bg-slate-400">
+                {localLoading ? 'Entrando...' : 'Entrar'}
+            </button>
+            <button onClick={onBack} className="w-full text-sm text-slate-500 hover:text-brand-primary">Voltar</button>
         </div>
     );
-}}));
+};
 
-const ParentLoginScreen = lazy(() => Promise.resolve({ default: ({ onBack, authError, setAuthError }: any) => {
-    const { signInAsParent } = useAuth();
-    const [email, setEmail] = useState('ana.silva@email.com');
-    const [pass, setPass] = useState('senha123');
-    const [load, setLoad] = useState(false);
+const AuthScreen: React.FC = () => {
+    const [view, setView] = useState<'initial' | 'staff_login' | 'parent_login'>('initial');
+
     return (
-        <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl space-y-6">
-            <h2 className="text-2xl font-bold text-center">Portal do Responsável</h2>
-            {authError && <div className="p-3 bg-red-50 text-red-600 text-sm rounded">{authError}</div>}
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded" placeholder="E-mail" />
-            <input type="password" value={pass} onChange={e => setPass(e.target.value)} className="w-full p-2 border rounded" placeholder="Senha" />
-            <button disabled={load} onClick={async () => { setLoad(true); try { await signInAsParent(email, pass); } catch(e){} setLoad(false); }} className="w-full py-3 bg-brand-primary text-white rounded-lg">{load ? 'Entrando...' : 'Entrar'}</button>
-            <button onClick={onBack} className="w-full text-sm text-brand-primary">Voltar</button>
+        <div className="flex items-center justify-center h-screen bg-slate-100 p-4">
+            {view === 'initial' && <InitialSelectionScreen onSelect={(t) => t === 'staff' ? setView('staff_login') : setView('parent_login')} />}
+            {view === 'staff_login' && <StaffLoginScreen onBack={() => setView('initial')} />}
+            {view === 'parent_login' && <ParentLoginScreen onBack={() => setView('initial')} />}
         </div>
     );
-}}));
+};
 
 const AppRouter: React.FC = () => {
     const { currentUser, isLoading } = useAuth();
     const [page, setPage] = useState<'crm' | 'capture' | null>(null);
-    const [failsafeActive, setFailsafeActive] = useState(false);
 
     useEffect(() => {
         const handleRouting = () => {
@@ -247,21 +285,15 @@ const AppRouter: React.FC = () => {
         };
         handleRouting();
         window.addEventListener('hashchange', handleRouting);
-        
-        // Failsafe de UI: Se após 4 segundos ainda estiver "verificando", permite tentar o login
-        const timer = setTimeout(() => setFailsafeActive(true), 4000);
-        
-        return () => {
-            window.removeEventListener('hashchange', handleRouting);
-            clearTimeout(timer);
-        }
+        return () => window.removeEventListener('hashchange', handleRouting);
     }, []);
 
-    if ((isLoading && !failsafeActive) || page === null) {
+    // Só mostramos o spinner global se NÃO estivermos na página de captura pública
+    if (page === null || (isLoading && page === 'crm' && !currentUser)) {
         return (
             <div className="flex flex-col h-screen w-screen items-center justify-center bg-slate-50">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-brand-primary mb-4"></div>
-                <p className="text-slate-600 font-medium animate-pulse">Verificando sessão segura...</p>
+                <p className="text-slate-600 font-medium animate-pulse">Sincronizando dados...</p>
             </div>
         );
     }

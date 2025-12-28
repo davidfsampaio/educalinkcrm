@@ -5,12 +5,14 @@ import {
     User, Expense, Revenue, LeadCaptureCampaign, Photo, TuitionPlan, StudentColumns, LeadColumns, InvoiceColumns, PhotoAlbumColumns
 } from '../types';
 
-// Helper centralizado para tratar respostas e evitar erros de sintaxe SQL por objetos malformados
+// Helper centralizado para tratar respostas e evitar erros de sintaxe SQL
 const handleResponse = <T>(response: { data: T | null; error: any }) => {
     if (response.error) {
-        console.error("Supabase API Error Details:", response.error);
-        // Retorna apenas a mensagem para evitar o erro [object Object]
-        throw new Error(typeof response.error === 'string' ? response.error : (response.error.message || "Erro na base de dados."));
+        // Se for erro de "não encontrado" (PGRST116), retornamos null em vez de travar
+        if (response.error.code === 'PGRST116') return null;
+        
+        console.error("Supabase API Error:", response.error);
+        throw new Error(response.error.message || "Erro na base de dados.");
     }
     return response.data as T;
 };
@@ -19,10 +21,15 @@ const handleResponse = <T>(response: { data: T | null; error: any }) => {
 export const getUsers = async () => 
     handleResponse<User[]>(await supabase.from('users').select('*'));
 
-// FIX: Busca por ID único é muito mais rápida e segura do que filtrar um array de todos os usuários
 export const getUserById = async (userId: string) => {
-    if (!userId || typeof userId !== 'string') throw new Error("ID de usuário inválido.");
-    return handleResponse<User>(await supabase.from('users').select('*').eq('id', userId).single());
+    if (!userId) return null;
+    try {
+        const response = await supabase.from('users').select('*').eq('id', userId).single();
+        return handleResponse<User>(response);
+    } catch (e) {
+        console.error("Erro ao buscar usuário por ID:", e);
+        return null;
+    }
 };
 
 export const addUser = async (data: any) => 
@@ -224,14 +231,10 @@ export const addLeadCaptureCampaign = async (data: any) =>
     handleResponse<LeadCaptureCampaign>(await supabase.from('lead_capture_campaigns').insert(data).select().single());
 
 export const savePushSubscription = async (subscription: any, userId: string) => {
-    // FIX: Utilizando a tabela dedicada 'push_subscriptions' identificada no dashboard do usuário.
     const { error } = await supabase.from('push_subscriptions').upsert({ 
         user_id: userId, 
         subscription: subscription,
         updated_at: new Date().toISOString()
     });
-    if (error) {
-        console.error("Falha ao salvar inscrição de push:", error);
-        throw new Error(error.message);
-    }
+    if (error) throw new Error(error.message);
 };
